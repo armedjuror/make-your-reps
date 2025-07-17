@@ -33,6 +33,7 @@ DEBUG = True
 ALLOWED_HOSTS = [
     '127.0.0.1',
     'localhost',
+    '140.245.225.184'
 ]
 
 
@@ -143,6 +144,7 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -190,3 +192,8 @@ CACHES = {
 }
 
 JWT_SECRET = os.environ.get('JWT_SECRET')
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+CSRF_TRUSTED_ORIGINS = ['http://140.245.225.184', 'http://localhost:8000', 'http://127.0.0.1:8000']
