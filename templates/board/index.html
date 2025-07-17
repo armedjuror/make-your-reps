@@ -1,0 +1,385 @@
+{% load static %}
+{% load socialaccount %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} | {{ tagline }}</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredericka+the+Great&family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'board/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'board/css/bootstrap-social.css' %}">
+</head>
+<body>
+    <div class="login-wrapper">
+        <div class="login-container">
+            <div class="compound-graph">
+            <div class="chart-container">
+                <canvas id="compoundChart" width="500" height="350"></canvas>
+            </div>
+            <div class="chart-legend">
+                <div class="legend-item">
+                    <div class="legend-color better"></div>
+                    <span>1% Better Daily = 37.78x in 1 year</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color worse"></div>
+                    <span>1% Worse Daily = 0.03x in 1 year</span>
+                </div>
+            </div>
+        </div>
+            <h3>{{ tagline | title}}</h3>
+            <div class="header">
+                {{ title | title}}
+                <div class="rotating-text">
+                    {% for val in sliding_text %}
+                        <span class="text-item">{{ val | title }}</span>
+                    {% endfor %}
+                    {% for val in sliding_text_strikethrough %}
+                        <span class="text-item strikethrough">{{ val }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% if user.is_authenticated %}
+                <a href="{% url 'dashboard' %}" class="btn btn-paper btn-primary" style="margin-top: 50px;">Go to the board</a>
+            {% else %}
+                <form action="{% provider_login_url 'google' %}?client_type=web" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-paper btn-primary" style="margin-top: 50px;"> <i class="fa-brands fa-google"></i> | Continue With Google</button>
+                </form>
+            {% endif %}
+
+        </div>
+    </div>
+    <div class="copyright">
+        © <span id="year"></span> {{ copyright_text }}
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        let currentTheme = 'dark';
+        document.addEventListener('DOMContentLoaded', function() {
+            updateGreeting();
+            updateYear()
+            setInterval(updateGreeting, 60000); // Update greeting every minute
+        });
+        function updateYear() {
+            const span = document.getElementById('year');
+            span.innerText = `${new Date().getFullYear()}`;
+        }
+
+        // Theme toggle
+        function toggleTheme() {
+            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.body.setAttribute('data-theme', currentTheme);
+            document.getElementById('themeIcon').className = currentTheme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
+        }
+
+        function updateGreeting() {
+            const now = new Date();
+            const hour = now.getHours();
+            let greeting = '';
+
+            if (hour < 12) {
+                greeting = 'Good Morning, How are you doing?';
+            } else if (hour < 17) {
+                greeting = 'Good Afternoon, How are you doing?';
+            } else {
+                greeting = 'Good Evening, How are you doing?';
+            }
+
+            document.querySelector('.greeting-main h1').textContent = greeting;
+        }
+
+        const canvas = document.getElementById('compoundChart');
+        const ctx = canvas.getContext('2d');
+
+        // Set up the chart dimensions
+        const padding = 50;
+        const width = canvas.width - 2 * padding;
+        const height = canvas.height - 2 * padding;
+
+        // Generate more data points for smoother curve
+        const days = 365;
+        const betterData = [];
+        const worseData = [];
+
+        for (let i = 0; i <= days; i += 3) { // More data points for smoother curve
+            const better = Math.pow(1.01, i);
+            const worse = Math.pow(0.99, i);
+            betterData.push({ x: i, y: better });
+            worseData.push({ x: i, y: worse });
+        }
+
+        // Find max values for scaling - adjust for better exponential visibility
+        const maxBetter = Math.max(...betterData.map(d => d.y));
+        const minWorse = Math.min(...worseData.map(d => d.y));
+
+        // Use scaling that shows exponential growth properly
+        const visualMaxValue = 20; // More space for exponential curve
+        const visualMinValue = 0;
+
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw grid
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.lineWidth = 1;
+
+        // Vertical grid lines
+        for (let i = 0; i <= 12; i++) {
+            const x = padding + (i * width / 12);
+            ctx.beginPath();
+            ctx.moveTo(x, padding);
+            ctx.lineTo(x, padding + height);
+            ctx.stroke();
+        }
+
+        // Horizontal grid lines
+        for (let i = 0; i <= 8; i++) {
+            const y = padding + (i * height / 8);
+            ctx.beginPath();
+            ctx.moveTo(padding, y);
+            ctx.lineTo(padding + width, y);
+            ctx.stroke();
+        }
+
+        // Draw axes
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.lineWidth = 2;
+
+        // X-axis
+        ctx.beginPath();
+        ctx.moveTo(padding, padding + height);
+        ctx.lineTo(padding + width, padding + height);
+        ctx.stroke();
+
+        // Y-axis
+        ctx.beginPath();
+        ctx.moveTo(padding, padding);
+        ctx.lineTo(padding, padding + height);
+        ctx.stroke();
+
+        // Function to convert data to canvas coordinates with proper exponential scaling
+        function dataToCanvas(x, y) {
+            const canvasX = padding + (x / days) * width;
+
+            // Proper exponential scaling that maintains the curve shape
+            let visualY;
+            if (y >= 1) {
+                // Use a power function to preserve exponential curve shape
+                // This maps 1 to baseline and 37.78 to top while keeping curve shape
+                visualY = 4 + Math.pow((y - 1) / 36.78, 0.6) * 14; // Maintains exponential curve
+            } else {
+                // For values below 1, linear scaling for decline
+                visualY = y * 4; // Maps 0 to bottom, 1 to baseline
+            }
+
+            const normalizedY = visualY / 18; // Total range is now 0-18
+            const canvasY = padding + height - (normalizedY * height);
+            return { x: canvasX, y: canvasY };
+        }
+
+        // Draw 1% better line
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+
+        betterData.forEach((point, index) => {
+            const canvasPoint = dataToCanvas(point.x, point.y);
+            if (index === 0) {
+                ctx.moveTo(canvasPoint.x, canvasPoint.y);
+            } else {
+                ctx.lineTo(canvasPoint.x, canvasPoint.y);
+            }
+        });
+        ctx.stroke();
+
+        // Draw 1% worse line
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+
+        worseData.forEach((point, index) => {
+            const canvasPoint = dataToCanvas(point.x, point.y);
+            if (index === 0) {
+                ctx.moveTo(canvasPoint.x, canvasPoint.y);
+            } else {
+                ctx.lineTo(canvasPoint.x, canvasPoint.y);
+            }
+        });
+        ctx.stroke();
+
+        // Add labels
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
+
+        // X-axis labels
+        ctx.fillText('Day 1', padding, padding + height + 20);
+        ctx.fillText('Day 365', padding + width, padding + height + 20);
+        ctx.fillText('Day 183', padding + width/2, padding + height + 20);
+
+        // Y-axis labels - adjusted for new scaling
+        ctx.textAlign = 'right';
+        const oneXPoint = dataToCanvas(0, 1);
+        const maxPoint = dataToCanvas(0, maxBetter);
+        const minPoint = dataToCanvas(0, minWorse);
+
+        ctx.fillText('1x', padding - 10, oneXPoint.y + 5);
+        ctx.fillText('37x', padding - 10, maxPoint.y + 5);
+        ctx.fillText('0.03x', padding - 10, minPoint.y + 5);
+
+        // Draw baseline at y=1 - now more prominent
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([8, 4]);
+        ctx.beginPath();
+        ctx.moveTo(padding, oneXPoint.y);
+        ctx.lineTo(padding + width, oneXPoint.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Add animated dots
+        let animationProgress = 0;
+
+        function drawChart() {
+            // Clear the entire canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Redraw grid
+            ctx.strokeStyle = 'rgba(152, 117, 63, 0.5)';
+            ctx.lineWidth = 1;
+
+            // Vertical grid lines
+            for (let i = 0; i <= 12; i++) {
+                const x = padding + (i * width / 12);
+                ctx.beginPath();
+                ctx.moveTo(x, padding);
+                ctx.lineTo(x, padding + height);
+                ctx.stroke();
+            }
+
+            // Horizontal grid lines
+            for (let i = 0; i <= 8; i++) {
+                const y = padding + (i * height / 8);
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(padding + width, y);
+                ctx.stroke();
+            }
+
+            // Redraw axes
+            ctx.strokeStyle = 'rgba(152, 117, 63, 1)';
+            ctx.lineWidth = 2;
+
+            // X-axis
+            ctx.beginPath();
+            ctx.moveTo(padding, padding + height);
+            ctx.lineTo(padding + width, padding + height);
+            ctx.stroke();
+
+            // Y-axis
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, padding + height);
+            ctx.stroke();
+
+            // Redraw 1% better line
+            ctx.strokeStyle = '#10b981';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+
+            betterData.forEach((point, index) => {
+                const canvasPoint = dataToCanvas(point.x, point.y);
+                if (index === 0) {
+                    ctx.moveTo(canvasPoint.x, canvasPoint.y);
+                } else {
+                    ctx.lineTo(canvasPoint.x, canvasPoint.y);
+                }
+            });
+            ctx.stroke();
+
+            // Redraw 1% worse line
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+
+            worseData.forEach((point, index) => {
+                const canvasPoint = dataToCanvas(point.x, point.y);
+                if (index === 0) {
+                    ctx.moveTo(canvasPoint.x, canvasPoint.y);
+                } else {
+                    ctx.lineTo(canvasPoint.x, canvasPoint.y);
+                }
+            });
+            ctx.stroke();
+
+            // Redraw labels
+            ctx.fillStyle = 'rgba(152, 117, 63, 1)';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+
+            // X-axis labels
+            ctx.fillText('Day 1', padding, padding + height + 20);
+            ctx.fillText('Day 365', padding + width, padding + height + 20);
+            ctx.fillText('Day 183', padding + width/2, padding + height + 20);
+
+            // Y-axis labels - adjusted for new scaling
+            ctx.textAlign = 'right';
+            const oneXPoint = dataToCanvas(0, 1);
+            const maxPoint = dataToCanvas(0, maxBetter);
+            const minPoint = dataToCanvas(0, minWorse);
+
+            ctx.fillText('1x', padding - 10, oneXPoint.y + 5);
+            ctx.fillText('37x', padding - 10, maxPoint.y + 5);
+            ctx.fillText('0.03x', padding - 10, minPoint.y + 5);
+
+            // Redraw baseline at y=1
+            ctx.strokeStyle = 'rgba(152, 117, 63, 1)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([8, 4]);
+            ctx.beginPath();
+            ctx.moveTo(padding, oneXPoint.y);
+            ctx.lineTo(padding + width, oneXPoint.y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Calculate current position for animated dots
+            const currentDay = (animationProgress % 1) * days;
+            const betterValue = Math.pow(1.01, currentDay);
+            const worseValue = Math.pow(0.99, currentDay);
+
+            const betterPoint = dataToCanvas(currentDay, betterValue);
+            const worsePoint = dataToCanvas(currentDay, worseValue);
+
+            // Draw animated dots with glow
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#10b981';
+            ctx.fillStyle = '#10b981';
+            ctx.beginPath();
+            ctx.arc(betterPoint.x, betterPoint.y, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.shadowColor = '#ef4444';
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.arc(worsePoint.x, worsePoint.y, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Reset shadow
+            ctx.shadowBlur = 0;
+
+            animationProgress += 0.008; // Slower animation
+            requestAnimationFrame(drawChart);
+        }
+
+        drawChart();
+
+    </script>
+</body>
+</html>

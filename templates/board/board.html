@@ -1,0 +1,1391 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title | title }} | {{ tagline | title }}</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredericka+the+Great&family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'board/css/style.css' %}">
+</head>
+<body data-theme="{{ user_detail.default_theme }}">
+
+    <div id="loader" class="loader-overlay hidden">
+        <div class="loader-container">
+            <div class="loader-content">
+                <div class="notebook-spinner"></div>
+                <div class="loader-text">Loading...</div>
+                <div class="loader-subtext">Patience is underrated!</div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="container-fluid">
+
+        <div class="nav-overlay" id="navOverlay"></div>
+<div class="nav-popup" id="navPopup">
+    <div class="nav-content">
+        <a href="#" class="nav-link">
+            <i class="fas fa-home"></i>
+            <span>Dashboard</span>
+        </a>
+        <a href="#" class="nav-link">
+            <i class="fas fa-tasks"></i>
+            <span>Tasks</span>
+        </a>
+        <a href="#" class="nav-link">
+            <i class="fas fa-calendar"></i>
+            <span>Routines</span>
+        </a>
+        <a href="#" class="nav-link">
+            <i class="fas fa-chart-line"></i>
+            <span>Habits</span>
+        </a>
+        <a href="#" class="nav-link">
+            <i class="fas fa-book"></i>
+            <span>Journal</span>
+        </a>
+        <a href="#" class="nav-link">
+            <i class="fas fa-moon"></i>
+            <span>Sleep Tracker</span>
+        </a>
+        <div class="nav-divider"></div>
+        <a href="#" class="nav-link" onclick="showSettings()">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+        </a>
+        <a href="{% url 'logout' %}" class="nav-link">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+        </a>
+    </div>
+</div>
+
+        <!-- Header -->
+        <div class="row">
+            <div class="col-12">
+                <div class="header-controls">
+                    <div class="btn btn-paper btn-primary" style="width: 200px;pointer-events: none;" id="date"></div>
+                    <button class="btn btn-paper btn-primary" onclick="toggleTheme()">
+                        <i class="{% if user_detail.default_theme == 'light' %}fas fa-moon{% else %}fas fa-sun{% endif %}" id="themeIcon"></i>
+                    </button>
+                <button class="btn btn-paper btn-primary hamburger-btn" id="hamburgerBtn">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                </button>
+
+                </div>
+
+                <div class="greeting">
+                    <h1>Good Morning, Friend!</h1>
+                    <p>Let's make today amazing ✨</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="row">
+            <!-- Left Column -->
+            <div class="col-lg-4">
+                <!-- Todo Manager -->
+                <div class="section mobile-order-2">
+                    <h3 class="section-title">{{ board_tasks_title }}</h3>
+                    <div class="mb-3">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="todoInput" placeholder="Add a new task...">
+                            <button class="btn btn-paper btn-primary ms-2" onclick="addTodo()">Add</button>
+                        </div>
+                    </div>
+                    <div id="todoList"></div>
+                </div>
+            </div>
+
+            <!-- Routine Manager -->
+            <div class="col-lg-4">
+                <div class="section mobile-order-1">
+                    <h3 class="section-title">{{ board_routines_title }}</h3>
+                    <div class="routine-tabs">
+                        <button class="routine-tab active" onclick="showRoutine('workday_routine')">Workday</button>
+                        <button class="routine-tab" onclick="showRoutine('holiday_routine')">Holiday</button>
+                    </div>
+                    <div id="workday_routine" class="routine-content">
+                        {% if user_detail.routines.workdays %}
+                            {% for routine in user_detail.routines.workdays %}
+                                <div class="routine-item">{{ routine }}</div>
+                            {% endfor %}
+                        {% else %}
+                            <h6 class="text-center mt-4 mb-4">Set your workday routine now</h6>
+                        {% endif %}
+                    </div>
+                    <div id="holiday_routine" class="routine-content" style="display: none;">
+                        {% if user_detail.routines.holidays %}
+                            {% for routine in user_detail.routines.holidays %}
+                                <div class="routine-item">{{ routine }}</div>
+                            {% endfor %}
+                        {% else %}
+                            <h6 class="text-center mt-4 mb-4">Set your holiday routine now</h6>
+                        {% endif %}
+                    </div>
+                    <button class="btn btn-paper btn-primary mt-3" onclick="editRoutine()">Edit This Routine</button>
+                </div>
+            </div>
+
+             <!-- Journal -->
+            <div class="col-lg-4">
+                <div class="section mobile-order-4">
+                    <h3 class="section-title">{{ board_journal_title }}</h3>
+                    <textarea class="form-control journal-area" placeholder="How was your day today? What did you learn? What are you grateful for?
+
+Write freely here, like you're writing in your personal journal..." rows="10" id="journal" onfocusout="updateJournal()"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Row -->
+        <div class="row">
+
+
+            <!-- Middle Column -->
+            <div class="col-lg-8">
+                <!-- Habit Tracker -->
+                <div class="section mobile-order-3">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h3 class="section-title">{{ board_habits_title }}</h3>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <button class="btn btn-paper btn-primary btn-sm" onclick="addHabitModal()">New Habit <i class="fa fa-add"></i> </button>
+                        </div>
+                    </div>
+                    <div class="habit-tracker" id="habitTracker">
+{#                        <div class="habit-row">#}
+{#                            <div class="habit-name">Morning Run</div>#}
+{#                            <div class="habit-days">#}
+{#                                <div class="habit-day" data-day="1">1</div>#}
+{#                                <div class="habit-day" data-day="2">2</div>#}
+{#                                <div class="habit-day checked" data-day="3">3</div>#}
+{#                                <div class="habit-day" data-day="4">4</div>#}
+{#                                <div class="habit-day checked" data-day="5">5</div>#}
+{#                                <div class="habit-day" data-day="6">6</div>#}
+{#                                <div class="habit-day" data-day="7">7</div>#}
+{#                                <div class="habit-day" data-day="8">8</div>#}
+{#                                <div class="habit-day" data-day="9">9</div>#}
+{#                                <div class="habit-day" data-day="10">10</div>#}
+{#                                <div class="habit-day" data-day="11">11</div>#}
+{#                                <div class="habit-day" data-day="12">12</div>#}
+{#                                <div class="habit-day" data-day="13">13</div>#}
+{#                                <div class="habit-day" data-day="14">14</div>#}
+{#                                <div class="habit-day" data-day="15">15</div>#}
+{#                            </div>#}
+{#                            <div class="habit-remark">Great progress! 🔥</div>#}
+{#                            <button class="btn btn-paper btn-success btn-sm" onclick="toggleToday('run')">Mark Today</button>#}
+{#                        </div>#}
+{##}
+{#                        <div class="habit-row">#}
+{#                            <div class="habit-name">💧 Drink Water</div>#}
+{#                            <div class="habit-days">#}
+{#                                <div class="habit-day checked" data-day="1">1</div>#}
+{#                                <div class="habit-day checked" data-day="2">2</div>#}
+{#                                <div class="habit-day checked" data-day="3">3</div>#}
+{#                                <div class="habit-day checked" data-day="4">4</div>#}
+{#                                <div class="habit-day checked" data-day="5">5</div>#}
+{#                                <div class="habit-day checked" data-day="6">6</div>#}
+{#                                <div class="habit-day checked" data-day="7">7</div>#}
+{#                                <div class="habit-day checked" data-day="8">8</div>#}
+{#                                <div class="habit-day" data-day="9">9</div>#}
+{#                                <div class="habit-day" data-day="10">10</div>#}
+{#                                <div class="habit-day" data-day="11">11</div>#}
+{#                                <div class="habit-day" data-day="12">12</div>#}
+{#                                <div class="habit-day" data-day="13">13</div>#}
+{#                                <div class="habit-day" data-day="14">14</div>#}
+{#                                <div class="habit-day" data-day="15">15</div>#}
+{#                            </div>#}
+{#                            <div class="habit-remark">Amazing streak! 🌟</div>#}
+{#                            <button class="btn btn-paper btn-success btn-sm" onclick="toggleToday('water')">Mark Today</button>#}
+{#                        </div>#}
+{##}
+{#                        <div class="habit-row">#}
+{#                            <div class="habit-name">📚 Read Book</div>#}
+{#                            <div class="habit-days">#}
+{#                                <div class="habit-day checked" data-day="1">1</div>#}
+{#                                <div class="habit-day" data-day="2">2</div>#}
+{#                                <div class="habit-day checked" data-day="3">3</div>#}
+{#                                <div class="habit-day" data-day="4">4</div>#}
+{#                                <div class="habit-day" data-day="5">5</div>#}
+{#                                <div class="habit-day" data-day="6">6</div>#}
+{#                                <div class="habit-day" data-day="7">7</div>#}
+{#                                <div class="habit-day" data-day="8">8</div>#}
+{#                                <div class="habit-day" data-day="9">9</div>#}
+{#                                <div class="habit-day" data-day="10">10</div>#}
+{#                                <div class="habit-day" data-day="11">11</div>#}
+{#                                <div class="habit-day" data-day="12">12</div>#}
+{#                                <div class="habit-day" data-day="13">13</div>#}
+{#                                <div class="habit-day" data-day="14">14</div>#}
+{#                                <div class="habit-day" data-day="15">15</div>#}
+{#                            </div>#}
+{#                            <div class="habit-remark">Keep it up! 📖</div>#}
+{#                            <button class="btn btn-paper btn-success btn-sm" onclick="toggleToday('read')">Mark Today</button>#}
+{#                        </div>#}
+{##}
+{#                        <div class="habit-row">#}
+{#                            <div class="habit-name"></div>#}
+{#                            <div class="habit-days">#}
+{#                                <div class="habit-day" data-day="1">1</div>#}
+{#                                <div class="habit-day checked" data-day="2">2</div>#}
+{#                                <div class="habit-day" data-day="3">3</div>#}
+{#                                <div class="habit-day checked" data-day="4">4</div>#}
+{#                                <div class="habit-day" data-day="5">5</div>#}
+{#                                <div class="habit-day checked" data-day="6">6</div>#}
+{#                                <div class="habit-day" data-day="7">7</div>#}
+{#                                <div class="habit-day" data-day="8">8</div>#}
+{#                                <div class="habit-day" data-day="9">9</div>#}
+{#                                <div class="habit-day" data-day="10">10</div>#}
+{#                                <div class="habit-day" data-day="11">11</div>#}
+{#                                <div class="habit-day" data-day="12">12</div>#}
+{#                                <div class="habit-day" data-day="13">13</div>#}
+{#                                <div class="habit-day" data-day="14">14</div>#}
+{#                                <div class="habit-day" data-day="15">15</div>#}
+{#                            </div>#}
+{#                            <div class="habit-remark">Getting started! 🌱</div>#}
+{#                            <button class="btn btn-paper btn-success btn-sm" onclick="toggleToday('meditation')">Mark Today</button>#}
+{#                        </div>#}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sleep Tracker -->
+            <div class="col-lg-4">
+                <div class="section mobile-order-5">
+                    <h3 class="section-title">{{ board_sleep_tracker_title }}</h3>
+                    <div class="input-group mb-3">
+                        <input type="number" class="form-control sleep-input" placeholder="Hours slept last night" step="0.5" min="0" max="24">
+                        <button class="btn btn-paper btn-primary ms-2" onclick="addSleep()">Add</button>
+                    </div>
+                    <div class="sleep-graph">
+                        <canvas id="sleepChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Copyright -->
+    <div class="copyright">
+        © <span id="year"></span> {{ copyright_text }}
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal fade" id="settingsModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="successModalLabel">
+                        <div class="modal-icon info">
+                            <i class="fas fa-cog"></i>
+                        </div>
+                        Settings
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-2">
+                        {% if user.first_name %}
+                            <label class="form-label">Name</label>
+                            <input type="text" class="form-control" placeholder="Your name" onfocusout="changeUserName(this.value)" value="{{ user.first_name }} {{ user.last_name }}" readonly>
+                        {% else %}
+                            <label class="form-label">Username</label>
+                            <input type="text" class="form-control" placeholder="Your username" value="{{ user }}" readonly>
+                        {% endif %}
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Default Theme</label>
+                        <select class="form-control" id="themeSelect" onchange="changeTheme()">
+                            <option value="light">Light</option>
+                            <option value="dark">Dark</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <a href="{% url 'logout' %}" class="btn btn-paper btn-danger">Logout</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Routine Edit Modal -->
+    <div class="modal fade" id="routineModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="routineModalLabel">
+                        <div class="modal-icon info">
+                            <i class="fas fa-edit"></i>
+                        </div>
+                        Edit Routine
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div>
+                        <select class="form-control" hidden id="routineType">
+                            <option value="workday_routine">Workday</option>
+                            <option value="holiday_routine">Holiday</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Routine Items</label>
+                        <textarea class="form-control" id="routineItems" rows="8" placeholder="Start Typing Your Routine&#10;Each Item Line by Line&#10;&#10;For Example:&#10;&#10;6:00 AM - Wake up&#10;7:00 AM - Breakfast&#10;..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-paper" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-paper btn-primary" onclick="saveRoutine()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="habitModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-icon info mx-2">
+                        <i class="fas fa-edit"></i>
+                    </div>
+                    <h5 class="modal-title" id="habitModalLabel">
+                        Edit Habit
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="habit_message"></div>
+                    <div class="paragraph-form">
+                I will
+                <input type="text"
+                       class="form-input habit-input"
+                       name="habit"
+                       id="habit"
+                       placeholder="read a page"
+                       required>
+                <input type="text"
+                       class="form-input when-where-input"
+                       name="whenWhere"
+                       id="whenWhere"
+                       placeholder="when I wake up"
+                       required>
+                so that I can become
+                <input type="text"
+                       class="form-input identity-input"
+                       name="identity"
+                       id="identity"
+                       placeholder="a wise person"
+                       required>
+            </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-paper" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="submit-btn" onclick="addHabit()">Create Habit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="successModalLabel">
+                        <div class="modal-icon success">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        Success!
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="modal-message" id="successMessage">Operation completed successfully!</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-paper btn-success" data-bs-dismiss="modal">
+                        <i class="fas fa-thumbs-up me-2"></i>Great!
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Modal -->
+    <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-icon error mx-2">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h5 class="modal-title" id="errorModalLabel">
+                        Error
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="modal-message" id="errorMessage">An error occurred. Please try again.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-paper btn-danger" data-bs-dismiss="modal">
+                        <i class="fas fa-face-meh me-2"></i>Ok
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Modal -->
+    <div class="modal fade" id="infoModal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-icon info mx-2" id="infoModalIcon"><i class="fas fa-info-circle"></i></div>
+                    <h5 class="modal-title" id="infoModalLabel">
+                        Information
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="infoMessage">
+                    <p class="modal-message">Here's some important information for you.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-paper" data-bs-dismiss="modal">
+                        <i class="fas fa-check me-2"></i>Got it
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Habit Settings Modal -->
+<div class="modal fade" id="habitSettingsModal" tabindex="-1" aria-labelledby="habitSettingsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="habitSettingsModalLabel">
+                    <div class="modal-icon info">
+                        <i class="fas fa-cog"></i>
+                    </div>
+                    Habit Settings
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="habit_settings_message" class="mb-3"></div>
+
+                <!-- Current Habit Display -->
+                <div class="current-habit-display mb-4">
+                    <h6 class="text-muted">Current Habit:</h6>
+                    <div class="habit-statement" id="currentHabitStatement">
+                        I will <span id="currentHabit">read a page</span> <span id="currentWhenWhere">when I wake up</span> so that I can become <span id="currentIdentity">a wise person</span>.
+                    </div>
+
+                    <!-- Accountability Partner Display -->
+                    <div class="accountability-partner-info mt-3" id="accountabilityInfo">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-user-friends me-2 text-muted"></i>
+                            <span class="text-muted">Accountability Partner: </span>
+                            <span id="partnerDisplay" class="ms-2">None assigned</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Edit Form (Initially Hidden) -->
+                <div id="editHabitForm" style="display: none;">
+                    <h6 class="mb-3">Edit your habit:</h6>
+                    <div class="paragraph-form">
+                        I will
+                        <input type="text"
+                               class="form-input habit-input"
+                               name="habit"
+                               id="editHabit"
+                               placeholder="read a page"
+                               required>
+                        <input type="text"
+                               class="form-input when-where-input"
+                               name="whenWhere"
+                               id="editWhenWhere"
+                               placeholder="when I wake up"
+                               required>
+                        so that I can become
+                        <input type="text"
+                               class="form-input identity-input"
+                               name="identity"
+                               id="editIdentity"
+                               placeholder="a wise person"
+                               required>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="habit-actions mt-4">
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <button type="button" class="btn habit-action-btn adjust-btn" onclick="toggleEditForm()">
+                                <i class="fas fa-edit"></i>
+                                <span class="btn-text">Adjust Habit</span>
+                                <small class="btn-subtitle">Modify your habit details</small>
+                            </button>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <button type="button" class="btn habit-action-btn partner-btn" onclick="togglePartnerSection()">
+                                <i class="fas fa-user-friends"></i>
+                                <span class="btn-text">Accountability</span>
+                                <small class="btn-subtitle">Assign a partner</small>
+                            </button>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <button type="button" class="btn habit-action-btn hallmark-btn" onclick="hallmarkHabit()">
+                                <i class="fas fa-star"></i>
+                                <span class="btn-text">Hallmark Habit</span>
+                                <small class="btn-subtitle">Mark as successfully formed</small>
+                            </button>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <button type="button" class="btn habit-action-btn delete-btn" onclick="deleteHabit()">
+                                <i class="fas fa-trash"></i>
+                                <span class="btn-text">Delete Habit</span>
+                                <small class="btn-subtitle">Remove this habit</small>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Accountability Partner Section (Initially Hidden) -->
+                <div id="partnerSection" style="display: none;" class="mt-4">
+                    <div class="partner-management">
+                        <h6 class="mb-3">
+                            <i class="fas fa-user-friends me-2"></i>
+                            Accountability Partner Management
+                        </h6>
+
+                        <div class="current-partner mb-3" id="currentPartnerSection">
+                            <!-- Will be populated dynamically -->
+                        </div>
+
+                        <div class="assign-partner">
+                            <div class="mb-3">
+                                <label class="form-label">Assign New Partner:</label>
+                                <div class="input-group">
+                                    <input type="email"
+                                           class="form-control"
+                                           id="partnerEmail"
+                                           placeholder="Enter partner's email address">
+                                    <button class="btn btn-paper btn-primary" onclick="assignPartner()">
+                                        <i class="fas fa-plus"></i> Assign
+                                    </button>
+                                </div>
+                                <small class="form-text text-muted mt-1">
+                                    Your partner will receive notifications about your habit progress and can provide encouragement.
+                                </small>
+                            </div>
+
+                            <div class="partner-permissions mb-3">
+                                <label class="form-label">Partner Permissions:</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="canViewProgress" checked>
+                                    <label class="form-check-label" for="canViewProgress">
+                                        Can view my progress
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="canSendReminders">
+                                    <label class="form-check-label" for="canSendReminders">
+                                        Can send me reminders
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="receiveNotifications" checked>
+                                    <label class="form-check-label" for="receiveNotifications">
+                                        Receive progress notifications
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Save/Cancel buttons for edit mode -->
+                <div id="editActions" class="text-end mt-3" style="display: none;">
+                    <button type="button" class="btn btn-paper me-2" onclick="cancelEdit()">Cancel</button>
+                    <button type="button" class="btn btn-paper btn-primary" onclick="saveHabitChanges()">Save Changes</button>
+                </div>
+
+                <!-- Partner Section Actions -->
+                <div id="partnerActions" class="text-end mt-3" style="display: none;">
+                    <button type="button" class="btn btn-paper me-2" onclick="cancelPartnerEdit()">Close</button>
+                    <button type="button" class="btn btn-paper btn-primary" onclick="savePartnerSettings()">Save Settings</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hallmark Confirmation Modal -->
+<div class="modal fade" id="hallmarkConfirmModal" tabindex="-1" aria-labelledby="hallmarkConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="hallmarkConfirmModalLabel">
+                    <div class="modal-icon success">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    Hallmark Habit
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>🎉 Congratulations! You're about to hallmark this habit as successfully formed.</p>
+                <p><strong>Note:</strong> Hallmark your habit once you feel it has become a natural part of your routine. This will move it to your "Formed Habits" collection.</p>
+                <p>Are you sure this habit has become automatic for you?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-paper" data-bs-dismiss="modal">Not Yet</button>
+                <button type="button" class="btn btn-paper btn-success" onclick="confirmHallmark()">
+                    <i class="fas fa-star me-2"></i>Yes, Hallmark It!
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteConfirmModalLabel">
+                    <div class="modal-icon error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    Delete Habit
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this habit?</p>
+                <p><strong>This action cannot be undone.</strong> All progress and data for this habit will be permanently removed.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-paper" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-paper btn-danger" onclick="confirmDelete()">
+                    <i class="fas fa-trash me-2"></i>Delete Habit
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{% static 'board/js/utils.js' %}"></script>
+    <script>
+        // Global variables
+        let todos = [];
+        let todoErrorMessage = 'Clean Slate, Nothing to do :)';
+        let currentRoutine = 'workday_routine';
+        let sleepData = {
+            '2025-07-14': 6,
+            '2025-07-15': 8,
+        }
+        const canvas = document.getElementById('sleepChart');
+        const chart = new Chart(canvas, {
+                type: 'line',
+                data: {
+                  datasets: [{
+                    label: 'Hours of sleep',
+                      borderColor: 'rgb(142,110,58)',
+                    data: sleepData,
+                    borderWidth: 1
+                  }]
+                },
+                options: {
+                  scales: {
+                    y: {
+                      beginAtZero: true
+                    }
+                  },
+                }
+              });
+        let currentTheme = `{{ user_detail.default_theme }}`;
+
+        let accessToken = '{{ access_token }}';
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            if (accessToken) {
+                apiClient.setAccessToken(accessToken);
+            }
+            updateGreeting();
+            loadTodos();
+            loadJournal();
+            updateDate()
+            loadHabits()
+            setInterval(updateGreeting, 600000); // Update greeting every minute
+        });
+
+        function updateDate() {
+            const date = document.getElementById('date');
+            date.innerText = new Date().toDateString();
+            const year = document.getElementById('year');
+            year.innerText = `${new Date().getFullYear()}`;
+        }
+
+        // Theme toggle
+        function toggleTheme() {
+            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.body.setAttribute('data-theme', currentTheme);
+            document.getElementById('themeIcon').className = currentTheme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
+        }
+
+        // Settings modal
+        function showSettings() {
+            const modal = new bootstrap.Modal(document.getElementById('settingsModal'));
+            modal.show();
+        }
+
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const navPopup = document.getElementById('navPopup');
+        const navOverlay = document.getElementById('navOverlay');
+
+        function toggleNav() {
+            hamburgerBtn.classList.toggle('active');
+            navPopup.classList.toggle('active');
+            navOverlay.classList.toggle('active');
+        }
+
+        hamburgerBtn.addEventListener('click', toggleNav);
+        navOverlay.addEventListener('click', toggleNav);
+
+        // Close nav when clicking on a link
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', toggleNav);
+        });
+
+        // Change theme from settings
+        function changeTheme() {
+            let selectedTheme = document.getElementById('themeSelect').value;
+            apiClient.put(
+                'board/api/user_details/',
+                {'default_theme': selectedTheme}
+            ).then((response) => {
+                if (response.status === 'success') {
+                    currentTheme = selectedTheme;
+                    document.body.setAttribute('data-theme', currentTheme);
+                    document.getElementById('themeIcon').className = currentTheme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
+                }else{
+                    showError(response.error)
+                }
+            });
+        }
+
+        // Update greeting based on time
+        function updateGreeting() {
+            const now = new Date();
+            const hour = now.getHours();
+            let greeting, message = '';
+            let greetings, messages;
+            if (hour < 4 || hour > 22) {
+                greetings = {{ board_greetings_night | safe }};
+                messages = {{ board_messages_night | safe }};
+            }
+            else if (hour < 9) {
+                greetings = {{ board_greetings_morning | safe }};
+                messages = {{ board_messages_morning | safe }};
+            } else if (hour < 17) {
+                greetings = {{ board_greetings_afternoon | safe }};
+                messages = {{ board_messages_afternoon | safe }};
+            } else {
+                greetings = {{ board_greetings_evening | safe }};
+                messages = {{ board_messages_evening | safe }};
+            }
+
+            greeting = greetings[Math.floor(Math.random() * greetings.length)];
+            message = messages[Math.floor(Math.random() * messages.length)];
+            document.querySelector('.greeting h1').textContent = greeting;
+            document.querySelector('.greeting p').textContent = message;
+        }
+
+        function addTodo() {
+            const input = document.getElementById('todoInput');
+            const task_name = input.value.trim();
+
+            if (task_name) {
+                apiClient.post(
+                    'board/api/tasks/',
+                    {
+                        "task_name": task_name
+                    }
+                ).then((res) => {
+                    if (res.status === 'success') {
+                        todos.push(res.data)
+                        input.value = '';
+                        renderTodos();
+                    }else{
+                        showError(res.error);
+                    }
+                })
+            }
+        }
+
+        function toggleTodo(id) {
+            apiClient.put(
+                'board/api/tasks/' + id + "/",
+                {'is_done': true}
+            ).then((res) => {
+                if (res.status === 'success') {
+                    todos = todos.map(todo =>
+                        todo.id === id ? res.data : todo
+                    );
+                    renderTodos();
+                }else{
+                    showError(res.error)
+                }
+            });
+
+        }
+
+        function deleteTodo(id) {
+            apiClient.delete(
+                'board/api/tasks/' + id + "/",
+            ).then((res) => {
+                if (res.status === 'success') {
+                    todos = todos.filter(todo => todo.id !== id);
+                    renderTodos();
+                }else{
+                    showError(res.error)
+                }
+            });
+
+        }
+
+        function renderTodos() {
+            const todoList = document.getElementById('todoList');
+            if (todos.length){
+                todoList.innerHTML = todos.map(todo => `
+                    <div class="todo-item ${todo.is_done ? 'completed' : ''}">
+                        <span class="todo-text" onclick="toggleTodo(${todo.id})">${todo.task_name}</span>
+                        <button class="btn btn-paper btn-danger btn-sm ms-2" onclick="deleteTodo(${todo.id})"><i class="fa fa-trash"></i> </button>
+                    </div>
+                `).join('');
+            }else{
+                todoList.innerHTML = `<h6 class="text-center mt-4">${todoErrorMessage}</h6>`
+            }
+
+        }
+
+        function loadTodos() {
+            todos = []
+            todoErrorMessage = 'Clean Slate, Nothing to do :)';
+            apiClient.get('board/api/tasks/')
+            .then((response) => {
+                console.log(response);
+                if (response.status === 'success') {
+                    todos = response.data;
+                    renderTodos();
+                }else{
+                    showError(response.error);
+                }
+            });
+
+        }
+
+        function showRoutine(type) {
+            currentRoutine = type;
+            document.querySelectorAll('.routine-tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+
+            document.getElementById('workday_routine').style.display = type === 'workday_routine' ? 'block' : 'none';
+            document.getElementById('holiday_routine').style.display = type === 'holiday_routine' ? 'block' : 'none';
+        }
+
+        function editRoutine() {
+            const modal = new bootstrap.Modal(document.getElementById('routineModal'));
+            document.getElementById('routineType').value = currentRoutine;
+            const routineContent = document.getElementById(currentRoutine);
+            let routineItems = routineContent.querySelectorAll('.routine-item')
+            const items = routineItems ? Array.from(routineItems).map(item => item.textContent) : [];
+            document.getElementById('routineItems').value = items.join('\n');
+            modal.show();
+        }
+
+        function saveRoutine() {
+            const routineType = document.getElementById('routineType').value;
+            const routineText = document.getElementById('routineItems').value;
+            apiClient.put(
+                'board/api/user_details/',
+                {[routineType]: routineText}
+            ).then((res) => {
+                if (res.status === 'success') {
+                    const items = routineText.split('\n').filter(item => item.trim());
+                    const routineContent = document.getElementById(routineType);
+                    routineContent.innerHTML = items.map(item => `<div class="routine-item">${item.trim()}</div>`).join('');
+                    bootstrap.Modal.getInstance(document.getElementById('routineModal')).hide();
+                }else{
+                    showError(res.error);
+                }
+            });
+        }
+
+        function loadJournal() {
+            const today = new Date()
+
+            const startDate = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
+
+
+            apiClient.get(`board/api/daily_data?start_date=${getDate(startDate)}`)
+                .then((response) => {
+                    if (response.status === 'success') {
+                        const journal = document.getElementById('journal')
+                        sleepData = {};
+                        for (let i = 0; i < response.data.length; i++) {
+                            sleepData[response.data[i].date] = response.data[i].sleep_hours ? response.data[i].sleep_hours : 0;
+                            if (response.data[i].date == today.toISOString().split('T')[0]) {
+                                journal.value = response.data[i].journal;
+                            }
+                        }
+                        chart.data.datasets[0].data = sleepData;
+                        chart.update();
+
+                    }
+                });
+        }
+
+        function updateJournal(){
+            const journal = document.getElementById('journal').value;
+            const date = new Date()
+
+            apiClient.put(
+                `board/api/daily_data/${getDate(date)}/`,
+                {journal: journal}
+            ).then((res) => {
+                if (res.status !== 'success') {
+                    showError(res.error);
+                }
+            })
+        }
+
+        function addHabitModal(){
+            const modal = new bootstrap.Modal(document.getElementById('habitModal'));
+            document.getElementById('habitModalLabel').textContent = "New Habit";
+            modal.show();
+        }
+
+        function addHabit(){
+            const habit = document.getElementById('habit');
+            const whenWhere = document.getElementById('whenWhere');
+            const identity = document.getElementById('identity');
+            apiClient.post(`board/api/habits/`,
+                {'habit': `${habit.value}`, 'detail': `${whenWhere.value}`, 'identity': `${identity.value}`}
+            ).then((res) => {
+                if (res.status === 'success') {
+                    const container = document.getElementById('habitTracker');
+                    container.appendChild(createHabitElement(res.data));
+                    habit.value = "";
+                    whenWhere.value = "";
+                    identity.value = "";
+                    document.getElementById('habit_message').innerText = '';
+                    $('#habitModal').modal('hide');
+                }else{
+                    showError(res.error);
+                }
+            });
+        }
+
+        function loadHabits(){
+            apiClient.get(`board/api/habits/`)
+            .then((response) => {
+                if (response.status === 'success') {
+                    const container = document.getElementById('habitTracker');
+                    for (let i = 0; i < response.data.length; i++) {
+                        container.appendChild(createHabitElement(response.data[i]));
+                    }
+                }else {
+                    showError(response.error);
+                }
+            });
+        }
+
+
+        function toggleHabit(habit_id, date){
+            apiClient.put(`board/api/habits/${habit_id}/toggle/`,{
+                'date': date
+            })
+            .then((res) => {
+                if (res.status === 'success') {
+                    const dayButton = document.querySelector('.habit-days .habit-day[data-day="' + date + '"][data-habit="' + habit_id + '"]');
+                    if (res.data.is_done){
+                        dayButton.classList.add('checked');
+                    }else{
+                        dayButton.classList.remove('checked');
+                    }
+                    if (res.message){
+                        if (res.data.is_done)showSuccess(res.message)
+                        const habitMessage = document.querySelector('.habit-remark[data-habit="' + habit_id + '"]');
+                        habitMessage.innerText = res.message;
+                    }
+                }else{
+                    showError(res.error);
+                }
+            })
+        }
+
+function showHabitSettings(habitId, habit, whenWhere, identity, partnerId = null, partnerEmail = null) {
+    currentHabitData = {
+        id: habitId,
+        habit: habit,
+        whenWhere: whenWhere,
+        identity: identity,
+        partnerId: partnerId,
+        partnerEmail: partnerEmail
+    };
+
+        document.getElementById('currentHabit').textContent = habit;
+    document.getElementById('currentWhenWhere').textContent = whenWhere;
+    document.getElementById('currentIdentity').textContent = identity;
+
+    // Update partner display
+    updatePartnerDisplay();
+
+    // Reset form state
+    document.getElementById('editHabitForm').style.display = 'none';
+    document.getElementById('editActions').style.display = 'none';
+    document.getElementById('partnerSection').style.display = 'none';
+    document.getElementById('partnerActions').style.display = 'none';
+    document.getElementById('habit_settings_message').innerHTML = '';
+
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('habitSettingsModal'));
+    modal.show();
+}
+
+// Toggle edit form
+function toggleEditForm() {
+    const editForm = document.getElementById('editHabitForm');
+    const editActions = document.getElementById('editActions');
+
+    if (editForm.style.display === 'none') {
+        // Show edit form and populate with current values
+        document.getElementById('editHabit').value = currentHabitData.habit;
+        document.getElementById('editWhenWhere').value = currentHabitData.whenWhere;
+        document.getElementById('editIdentity').value = currentHabitData.identity;
+
+        editForm.style.display = 'block';
+        editActions.style.display = 'block';
+
+        // Auto-resize inputs
+        resizeInputs();
+
+        document.getElementById('habit_settings_message').innerHTML =
+            '<div class="alert alert-info"><i class="fas fa-edit me-2"></i>Edit your habit details below.</div>';
+    } else {
+        cancelEdit();
+    }
+}
+
+// Cancel edit
+function cancelEdit() {
+    document.getElementById('editHabitForm').style.display = 'none';
+    document.getElementById('editActions').style.display = 'none';
+    document.getElementById('habit_settings_message').innerHTML = '';
+}
+
+// Update partner display
+function updatePartnerDisplay() {
+    const partnerDisplay = document.getElementById('partnerDisplay');
+    if (currentHabitData.partnerEmail) {
+        partnerDisplay.innerHTML = `<span class="partner-badge">${currentHabitData.partnerEmail}</span>`;
+    } else {
+        partnerDisplay.innerHTML = '<span class="text-muted">None assigned</span>';
+    }
+}
+
+// Toggle partner section
+function togglePartnerSection() {
+    const partnerSection = document.getElementById('partnerSection');
+    const partnerActions = document.getElementById('partnerActions');
+
+    if (partnerSection.style.display === 'none') {
+        // Show partner section
+        partnerSection.style.display = 'block';
+        partnerActions.style.display = 'block';
+
+        // Update current partner section
+        updateCurrentPartnerSection();
+
+        document.getElementById('habit_settings_message').innerHTML =
+            '<div class="alert alert-info"><i class="fas fa-user-friends me-2"></i>Manage your accountability partner below.</div>';
+    } else {
+        cancelPartnerEdit();
+    }
+}
+
+// Update current partner section
+function updateCurrentPartnerSection() {
+    const currentPartnerSection = document.getElementById('currentPartnerSection');
+
+    if (currentHabitData.partnerEmail) {
+        currentPartnerSection.innerHTML = `
+            <div class="current-partner-card">
+                <div class="partner-info">
+                    <div class="partner-details">
+                        <div class="partner-avatar">
+                            ${currentHabitData.partnerEmail.charAt(0).toUpperCase()}
+                        </div>
+                        <div class="partner-meta">
+                            <h6>${currentHabitData.partnerEmail}</h6>
+                            <small>Accountability Partner</small>
+                        </div>
+                    </div>
+                    <div class="partner-actions">
+                        <button class="btn btn-sm btn-outline-danger" onclick="removePartner()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    } else {
+        currentPartnerSection.innerHTML = `
+            <div class="alert alert-secondary mb-3">
+                <i class="fas fa-info-circle me-2"></i>
+                No accountability partner assigned yet.
+            </div>
+        `;
+    }
+}
+
+// Cancel partner edit
+function cancelPartnerEdit() {
+    document.getElementById('partnerSection').style.display = 'none';
+    document.getElementById('partnerActions').style.display = 'none';
+    document.getElementById('habit_settings_message').innerHTML = '';
+    document.getElementById('partnerEmail').value = '';
+}
+
+// Assign partner
+function assignPartner() {
+    const email = document.getElementById('partnerEmail').value.trim();
+
+    if (!email) {
+        document.getElementById('habit_settings_message').innerHTML =
+            '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-2"></i>Please enter a valid email address.</div>';
+        return;
+    }
+
+    if (!isValidEmail(email)) {
+        document.getElementById('habit_settings_message').innerHTML =
+            '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-2"></i>Please enter a valid email format.</div>';
+        return;
+    }
+
+    // Update current data
+    currentHabitData.partnerEmail = email;
+
+    // Update displays
+    updatePartnerDisplay();
+    updateCurrentPartnerSection();
+
+    // Clear input
+    document.getElementById('partnerEmail').value = '';
+
+    // Show success message
+    document.getElementById('habit_settings_message').innerHTML =
+        '<div class="alert alert-success"><i class="fas fa-check me-2"></i>Accountability partner assigned successfully! They will receive an invitation.</div>';
+
+    // Here you would make an API call to assign the partner
+    // apiClient.post(`habits/${currentHabitData.id}/assign-partner/`, { email, permissions: getPartnerPermissions() });
+}
+
+// Remove partner
+function removePartner() {
+    currentHabitData.partnerEmail = null;
+    currentHabitData.partnerId = null;
+
+    updatePartnerDisplay();
+    updateCurrentPartnerSection();
+
+    document.getElementById('habit_settings_message').innerHTML =
+        '<div class="alert alert-info"><i class="fas fa-info-circle me-2"></i>Accountability partner removed.</div>';
+
+    // Here you would make an API call to remove the partner
+    // apiClient.delete(`habits/${currentHabitData.id}/remove-partner/`);
+}
+
+// Save partner settings
+function savePartnerSettings() {
+    const permissions = getPartnerPermissions();
+
+    document.getElementById('habit_settings_message').innerHTML =
+        '<div class="alert alert-success"><i class="fas fa-check me-2"></i>Partner settings saved successfully!</div>';
+
+    // Here you would make an API call to save partner settings
+    // apiClient.put(`habits/${currentHabitData.id}/partner-settings/`, { permissions });
+}
+
+// Get partner permissions
+function getPartnerPermissions() {
+    return {
+        canViewProgress: document.getElementById('canViewProgress').checked,
+        canSendReminders: document.getElementById('canSendReminders').checked,
+        receiveNotifications: document.getElementById('receiveNotifications').checked
+    };
+}
+
+// Validate email
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+// Save habit changes
+function saveHabitChanges() {
+    const habit = document.getElementById('editHabit').value.trim();
+    const whenWhere = document.getElementById('editWhenWhere').value.trim();
+    const identity = document.getElementById('editIdentity').value.trim();
+
+    if (habit && whenWhere && identity) {
+        // Update current data
+        currentHabitData.habit = habit;
+        currentHabitData.whenWhere = whenWhere;
+        currentHabitData.identity = identity;
+
+        // Update display
+        document.getElementById('currentHabit').textContent = habit;
+        document.getElementById('currentWhenWhere').textContent = whenWhere;
+        document.getElementById('currentIdentity').textContent = identity;
+
+        // Hide edit form
+        cancelEdit();
+
+        // Show success message
+        document.getElementById('habit_settings_message').innerHTML =
+            '<div class="alert alert-success"><i class="fas fa-check me-2"></i>Habit updated successfully!</div>';
+
+        // Here you would typically make an API call to save the changes
+        // apiClient.put(`habits/${currentHabitData.id}/`, { habit, whenWhere, identity });
+
+    } else {
+        document.getElementById('habit_settings_message').innerHTML =
+            '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-2"></i>Please fill in all fields.</div>';
+    }
+}
+
+// Hallmark habit
+function hallmarkHabit() {
+    bootstrap.Modal.getInstance(document.getElementById('habitSettingsModal')).hide();
+    const modal = new bootstrap.Modal(document.getElementById('hallmarkConfirmModal'));
+    modal.show();
+}
+
+// Confirm hallmark
+function confirmHallmark() {
+    bootstrap.Modal.getInstance(document.getElementById('hallmarkConfirmModal')).hide();
+
+    // Here you would make an API call to hallmark the habit
+    // apiClient.put(`habits/${currentHabitData.id}/hallmark/`);
+
+    showSuccess('🎉 Habit hallmarked! Congratulations on forming this habit successfully!');
+}
+
+// Delete habit
+function deleteHabit() {
+    bootstrap.Modal.getInstance(document.getElementById('habitSettingsModal')).hide();
+    const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+    modal.show();
+}
+
+// Confirm delete
+function confirmDelete() {
+    bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal')).hide();
+
+    // Here you would make an API call to delete the habit
+    // apiClient.delete(`habits/${currentHabitData.id}/`);
+
+    showSuccess('Habit deleted successfully.');
+}
+
+
+
+        // Sleep Tracking
+        function addSleep() {
+            const input = document.querySelector('.sleep-input');
+            const hours = parseFloat(input.value);
+            const date = getDate(new Date())
+            if (hours && hours >= 0 && hours <= 24) {
+                apiClient.put(`board/api/daily_data/${date}/`,
+                    {'sleep_hours': hours}
+                ).then((res) => {
+                    if (res.status === 'success') {
+                        sleepData[date] = hours;
+                        input.value = '';
+                        chart.update();
+                    }else{
+                        showError(res.error);
+                    }
+                })
+
+            }
+        }
+
+        // Handle Enter key for todo input
+        document.getElementById('todoInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addTodo();
+            }
+        });
+
+        // Handle Enter key for sleep input
+        document.querySelector('.sleep-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addSleep();
+            }
+        });
+
+        // Resize chart when window resizes
+        window.addEventListener('resize', function() {
+            setTimeout(drawSleepChart, 100);
+        });
+
+        // Add some interactivity to make it feel more like writing on paper
+        document.querySelector('.journal-area').addEventListener('focus', function() {
+            this.style.background = 'rgba(0,0,0,0.02)';
+        });
+
+        document.querySelector('.journal-area').addEventListener('blur', function() {
+            this.style.background = 'transparent';
+        });
+
+        document.getElementById('habit').addEventListener('focus', function() {
+            document.getElementById('habit_message').innerHTML = "What is your habit?<br>Think small, a two minutes version of what you want to do."
+        })
+
+        document.getElementById('whenWhere').addEventListener('focus', function() {
+            document.getElementById('habit_message').innerHTML = "Make it clear.<br>When will you be able to do it?<br>Where can you do this?"
+        })
+
+        document.getElementById('identity').addEventListener('focus', function() {
+            document.getElementById('habit_message').innerHTML = "What kind of person you want to become after doing this.<br>Goal is not to run a marathon. But to become a runner"
+        })
+
+        document.querySelectorAll('.form-input').forEach(input => {
+            input.addEventListener('input', function() {
+                this.style.width = Math.max(this.value.length * 8.5 + 40, parseInt(this.classList.contains('habit-input') ? 150 : this.classList.contains('when-where-input') ? 200 : 180)) + 'px';
+            });
+        });
+    </script>
+</body>
+</html>
