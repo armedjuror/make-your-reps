@@ -1,4 +1,3 @@
-HOST = 'https://makeyourreps.com/'
 
 
 class ApiClient {

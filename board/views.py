@@ -17,24 +17,16 @@ from main.utils import NoDestroyViewSet, AuthenticatedModelViewSet
 
 def board(request):
     if request.user.is_authenticated:
-        client = request.session.get('client', 'web')
-        if client == 'api':
-            return JsonResponse({
-                'status': 'success',
-                'data': {
-                    'access_token': request.session.get('access_token'),
-                    'user': request.user.id,
-                }
-            })
-        elif client == 'web':
-            configs = get_config().get_all()
-            user_detail, _ = UserDetail.objects.get_or_create(user=request.user)
-            context = {
-                'user_detail': UserDetailSerializer(user_detail).data,
-            }
+        configs = get_config().get_all()
+        user_detail, _ = UserDetail.objects.get_or_create(user=request.user)
+        host = 'https://' if request.is_secure() else 'http://' + request.get_host() + "/"
+        context = {
+            'user_detail': UserDetailSerializer(user_detail).data,
+            'host': host,
+        }
 
-            context.update(configs)
-            return render(request, 'board/board.html', context=context)
+        context.update(configs)
+        return render(request, 'board/board.html', context=context)
     else:
         return redirect('/')
 
