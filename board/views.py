@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 
 from django.http import JsonResponse
@@ -19,10 +20,9 @@ def board(request):
     if request.user.is_authenticated:
         configs = get_config().get_all()
         user_detail, _ = UserDetail.objects.get_or_create(user=request.user)
-        host = 'https://' if request.is_secure() else 'http://' + request.get_host() + "/"
         context = {
             'user_detail': UserDetailSerializer(user_detail).data,
-            'host': host,
+            'host': os.environ.get("HOST", "http://127.0.0.1:8000"),
         }
 
         context.update(configs)
