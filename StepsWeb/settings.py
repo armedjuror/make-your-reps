@@ -198,3 +198,5 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 CSRF_TRUSTED_ORIGINS = ['http://140.245.225.184', 'http://localhost:8000', 'http://127.0.0.1:8000', 'https://makeyourreps.com']
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_CF_VISITOR', '{"scheme":"https"}')
