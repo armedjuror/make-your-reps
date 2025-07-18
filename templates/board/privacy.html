@@ -1,0 +1,181 @@
+{% load static %}
+{% load socialaccount %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy | {{ tagline }}</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredericka+the+Great&family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'board/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'board/css/bootstrap-social.css' %}">
+    <style>
+        .privacy-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            color: rgba(152, 117, 63, 1);
+            line-height: 1.6;
+        }
+        .privacy-content h2 {
+            color: rgba(152, 117, 63, 1);
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 600;
+        }
+        .privacy-content h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            {#font-family: 'Fredericka the Great', cursive;#}
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 600;
+            font-size: 2.5rem;
+        }
+        .privacy-content p {
+            margin-bottom: 15px;
+        }
+        .privacy-content ul {
+            margin-bottom: 15px;
+            padding-left: 30px;
+        }
+        .privacy-content li {
+            margin-bottom: 8px;
+        }
+        .back-btn {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            z-index: 1000;
+        }
+        .last-updated {
+            font-style: italic;
+            text-align: center;
+            margin-bottom: 40px;
+            opacity: 0.8;
+        }
+        .highlight-box {
+            background: rgba(152, 117, 63, 0.1);
+            border-left: 4px solid rgba(152, 117, 63, 1);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <a href="{% url 'index' %}" class="btn btn-paper btn-primary back-btn">
+        <i class="fas fa-arrow-left"></i> Back to Home
+    </a>
+
+    <div class="privacy-content">
+        <h1>Privacy Policy</h1>
+        <p class="last-updated">Last updated: <span id="current-date"></span></p>
+
+        <div class="highlight-box">
+            <p><strong>Quick Summary:</strong> We only collect your basic Google account information for verification purposes. We never share your data with anyone else. Your privacy is our priority.</p>
+        </div>
+
+        <h2>1. Information We Collect</h2>
+        <p>When you sign in with Google, we collect only the following information:</p>
+        <ul>
+            <li>Your name</li>
+            <li>Your email address</li>
+            <li>Your Google profile picture (if available)</li>
+            <li>Basic account verification status</li>
+        </ul>
+        <p>This information is collected solely for the purpose of creating and managing your account on our platform.</p>
+
+        <h2>2. How We Use Your Information</h2>
+        <p>We use your personal information exclusively for:</p>
+        <ul>
+            <li><strong>Account Verification:</strong> To verify your identity and create your account</li>
+            <li><strong>Platform Access:</strong> To provide you access to your personalized dashboard</li>
+            <li><strong>Account Management:</strong> To maintain and manage your user profile</li>
+            <li><strong>Service Improvement:</strong> To understand how our platform is used and improve our services</li>
+        </ul>
+
+        <h2>3. Data Sharing and Disclosure</h2>
+        <div class="highlight-box">
+            <p><strong>We do not share, sell, rent, or trade your personal information with any third parties.</strong></p>
+        </div>
+        <p>Your personal data remains private and is used exclusively within our platform. We may only disclose your information if:</p>
+        <ul>
+            <li>Required by law or legal process</li>
+            <li>Necessary to protect our rights, property, or safety</li>
+            <li>You provide explicit consent for a specific purpose</li>
+        </ul>
+
+        <h2>4. Data Security</h2>
+        <p>We implement appropriate technical and organizational security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction. Your data is stored securely and access is limited to authorized personnel only.</p>
+
+        <h2>5. Data Retention</h2>
+        <p>We retain your personal information only as long as necessary to provide our services and fulfill the purposes outlined in this privacy policy. You may request deletion of your account and associated data at any time.</p>
+
+        <h2>6. Your Rights</h2>
+        <p>You have the right to:</p>
+        <ul>
+            <li>Access the personal information we hold about you</li>
+            <li>Request correction of any inaccurate information</li>
+            <li>Request deletion of your account and personal data</li>
+        </ul>
+
+        <h2>7. Google OAuth Integration</h2>
+        <p>Our platform uses Google OAuth for authentication. When you sign in with Google:</p>
+        <ul>
+            <li>You are redirected to Google's secure authentication servers</li>
+            <li>Google validates your credentials</li>
+            <li>Google provides us with only the basic profile information you authorize</li>
+            <li>We do not store or have access to your Google password</li>
+        </ul>
+        <p>Please review <a href="https://policies.google.com/privacy" target="_blank" style="color: rgba(152, 117, 63, 1);">Google's Privacy Policy</a> for information about how Google handles your data.</p>
+
+        <h2>8. Cookies and Tracking</h2>
+        <p>We use essential cookies to maintain your login session and provide basic functionality. We do not use tracking cookies or analytics that collect personal information beyond what is necessary for the service.</p>
+
+        <h2>9. Changes to This Privacy Policy</h2>
+        <p>We may update this privacy policy from time to time. Any changes will be posted on this page with an updated "Last updated" date. We encourage you to review this privacy policy periodically for any changes.</p>
+
+        <h2>10. Contact Us</h2>
+        <p>If you have any questions about this privacy policy or our data practices, please contact us:</p>
+        <div class="highlight-box">
+            <p><strong>Email:</strong> armedjuror@gmail.com<br>
+        </div>
+
+
+        <p style="text-align: center; font-size: 0.9em; opacity: 0.8;">
+            By using our service, you acknowledge that you have read and understood this privacy policy and agree to our data practices as described herein.
+        </p>
+
+        <hr style="margin: 40px 0; border-color: rgba(152, 117, 63, 0.3);">
+
+    </div>
+
+    <div class="copyright">
+        © <span id="year"></span> {{ copyright_text }}
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            updateYear();
+            updateCurrentDate();
+        });
+
+        function updateYear() {
+            const span = document.getElementById('year');
+            span.innerText = `${new Date().getFullYear()}`;
+        }
+
+        function updateCurrentDate() {
+            const dateSpan = document.getElementById('current-date');
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            dateSpan.innerText = new Date().toLocaleDateString('en-US', options);
+        }
+    </script>
+</body>
+</html>

@@ -18,11 +18,14 @@ def index(request):
             sliding_text_strikethrough.append(value)
         elif key.startswith('sliding_text'):
             sliding_text.append(value)
-    print(sliding_text_strikethrough)
-    print(sliding_text)
     context['sliding_text_strikethrough'] = sliding_text_strikethrough
     context['sliding_text'] = sliding_text
     return render(request, 'board/index.html', context=context)
+
+def privacy_policy(request):
+    config = get_config()
+    context = config.get_all()
+    return render(request, 'board/privacy.html', context=context)
 
 @csrf_exempt
 @handle_exceptions
