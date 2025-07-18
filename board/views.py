@@ -22,15 +22,47 @@ def board(request):
         user_detail, _ = UserDetail.objects.get_or_create(user=request.user)
         context = {
             'user_detail': UserDetailSerializer(user_detail).data,
-            'host': os.environ.get("HOST", "http://127.0.0.1:8000"),
+            'host': os.environ.get("HOST", "http://127.0.0.1:8000/"),
         }
-
         context.update(configs)
         return render(request, 'board/board.html', context=context)
     else:
         return redirect('/')
 
 
+def achievements(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+
+    # Calculate achievements data
+    hallmarked_habits = Habit.objects.filter(
+        user=request.user,
+        status=HabitStatus.COMPLETED.value
+    ).count()
+
+    # You'll need to implement badge logic
+    total_badges = calculate_earned_badges(request.user)
+
+    # Calculate longest streak
+    longest_streak = calculate_longest_streak(request.user)
+
+    context = {
+        'total_habits': hallmarked_habits,
+        'total_badges': total_badges,
+        'longest_streak': longest_streak,
+    }
+
+    return render(request, 'board/achievements.html', context)
+
+
+def calculate_earned_badges(user):
+    # Implement your badge calculation logic
+    return 0
+
+
+def calculate_longest_streak(user):
+    # Implement streak calculation logic
+    return 0
 class UserDetailView(APIView):
     def get(self, request, *args, **kwargs):
         user_id = request.session.get('user_id')
