@@ -335,10 +335,10 @@ class HabitViewSet(AuthenticatedModelViewSet):
             }, status=status.HTTP_404_NOT_FOUND)
 
         try:
-            parse_date = datetime.strptime(date, '%Y-%m-%d')
-            if parse_date > datetime.now():
+            parse_date = datetime.strptime(date, '%Y-%m-%d').date()
+            if parse_date > datetime.now().date():
                 return Response({'status': 'failed', 'error': 'This date is in future'}, status=status.HTTP_400_BAD_REQUEST)
-            if parse_date < habit.created_at.replace(tzinfo=None):
+            if parse_date < habit.created_at.replace(tzinfo=None).date():
                 return Response({
                     "status": "failed",
                     "error": "This date is before the habit creation"
