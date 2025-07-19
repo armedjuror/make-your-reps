@@ -754,10 +754,10 @@ Write freely here, like you're writing in your personal journal..." rows="10" id
             }
         }
 
-        function toggleTodo(id) {
+        function toggleTodo(id, is_done) {
             apiClient.put(
                 'board/api/tasks/' + id + "/",
-                {'is_done': true}
+                {'is_done': !is_done}
             ).then((res) => {
                 if (res.status === 'success') {
                     todos = todos.map(todo =>
@@ -790,7 +790,7 @@ Write freely here, like you're writing in your personal journal..." rows="10" id
             if (todos.length){
                 todoList.innerHTML = todos.map(todo => `
                     <div class="todo-item ${todo.is_done ? 'completed' : ''}">
-                        <span class="todo-text" onclick="toggleTodo(${todo.id})">${todo.task_name}</span>
+                        <span class="todo-text" onclick="toggleTodo(${todo.id}, ${todo.is_done})">${todo.task_name}</span>
                         <button class="btn btn-paper btn-danger btn-sm ms-2" onclick="deleteTodo(${todo.id})"><i class="fa fa-trash"></i> </button>
                     </div>
                 `).join('');
