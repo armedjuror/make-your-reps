@@ -253,7 +253,9 @@ class HabitViewSet(AuthenticatedModelViewSet):
     def list(self, request, **kwargs):
         user_id = request.session.get('user_id')
         habit_status = request.GET.get('status', 'active')
-        queryset = self.get_queryset().filter(user_id=user_id, status=habit_status)
+        queryset = self.get_queryset().filter(user_id=user_id, status=habit_status).order_by(
+            'notify_at', 'created_at'
+        )
         data = self.get_serializer(queryset, many=True).data
         return Response({
             'status': 'success',
