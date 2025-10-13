@@ -132,7 +132,7 @@ class HabitSerializer(serializers.ModelSerializer):
         """Find the most recent date when habit was completed"""
         for date_str, log in sorted(logs.items(), reverse=True):
             if log.get('is_done', False):
-                return datetime.strptime(f"2025-07-{log['date']}", "%Y-%m-%d").date()
+                return datetime.strptime(date_str, "%Y-%m-%d").date()
         return None
 
     def _get_consecutive_missed_days(self, logs):
