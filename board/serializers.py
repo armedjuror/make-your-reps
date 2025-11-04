@@ -86,17 +86,39 @@ class HabitSerializer(serializers.ModelSerializer):
                   'notify_at', 'status', 'created_at', 'stats', 'remark']
         read_only_fields = ['created_at', 'user']
 
+    def _get_recent_logs(self, obj, days=60):
+        """Get logs for the last N days for accurate message calculation"""
+        now = timezone.now().date()
+        start_date = now - timezone.timedelta(days=days)
+
+        logs = {
+            x.date.strftime('%Y-%m-%d'): {'is_done': x.is_done, 'date': x.date}
+            for x in HabitLog.objects.filter(
+                habit=obj,
+                date__gte=start_date,
+                date__lte=now
+            ).order_by('-date')
+        }
+        return logs
+
     def get_stats(self, obj):
         total_reps = HabitLog.objects.filter(habit=obj, is_done=True).count()
         now = timezone.now().date()
         target_year = now.year
         target_month = now.month
         streak = get_streak(obj)
+
+        # Get current month logs for display
         logs = get_habit_log(obj, target_month, target_year)
+
+        # Get recent logs for accurate message calculation (last 60 days)
+        recent_logs = self._get_recent_logs(obj, days=60)
+
         return {
             'streak': streak,
             'total_reps': total_reps,
             'logs': logs,
+            'recent_logs': recent_logs,  # Add this for message calculation
         }
 
     def get_remark(self, obj):
@@ -106,15 +128,15 @@ class HabitSerializer(serializers.ModelSerializer):
         stats = self.get_stats(obj)
         total_reps = stats['total_reps']
         streak = stats['streak']
-        logs = stats['logs']
+        recent_logs = stats.get('recent_logs', {})  # Use recent_logs instead of logs
 
         now = timezone.now().date()
         created_date = obj.created_at.date()
         days_since_creation = (now - created_date).days
 
         # Get recent activity pattern
-        last_done_date = self._get_last_done_date(logs)
-        missed_days = self._get_consecutive_missed_days(logs)
+        last_done_date = self._get_last_done_date(recent_logs)
+        missed_days = self._get_consecutive_missed_days(recent_logs)
 
         # Priority-based messaging system
         message = self._get_priority_message(
