@@ -24,34 +24,6 @@ def get_habit_log(habit, target_month, target_year):
 
     return dict(sorted(logs.items()))
 
-def get_streak(habit):
-    now = timezone.now().date()
-    from django.db import connection
-    with connection.cursor() as cursor:
-        cursor.execute("""
-                            WITH RECURSIVE streak_calc AS (
-                                SELECT 
-                                    date,
-                                    is_done,
-                                    ROW_NUMBER() OVER (ORDER BY date DESC) as rn
-                                FROM board_habitlog 
-                                WHERE habit_id = %s 
-                                AND date <= %s
-                                ORDER BY date DESC
-                            )
-                            SELECT COUNT(*) as current_streak
-                            FROM streak_calc
-                            WHERE rn <= (
-                                SELECT MIN(rn) 
-                                FROM streak_calc 
-                                WHERE is_done = false
-                            ) - 1
-                            AND is_done = true
-                        """, [habit.id, now])
-        result = cursor.fetchone()
-        return result[0] if result else 0
-
-
 
 class UserDetailSerializer(serializers.ModelSerializer):
     routines = serializers.SerializerMethodField()
@@ -106,7 +78,7 @@ class HabitSerializer(serializers.ModelSerializer):
         now = timezone.now().date()
         target_year = now.year
         target_month = now.month
-        streak = get_streak(obj)
+        streak = obj.current_streak
 
         # Get current month logs for display
         logs = get_habit_log(obj, target_month, target_year)
@@ -116,6 +88,7 @@ class HabitSerializer(serializers.ModelSerializer):
 
         return {
             'streak': streak,
+            'max_streak': obj.max_streak,
             'total_reps': total_reps,
             'logs': logs,
             'recent_logs': recent_logs,  # Add this for message calculation
@@ -142,6 +115,7 @@ class HabitSerializer(serializers.ModelSerializer):
         message = self._get_priority_message(
             total_reps=total_reps,
             streak=streak,
+            max_streak=stats['max_streak'],
             days_since_creation=days_since_creation,
             missed_days=missed_days,
             last_done_date=last_done_date,
@@ -176,10 +150,11 @@ class HabitSerializer(serializers.ModelSerializer):
 
         return missed_count
 
-    def _get_priority_message(self, total_reps, streak, days_since_creation,
+    def _get_priority_message(self, total_reps, streak, max_streak, days_since_creation,
                               missed_days, last_done_date, now):
         """
-        Generate messages based on priority hierarchy
+        Generate messages based on priority hierarchy.
+        Priority: Streak consistency > Recovery from breaks > Milestone celebrations
         """
 
         # 1. First-time user with no reps
@@ -193,52 +168,84 @@ class HabitSerializer(serializers.ModelSerializer):
             else:
                 return "🔧 It seems like this habit might be too challenging right now. Consider adjusting it to something smaller and more manageable."
 
-        # 2. Missed days handling
-        if missed_days >= 2:
-            if streak > 0:
-                return "⚡ You had a great streak going! Remember: don't let two days become a week. Get back on track today!"
+        # 2. Active streak - celebrate and maintain
+        if streak > 0:
+            if streak >= 30:
+                return f"🔥 {streak}-day streak! You're unstoppable! This is who you are now - keep being amazing!"
+            elif streak >= 21:
+                return f"💎 {streak}-day streak! You're in the habit formation zone. You're becoming the person you want to be!"
+            elif streak >= 14:
+                return f"⭐ {streak}-day streak! Two weeks of consistency - you're building something real here!"
+            elif streak >= 7:
+                return f"🚀 {streak}-day streak! One full week! You're proving consistency is your superpower!"
+            elif streak >= 3:
+                return f"💪 {streak}-day streak! Keep it going - you're building momentum!"
             else:
-                return "🔄 Always remember: Don't miss twice in a row. Today is a fresh start - one rep is all it takes!"
+                return f"✨ {streak}-day streak! Every day counts. Let's keep this going!"
 
-        if missed_days == 1:
-            if streak >= 7:
-                return "🏆 You've built an amazing streak! One missed day doesn't define you - bounce back stronger today!"
+        # 3. Streak broken - use max_streak and missed_days to recover
+        if streak == 0 and max_streak > 0:
+            if missed_days == 1:
+                if max_streak >= 14:
+                    return f"⚡ You built a {max_streak}-day streak before! One missed day doesn't erase that. Bounce back today!"
+                elif max_streak >= 7:
+                    return f"🔄 You had a {max_streak}-day streak! Don't let one day become two. Get back on track now!"
+                else:
+                    return f"🎯 You missed yesterday, but you've done this {max_streak} days before. Start a new streak today!"
+
+            elif missed_days == 2:
+                if max_streak >= 14:
+                    return f"🚨 Don't let 2 days become a week! You built a {max_streak}-day streak - you can do it again. Start NOW!"
+                else:
+                    return "⚠️ Two days missed - this is the critical moment! Don't let it become three. One rep today resets everything!"
+
+            elif missed_days >= 3:
+                if max_streak >= 21:
+                    return f"💪 You once had a {max_streak}-day streak - that person is still you! Begin again today, one rep at a time."
+                elif max_streak >= 7:
+                    return f"🌱 Remember your {max_streak}-day streak? You've proven you can do this. Fresh start today!"
+                else:
+                    return f"🔄 You've completed this habit {total_reps} times before. Today is day one of your comeback story!"
+
+        # 4. No streak and no max_streak - use reps to motivate
+        if streak == 0 and max_streak == 0:
+            if missed_days >= 2:
+                return "🔄 Don't let two days become a habit! Today is a fresh start - one rep is all it takes to begin your streak!"
+            elif missed_days == 1:
+                return "🎯 You missed yesterday, but today is a new opportunity. Start your streak today!"
             else:
-                return "🎯 You missed yesterday, but today is a new opportunity. Don't let one day become two!"
+                # First attempt after creation
+                return "🌟 Let's build your first streak! One day at a time, one rep at a time."
 
-        # 3. Performance-based encouragement
-        if streak >= 21:
-            return "🔥 Incredible! You're in the habit formation zone. You're becoming the person you want to be!"
-        elif streak >= 14:
-            return "⭐ Two weeks strong! You're building something amazing. Keep the momentum going!"
-        elif streak >= 7:
-            return "🚀 One week streak! You're proving to yourself that consistency is possible. Keep going!"
-        elif streak >= 3:
-            return "💎 Great consistency! You're building the foundation of lasting change."
-
-        # 4. Milestone celebrations
+        # 5. Total reps milestones (secondary - when not covered by streak logic)
         if total_reps >= 100:
-            return "🎉 100+ reps! Champion You're! Hallmark this habit and start a new one if you feel like this one is already a habit!"
-        elif total_reps >= 50:
-            return "🌟 50+ reps achieved! Hallmark the habit and start a new one if you feel like this one is already a habit!"
-        elif total_reps >= 30:
-            return "💪 30+ reps! You're building serious momentum. Keep pushing forward!"
-        elif total_reps >= 10:
-            return "🎯 Double digits! You're proving that small actions create big results."
+            if streak == 0:
+                return f"🎉 You've done this {total_reps} times! That's proof you can build consistency. Start a fresh streak today!"
+            else:
+                return f"🏆 {total_reps} total reps AND a {streak}-day streak! You're crushing it! Consider hallmarking this habit!"
 
-        # 5. Recent activity encouragement
+        elif total_reps >= 50:
+            if streak == 0:
+                return f"🌟 {total_reps} reps completed! You know how to do this. Time to build a streak that matches your effort!"
+            else:
+                return f"💫 {total_reps} reps with a {streak}-day streak! Consider hallmarking and starting a new challenge!"
+
+        elif total_reps >= 30:
+            if streak == 0:
+                return f"💪 {total_reps} reps done! You've got the skill - now build the consistency with a streak!"
+            else:
+                return f"🎯 {total_reps} reps and counting! Your {streak}-day streak shows you're building something lasting!"
+
+        # 6. Recent activity check (fallback for edge cases)
         if last_done_date:
             days_since_last = (now - last_done_date).days
-            if days_since_last <= 1:
-                return "✨ Great job staying consistent! You're building a powerful habit."
-            elif days_since_last <= 3:
-                return "🔄 You were doing well! Let's get back into the rhythm today."
-            else:
-                return "🌱 It's been a while, but every day is a chance to restart. Begin again today!"
+            if days_since_last <= 1 and streak == 0:
+                return "✨ You did this recently! Keep the momentum - start a streak today!"
+            elif days_since_last >= 7 and total_reps >= 10:
+                return f"🌱 It's been a week, but you've completed this {total_reps} times before. You've got this - begin again!"
 
-        # 6. Default encouraging message
+        # 7. Default encouraging message
         return "🌟 You're on a journey of growth! Every small step counts toward the person you're becoming."
-
 
 class HabitLogSerializer(serializers.ModelSerializer):
     class Meta:

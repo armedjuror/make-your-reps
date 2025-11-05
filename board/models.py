@@ -1,3 +1,5 @@
+from datetime import date, timedelta
+
 from django.contrib.auth.models import User
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
@@ -81,6 +83,60 @@ class Habit(models.Model):
        choices=HabitStatus.choices,
        default=HabitStatus.ACTIVE.value
    )
+
+   @property
+   def current_streak(self):
+      logs = {x.date.isoformat(): x.is_done for x in self.habitlog_set.all()}
+      current_streak = 0
+      today = date.today()
+      min_date = self.created_at.date()
+
+      today_weekday = today.weekday()
+      today_is_scheduled = not self.frequency or today_weekday in self.frequency
+      today_is_done = logs.get(today.isoformat(), False)
+
+      if today_is_scheduled and not today_is_done:
+         current_date = today - timedelta(days=1)
+      else:
+         current_date = today
+
+      while current_date >= min_date:
+         weekday = current_date.weekday()
+         if self.frequency and (weekday not in self.frequency):
+            current_date -= timedelta(days=1)
+            continue
+
+         if logs.get(current_date.isoformat(), False):
+            current_streak += 1
+            current_date -= timedelta(days=1)
+         else:
+            break
+      return current_streak
+
+   @property
+   def max_streak(self):
+      logs = list(self.habitlog_set.filter(
+         is_done=True
+      ).order_by('date').values_list('date', flat=True))
+
+      if not logs:
+         return 0
+
+      max_streak = 0
+      current_streak = 0
+      for i in range(1, len(logs)):
+         prev_date = logs[i - 1]
+         curr_date = logs[i]
+         next_scheduled = prev_date + timedelta(days=1)
+         while self.frequency and (next_scheduled.weekday() not in self.frequency):
+            next_scheduled += timedelta(days=1)
+         if curr_date == next_scheduled:
+            current_streak += 1
+            max_streak = max(max_streak, current_streak)
+         else:
+            current_streak = 1
+
+      return max_streak
 
 
 class LogStatus(models.TextChoices):
