@@ -30,6 +30,20 @@ def board(request):
         return redirect('/')
 
 
+def journals(request):
+    if request.user.is_authenticated:
+        configs = get_config().get_all()
+        user_detail, _ = UserDetail.objects.get_or_create(user=request.user)
+        context = {
+            'user_detail': UserDetailSerializer(user_detail).data,
+            'host': os.environ.get("HOST", "http://127.0.0.1:8000/"),
+        }
+        context.update(configs)
+        return render(request, 'board/journals.html', context=context)
+    else:
+        return redirect('/')
+
+
 def achievements(request):
     if not request.user.is_authenticated:
         return redirect('login')

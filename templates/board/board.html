@@ -31,10 +31,10 @@
         <div class="nav-overlay" id="navOverlay"></div>
 <div class="nav-popup" id="navPopup">
     <div class="nav-content">
-{#        <a href="#" class="nav-link">#}
-{#            <i class="fas fa-home"></i>#}
-{#            <span>Dashboard</span>#}
-{#        </a>#}
+        <a href="{% url 'dashboard' %}" class="nav-link">
+            <i class="fas fa-home"></i>
+            <span>Dashboard</span>
+        </a>
 {#        <a href="#" class="nav-link">#}
 {#            <i class="fas fa-tasks"></i>#}
 {#            <span>Tasks</span>#}
@@ -47,15 +47,15 @@
 {#            <i class="fas fa-chart-line"></i>#}
 {#            <span>Habits</span>#}
 {#        </a>#}
-{#        <a href="#" class="nav-link">#}
-{#            <i class="fas fa-book"></i>#}
-{#            <span>Journal</span>#}
-{#        </a>#}
+        <a href="{% url 'journals' %}" class="nav-link">
+            <i class="fas fa-book"></i>
+            <span>Journals</span>
+        </a>
 {#        <a href="#" class="nav-link">#}
 {#            <i class="fas fa-moon"></i>#}
 {#            <span>Sleep Tracker</span>#}
 {#        </a>#}
-{#        <div class="nav-divider"></div>#}
+        <div class="nav-divider"></div>
         <a href="#" class="nav-link" onclick="showSettings()">
             <i class="fas fa-cog"></i>
             <span>Settings</span>
@@ -165,6 +165,10 @@ Write freely here, like you're writing in your personal journal..." rows="10" id
                         </div>
                     </div>
                     <div class="habit-tracker" id="habitTracker">
+                        <div class="mt-4">
+                            <div class="notebook-spinner"></div>
+                            <div class="loader-text">Loading...</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -172,10 +176,11 @@ Write freely here, like you're writing in your personal journal..." rows="10" id
             <!-- Sleep Tracker -->
             <div class="col-lg-4">
                 <div class="section mobile-order-5">
-                    <h3 class="section-title">{{ board_sleep_tracker_title }}</h3>
-                    <div class="input-group mb-3">
-                        <input type="number" class="form-control sleep-input" placeholder="Hours slept last night" step="0.5" min="0" max="24">
-                        <button class="btn btn-paper btn-primary ms-2" onclick="addSleep()">Add</button>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h3 class="section-title mb-0">{{ board_sleep_tracker_title }}</h3>
+                        <button class="btn btn-paper btn-sm btn-primary" onclick="openSleepModal()">
+                            <i class="fas fa-plus"></i> Add Entry
+                        </button>
                     </div>
                     <div class="sleep-graph">
                         <canvas id="sleepChart"></canvas>
@@ -373,6 +378,38 @@ Write freely here, like you're writing in your personal journal..." rows="10" id
                     <button type="button" class="btn btn-paper" data-bs-dismiss="modal">
                         <i class="fas fa-check me-2"></i>Got it
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sleep Entry Modal -->
+    <div class="modal fade" id="sleepModal" tabindex="-1" aria-labelledby="sleepModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="sleepModalLabel">
+                        <div class="modal-icon info">
+                            <i class="fas fa-moon"></i>
+                        </div>
+                        <span id="sleepModalTitle">Add Sleep Entry</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Date</label>
+                        <input type="date" class="form-control" id="sleepDate">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Hours Slept</label>
+                        <input type="number" class="form-control" id="sleepHours" placeholder="Hours slept" step="0.5" min="0" max="24" required>
+                        <small class="form-text text-muted">Enter the number of hours you slept (0-24)</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-paper" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-paper btn-primary" onclick="saveSleepEntry()">Save Entry</button>
                 </div>
             </div>
         </div>
@@ -805,7 +842,6 @@ Write freely here, like you're writing in your personal journal..." rows="10" id
             todoErrorMessage = 'Clean Slate, Nothing to do :)';
             apiClient.get('board/api/tasks/')
             .then((response) => {
-                console.log(response);
                 if (response.status === 'success') {
                     todos = response.data;
                     renderTodos();
@@ -866,7 +902,7 @@ Write freely here, like you're writing in your personal journal..." rows="10" id
                         sleepData = {};
                         for (let i = 0; i < response.data.length; i++) {
                             sleepData[response.data[i].date] = response.data[i].sleep_hours ? response.data[i].sleep_hours : 0;
-                            if (response.data[i].date == today.toISOString().split('T')[0]) {
+                            if (response.data[i].date == getDate(today)) {
                                 journal.value = response.data[i].journal;
                             }
                         }
@@ -1277,12 +1313,80 @@ function isValidEmail(email) {
                         sleepData[date] = hours;
                         input.value = '';
                         chart.update();
+                        loadJournal(); // Reload to update sleep data
                     }else{
                         showError(res.error);
                     }
                 })
 
             }
+        }
+
+        function openSleepModal() {
+            const modal = new bootstrap.Modal(document.getElementById('sleepModal'));
+            const dateInput = document.getElementById('sleepDate');
+            const hoursInput = document.getElementById('sleepHours');
+            const modalTitle = document.getElementById('sleepModalTitle');
+            
+            // Set max date to today
+            const today = new Date();
+            dateInput.max = getDate(today);
+            
+            // Set default date to today
+            dateInput.value = getDate(today);
+            
+            // Clear hours input
+            hoursInput.value = '';
+            
+            // Set modal title
+            modalTitle.textContent = 'Add Sleep Entry';
+            
+            modal.show();
+        }
+
+        function saveSleepEntry() {
+            const dateInput = document.getElementById('sleepDate');
+            const hoursInput = document.getElementById('sleepHours');
+            const date = dateInput.value;
+            const hours = parseFloat(hoursInput.value);
+            
+            if (!date) {
+                showError('Please select a date');
+                return;
+            }
+            
+            if (!hours || hours < 0 || hours > 24) {
+                showError('Please enter a valid number of hours (0-24)');
+                return;
+            }
+            
+            // Check if date is in the future
+            const selectedDate = new Date(date);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            if (selectedDate > today) {
+                showError('Cannot add sleep entry for future dates');
+                return;
+            }
+            
+            apiClient.put(`board/api/daily_data/${date}/`,
+                {'sleep_hours': hours}
+            ).then((res) => {
+                if (res.status === 'success') {
+                    sleepData[date] = hours;
+                    chart.update();
+                    loadJournal(); // Reload to update sleep data
+                    
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('sleepModal'));
+                    modal.hide();
+                    
+                    showSuccess('Sleep entry saved successfully!');
+                } else {
+                    showError(res.error || 'Failed to save sleep entry');
+                }
+            }).catch((error) => {
+                showError('Failed to save sleep entry: ' + error.message);
+            });
         }
 
         // Handle Enter key for todo input
@@ -1293,11 +1397,11 @@ function isValidEmail(email) {
         });
 
         // Handle Enter key for sleep input
-        document.querySelector('.sleep-input').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                addSleep();
-            }
-        });
+        // document.querySelector('.sleep-input').addEventListener('keypress', function(e) {
+        //     if (e.key === 'Enter') {
+        //         addSleep();
+        //     }
+        // });
 
         // Resize chart when window resizes
         window.addEventListener('resize', function() {
