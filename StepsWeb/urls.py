@@ -23,6 +23,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('allauth.urls')),
     path('board/', include('board.urls')),
+    path('splitwise/', include('splitwise.urls')),
     path('', include('main.urls')),
 ]
 

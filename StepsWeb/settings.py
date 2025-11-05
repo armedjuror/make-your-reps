@@ -56,6 +56,7 @@ INSTALLED_APPS = [
 
     'main',
     'board',
+    'splitwise',
 ]
 
 MIDDLEWARE = [
