@@ -112,8 +112,8 @@
                 <div class="section mobile-order-1">
                     <h3 class="section-title">{{ board_routines_title }}</h3>
                     <div class="routine-tabs">
-                        <button class="routine-tab active" onclick="showRoutine('workday_routine')">Workday</button>
-                        <button class="routine-tab" onclick="showRoutine('holiday_routine')">Holiday</button>
+                        <button class="routine-tab active" onclick="showRoutine('workday_routine')" id="workday_routine_button">Workday</button>
+                        <button class="routine-tab" onclick="showRoutine('holiday_routine')" id="holiday_routine_button">Holiday</button>
                     </div>
                     <div id="workday_routine" class="routine-content">
                         {% if user_detail.routines.workdays %}
@@ -685,6 +685,12 @@ Write freely here, like you're writing in your personal journal..." rows="10" id
             updateDate()
             loadHabits()
             setInterval(updateGreeting, 600000); // Update greeting every minute
+            const today = (new Date()).getDay();
+            if (today === 0 || today === 6) {
+                document.getElementById('holiday_routine_button').click()
+            }else{
+                document.getElementById('workday_routine_button').click()
+            }
         });
 
         function updateDate() {

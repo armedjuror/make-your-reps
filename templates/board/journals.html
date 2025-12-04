@@ -15,14 +15,13 @@
     <style>
         .calendar-container {
             max-width: 1200px;
-            margin: 0 auto;
+            margin: 10px auto;
         }
         
         .calendar-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
         }
         
         .calendar-nav {
@@ -39,9 +38,10 @@
         
         .calendar-grid {
             display: grid;
-            grid-template-columns: repeat(7, 1fr);
+            grid-template-columns: repeat(7, minmax(0, 1fr));
             gap: 8px;
             margin-bottom: 20px;
+            box-sizing: border-box;
         }
         
         .calendar-day-header {
@@ -172,6 +172,29 @@
             
             .calendar-day-preview {
                 display: none;
+            }
+
+            
+        }
+        
+        @media (max-width: 576px) {
+            .calendar-container {
+                padding: 0 8px;
+            }
+            .calendar-header {
+                display: block;
+                text-align: center;
+            }
+            .calendar-nav {
+                /* display: block;  */
+                text-align: center;
+            }
+            .calendar-grid {
+                gap: 4px;
+                grid-template-columns: repeat(7, minmax(0, 1fr));
+            }
+            .calendar-day {
+                padding: 6px 2px;
             }
         }
     </style>
@@ -413,6 +436,7 @@ Write freely here, like you're writing in your personal journal..."></textarea>
         let journals = [];
         let currentDate = new Date();
         let journalsMap = {}; // Map of date strings to journal entries
+        let tooltipInstances = []; // Bootstrap tooltip instances for cleanup
 
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
@@ -449,6 +473,27 @@ Write freely here, like you're writing in your personal journal..."></textarea>
                 });
             }
         });
+
+        function initTooltips() {
+            // Dispose existing tooltip instances to prevent leaks/duplicates
+            if (Array.isArray(tooltipInstances) && tooltipInstances.length) {
+                tooltipInstances.forEach(instance => {
+                    try { instance.dispose(); } catch (e) {}
+                });
+                tooltipInstances = [];
+            }
+            // Initialize tooltips for calendar day previews
+            const tooltipElements = document.querySelectorAll('.calendar-day[data-bs-toggle="tooltip"]');
+            tooltipElements.forEach(el => {
+                const instance = new bootstrap.Tooltip(el, {
+                    container: 'body',
+                    trigger: 'hover focus',
+                    placement: el.getAttribute('data-bs-placement') || 'top',
+                    delay: { show: 150, hide: 50 }
+                });
+                tooltipInstances.push(instance);
+            });
+        }
 
         function updateDate() {
             const date = document.getElementById('date');
@@ -598,6 +643,8 @@ Write freely here, like you're writing in your personal journal..."></textarea>
                     calendarGrid.appendChild(dayElement);
                 }
             }
+            // Initialize tooltips after the calendar DOM is ready
+            initTooltips();
         }
 
         function createCalendarDay(date, isOtherMonth, isToday = false) {
@@ -630,8 +677,11 @@ Write freely here, like you're writing in your personal journal..."></textarea>
                 const previewText = journal.journal.length > 30 
                     ? journal.journal.substring(0, 30) + '...' 
                     : journal.journal;
-                preview.textContent = journal.journal;
-                preview.title = journal.journal;
+                preview.textContent = previewText;
+                // Use Bootstrap tooltip instead of native title
+                dayElement.setAttribute('title', journal.journal);
+                dayElement.setAttribute('data-bs-toggle', 'tooltip');
+                dayElement.setAttribute('data-bs-placement', 'top');
                 dayElement.appendChild(preview);
             }
 
