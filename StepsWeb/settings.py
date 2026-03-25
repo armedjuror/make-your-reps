@@ -33,7 +33,8 @@ DEBUG = True
 ALLOWED_HOSTS = [
     '127.0.0.1',
     'localhost',
-    '140.245.225.184'
+    '140.245.225.184',
+    'makeyourreps.com'
 ]
 
 
