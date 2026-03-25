@@ -272,7 +272,7 @@ function createHabitElement(habitEl){
     const button = document.createElement('button');
     button.className = 'btn btn-paper btn-primary btn-sm';
     button.innerHTML = '<i class="fa fa-cog"></i>';
-    button.onclick = () => showHabitSettings(`${habitEl.id}`, `${habitEl.habit}`, `${habitEl.detail}`, `${habitEl.identity}`);
+    button.onclick = () => showHabitSettings(`${habitEl.id}`, `${habitEl.habit}`, `${habitEl.detail}`, `${habitEl.identity}`, habitEl.notify_at || null);
 
     // Append all elements to habit row
     habitRow.appendChild(habitName);

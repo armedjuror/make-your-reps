@@ -40,10 +40,11 @@ body {
     font-family: 'Lato', Tahoma, Geneva, Verdana, sans-serif;
     background: radial-gradient(circle at center, var(--paper-bg-center) 0%, var(--paper-bg-end) 100%);
     color: var(--ink-black);
-    min-height: 100vh;
+    min-height: 80vh;
     line-height: 1.6;
     position: relative;
     overflow-x: auto;
+    /*margin-top: 70px;*/
 }
 
 /* Old notebook paper with grid dots */
@@ -62,9 +63,9 @@ body::before {
 }
 
 .container-fluid {
-    max-width: 1500px;
+    max-width: 90%;
     margin: 0 auto;
-    padding: 40px 5% 40px 5%;
+    padding: 20px 5% 20px 5%;
     position: relative;
     z-index: 1;
 }
@@ -84,7 +85,7 @@ body::before {
 }
 
 .section-title {
-    font-size: 1.8rem;
+    font-size: 1.4rem;
     font-weight: 600;
     color: var(--ink-brown);
     margin-bottom: 15px;
@@ -94,7 +95,7 @@ body::before {
 
 .header-controls {
     position: absolute;
-    top: 20px;
+    top: 50px;
     right: 5%;
     display: flex;
     gap: 15px;
@@ -185,8 +186,9 @@ body::before {
     padding: 6px 0;
     border-bottom: 1px dotted var(--grid-dots);
     margin-bottom: 4px;
-    padding-left: 20px;
     position: relative;
+    font-size: 0.9rem;
+    font-weight: 400;
 }
 
 .routine-item::before {
@@ -235,6 +237,7 @@ body::before {
     /*font-weight: 500;*/
     color: var(--ink-brown-light);
     text-align: center;
+    font-size: 0.8rem;
 }
 
 .habit-name h5 {
@@ -245,7 +248,7 @@ body::before {
 
 .habit-name h6 {
     color: var(--ink-brown);
-    font-size: 1.1rem;
+    font-size: 0.8rem;
     text-transform: capitalize;
 }
 
@@ -288,7 +291,7 @@ body::before {
 }
 
 .habit-remark {
-    font-size: 14px;
+    font-size: 11px;
     color: var(--ink-black);
     font-style: italic;
 }
@@ -380,25 +383,39 @@ body::before {
     text-align: center;
 }
 
+/* Full-width blur strip at the bottom of the page */
+body::after {
+    content: '';
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 80px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    mask-image: linear-gradient(to bottom, transparent, black 60%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent, black 60%);
+    pointer-events: none;
+    z-index: 998;
+}
+
 .copyright {
-    position: absolute;
+    position: fixed;
     bottom: 15px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(244, 241, 232, 0.9);
+    background: rgba(42, 38, 32, 0.9);
     backdrop-filter: blur(5px);
     padding: 8px 20px;
     border-radius: 20px;
     font-size: 12px;
-    color: var(--ink-gray);
-    border: 1px solid var(--grid-dots);
+    color: var(--ink-brown-light);
+    /*border: 1px solid var(--grid-dots);*/
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     text-align: center;
+    z-index: 999;
 }
 
-[data-theme="dark"] .copyright {
-    background: rgba(42, 38, 32, 0.9);
-}
 
 [data-theme="dark"] .form-control, .form-control::placeholder {
     color: var(--ink-black);

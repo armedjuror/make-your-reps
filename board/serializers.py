@@ -3,7 +3,12 @@ from datetime import date, datetime
 
 from django.utils import timezone
 from rest_framework import serializers
-from board.models import Habit, Task, UserDetail, DailyData, HabitLog
+
+from board.models import (
+    Habit, Task, TaskGroup, UserDetail, DailyData, HabitLog,
+    RoutineEntry, ReadingListItem, TimelineEvent, SearchEngine
+)
+
 
 def get_habit_log(habit, target_month, target_year):
     days_in_month = monthrange(target_year, target_month)[1]
@@ -20,24 +25,36 @@ def get_habit_log(habit, target_month, target_year):
     for i in range(1, days_in_month + 1):
         d = date(target_year, target_month, i)
         if str(d) not in logs:
-            logs[d.strftime('%Y-%m-%d')] =  {'is_done': False, "date": d.strftime('%d')}
+            logs[d.strftime('%Y-%m-%d')] = {'is_done': False, "date": d.strftime('%d')}
 
     return dict(sorted(logs.items()))
 
 
 class UserDetailSerializer(serializers.ModelSerializer):
-    routines = serializers.SerializerMethodField()
     class Meta:
         model = UserDetail
         exclude = ('created_at', 'updated_at')
 
-    def get_routines(self, obj):
-        workdays_routine = [x.strip() for x in obj.workday_routine.split('\n') if x.strip()]
-        holidays_routine = [x.strip() for x in obj.holiday_routine.strip().split('\n') if x.strip()]
-        return {'workdays': workdays_routine, 'holidays': holidays_routine}
+
+class TaskGroupSerializer(serializers.ModelSerializer):
+    task_count = serializers.SerializerMethodField()
+    pending_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TaskGroup
+        exclude = ('user',)
+        read_only_fields = ['created_at', 'updated_at']
+
+    def get_task_count(self, obj):
+        return obj.tasks.filter(is_deleted=False).count()
+
+    def get_pending_count(self, obj):
+        return obj.tasks.filter(is_deleted=False, is_done=False).count()
 
 
 class TaskSerializer(serializers.ModelSerializer):
+    group_name = serializers.CharField(source='group.name', read_only=True, default=None)
+
     class Meta:
         model = Task
         exclude = ('user', 'is_deleted', 'updated_at')
@@ -47,6 +64,13 @@ class DailyDataSerializer(serializers.ModelSerializer):
     class Meta:
         model = DailyData
         fields = '__all__'
+
+
+class HabitLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HabitLog
+        fields = '__all__'
+
 
 class HabitSerializer(serializers.ModelSerializer):
     stats = serializers.SerializerMethodField()
@@ -230,24 +254,33 @@ class HabitSerializer(serializers.ModelSerializer):
             else:
                 return f"💫 {total_reps} reps with a {streak}-day streak! Consider hallmarking and starting a new challenge!"
 
-        elif total_reps >= 30:
-            if streak == 0:
-                return f"💪 {total_reps} reps done! You've got the skill - now build the consistency with a streak!"
-            else:
-                return f"🎯 {total_reps} reps and counting! Your {streak}-day streak shows you're building something lasting!"
 
-        # 6. Recent activity check (fallback for edge cases)
-        if last_done_date:
-            days_since_last = (now - last_done_date).days
-            if days_since_last <= 1 and streak == 0:
-                return "✨ You did this recently! Keep the momentum - start a streak today!"
-            elif days_since_last >= 7 and total_reps >= 10:
-                return f"🌱 It's been a week, but you've completed this {total_reps} times before. You've got this - begin again!"
+# ──────────────────────────────────────
+# New Serializers
+# ──────────────────────────────────────
 
-        # 7. Default encouraging message
-        return "🌟 You're on a journey of growth! Every small step counts toward the person you're becoming."
-
-class HabitLogSerializer(serializers.ModelSerializer):
+class RoutineEntrySerializer(serializers.ModelSerializer):
     class Meta:
-        model = HabitLog
-        exclude = ('created_at', 'updated_at')
+        model = RoutineEntry
+        exclude = ('user',)
+        read_only_fields = ['created_at', 'updated_at']
+
+
+class ReadingListItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReadingListItem
+        exclude = ('user',)
+        read_only_fields = ['created_at', 'updated_at']
+
+
+class TimelineEventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TimelineEvent
+        exclude = ('user',)
+        read_only_fields = ['created_at', 'updated_at']
+
+
+class SearchEngineSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SearchEngine
+        fields = '__all__'

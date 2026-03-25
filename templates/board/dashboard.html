@@ -1,0 +1,985 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Make Your Reps</title>
+    <link rel="icon" type="image/x-icon" href="{% static 'images/logo.png' %}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredericka+the+Great&family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'board/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'board/css/dashboard.css' %}">
+</head>
+<body data-theme="{{ user_detail.default_theme }}" data-font="{{ user_detail.font_family }}" data-clock="{{ user_detail.clock_format }}">
+
+    <!-- Loader -->
+    <div id="loader" class="loader-overlay hidden">
+        <div class="loader-container">
+            <div class="loader-content">
+                <div class="notebook-spinner"></div>
+                <div class="loader-text">Loading...</div>
+                <div class="loader-subtext">Patience is underrated!</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- BOTTOM TAB BAR                              -->
+    <!-- ═══════════════════════════════════════════ -->
+    <nav class="tab-bar" id="tab-bar">
+        <!-- Desktop nav items -->
+        <div class="tab-nav-group" id="tab-nav-group">
+            <a class="tab-item active" data-pane="home" onclick="switchPane('home')">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </a>
+            <a class="tab-item" data-pane="todos" onclick="switchPane('todos')">
+                <i class="fas fa-tasks"></i>
+                <span>Todos</span>
+            </a>
+            <a class="tab-item" data-pane="trackers" onclick="switchPane('trackers')">
+                <i class="fas fa-chart-line"></i>
+                <span>Trackers</span>
+            </a>
+
+            <a class="tab-item" data-pane="journals" onclick="switchPane('journals')">
+                <i class="fas fa-book"></i>
+                <span>Journals</span>
+            </a>
+            <a class="tab-item" onclick="toggleTheme()">
+                <i class="{% if user_detail.default_theme == 'light' %}fas fa-moon{% else %}fas fa-sun{% endif %}" id="themeIcon"></i>
+                <span>Theme</span>
+            </a>
+            <a class="tab-item" onclick="showSettings()">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </a>
+        </div>
+        <!-- Score + Datetime (desktop right side) -->
+        <div class="tab-meta-group">
+            <div class="home-meta">
+                <div class="tab-item productivity-score" id="productivity-score">
+                    <div class="score-ring">
+                        <svg viewBox="0 0 80 80">
+                            <circle class="score-bg" cx="40" cy="40" r="34" />
+                            <circle class="score-fill" cx="40" cy="40" r="34" id="score-circle" />
+                        </svg>
+                        <div class="score-value" id="score-value">-</div>
+                    </div>
+                    <div class="score-label">Productivity</div>
+                </div>
+            </div>
+            <div class="tab-item home-datetime" id="home-datetime"></div>
+        </div>
+        <!-- Mobile: hamburger -->
+        <button class="hamburger-btn" id="hamburger-btn" onclick="toggleMobileMenu()">
+            <i class="fas fa-bars"></i>
+        </button>
+    </nav>
+
+    <!-- Mobile slide-out menu -->
+    <div class="mobile-menu-overlay" id="mobile-menu-overlay" onclick="closeMobileMenu()"></div>
+    <div class="mobile-menu" id="mobile-menu">
+        <div class="mobile-menu-header">
+            <button class="mobile-menu-close" onclick="closeMobileMenu()"><i class="fas fa-times"></i></button>
+        </div>
+        <a class="mobile-menu-item active" data-pane="home" onclick="switchPane('home'); closeMobileMenu()">
+            <i class="fas fa-home"></i> Home
+        </a>
+        <a class="mobile-menu-item" data-pane="todos" onclick="switchPane('todos'); closeMobileMenu()">
+            v<i class="fas fa-tasks"></i> Todos
+        </a>
+        <a class="mobile-menu-item" data-pane="trackers" onclick="switchPane('trackers'); closeMobileMenu()">
+            <i class="fas fa-chart-line"></i> Trackers
+        </a>
+        <a class="mobile-menu-item" data-pane="journals" onclick="switchPane('journals'); closeMobileMenu()">
+            <i class="fas fa-book"></i> Journals
+        </a>
+        <a class="mobile-menu-item" onclick="toggleTheme(); closeMobileMenu()">
+            <i class="fas fa-circle-half-stroke"></i> Toggle Theme
+        </a>
+        <a class="mobile-menu-item" onclick="showSettings(); closeMobileMenu()">
+            <i class="fas fa-cog"></i> Settings
+        </a>
+    </div>
+
+    <!-- Header Controls -->
+    <div class="header-controls">
+{#        <button class="btn btn-paper btn-primary" onclick="toggleTheme()">#}
+{#            <i class="{% if user_detail.default_theme == 'light' %}fas fa-moon{% else %}fas fa-sun{% endif %}" id="themeIcon"></i>#}
+{#        </button>#}
+{#        <button class="btn btn-paper btn-primary" onclick="showSettings()">#}
+{#            <i class="fas fa-cog"></i>#}
+{#        </button>#}
+        <!-- Date, Time & Productivity Score -->
+
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- PANE: HOME (Default)                        -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div class="pane" id="pane-home">
+        <div class="container-fluid">
+            <div class="default-pane-content">
+
+                <!-- Pomodoro Timer -->
+                <div class="pomodoro-section">
+                    <div class="pomodoro-main">
+                        <div class="pomodoro-controls">
+                            <div class="pomodoro-display">
+                            <span class="pomodoro-mode" id="pomodoro-mode">Focus</span>
+                            <span class="pomodoro-time" id="pomodoro-time">25:00</span>
+                        </div>
+                        <button class="btn btn-paper btn-primary btn-sm" id="pomodoro-start" onclick="Pomodoro.toggle()">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <button class="btn btn-paper btn-sm" id="pomodoro-reset" onclick="Pomodoro.reset()">
+                            <i class="fas fa-redo"></i>
+                        </button>
+                        <button class="btn btn-paper btn-sm" id="pomodoro-toggle-mode" onclick="Pomodoro.toggleMode()">
+                            <i class="fas fa-coffee"></i>
+                        </button>
+                    </div>
+                        </div>
+                    <div class="pomodoro-cycles" id="pomodoro-cycles"></div>
+                </div>
+
+                <!-- Greeting -->
+                <div class="greeting-main">
+                    <h1 id="greeting-text">Good Morning!</h1>
+                    <p id="greeting-sub">Let's make today amazing</p>
+                </div>
+
+
+
+                <!-- Search Bar -->
+                <div class="search-section">
+                    <div class="search-bar">
+                        <input type="text" class="search-input" id="search-input"
+                               placeholder="Search (Ctrl+k: Search, Ctrl+;: Todo, Ctrl+h: New Habit, Ctrl+j: Journal)"
+                               autocomplete="off">
+                        <div class="search-engine-dropdown" id="search-engine-dropdown"></div>
+                        <div class="search-engine-select" id="search-engine-btn" onclick="toggleSearchEngineDropdown()">
+                        <i class="fab fa-google" id="search-engine-icon"></i>
+                    </div>
+                    </div>
+                </div>
+
+                <!-- Timeline -->
+                <div class="timeline-section">
+{#                    <h3 class="section-title-sm">Timeline</h3>#}
+                    <div class="timeline-container" id="timeline-container">
+                        <div class="timeline-list" id="timeline-list">
+                            <div class="timeline-loading">
+                                <div class="notebook-spinner"></div>
+                            </div>
+                        </div>
+                        <div class="timeline-gradient-top"></div>
+                        <div class="timeline-gradient-bottom"></div>
+                    </div>
+                </div>
+
+                <!-- Reading List (Featured Bookmarks) -->
+                <div class="reading-list-section">
+                    <div class="reading-list-grid" id="reading-list-grid">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- PANE: TRACKERS                              -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div class="pane" id="pane-trackers" style="display:none;padding-top: 100px;">
+        <div class="container-fluid">
+            <div class="row">
+                <!-- Left: Todos + Habits (67%) -->
+                <div class="col-lg-8">
+                    <!-- Todo Manager -->
+{#                    <div class="section">#}
+{#                        <h3 class="section-title">{{ board_tasks_title }}</h3>#}
+{#                        <div class="mb-3">#}
+{#                            <div class="input-group">#}
+{#                                <input type="text" class="form-control" id="todoInput" placeholder="Add a new task...">#}
+{#                                <button class="btn btn-paper btn-primary ms-2" onclick="addTodo()">Add</button>#}
+{#                            </div>#}
+{#                            <div class="d-flex align-items-center gap-2 mt-1">#}
+{#                                <input type="datetime-local" class="form-control form-control-sm" id="todoDeadlineInput" style="max-width:230px;">#}
+{#                                <small class="text-muted">deadline (optional)</small>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                        <div id="todoList"></div>#}
+{#                    </div>#}
+
+                    <!-- Habit Tracker -->
+                    <div class="section">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h3 class="section-title">{{ board_habits_title }}</h3>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <button class="btn btn-paper btn-primary btn-sm" onclick="Habits.showHabitModal()">New Habit <i class="fa fa-add"></i></button>
+                            </div>
+                        </div>
+                        <div class="habit-tracker" id="habitTracker">
+                            <div class="mt-4">
+                                <div class="notebook-spinner"></div>
+                                <div class="loader-text">Loading...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Routine + Sleep (33%) -->
+                <div class="col-lg-4">
+                    <!-- Routine Manager -->
+                    <div class="section">
+                        <h3 class="section-title">{{ board_routines_title }}</h3>
+                        <div class="routine-tabs">
+                            <button class="routine-tab active" onclick="showRoutine('workday')" id="workday_routine_button">Workday</button>
+                            <button class="routine-tab" onclick="showRoutine('holiday')" id="holiday_routine_button">Holiday</button>
+                        </div>
+                        <div id="routine-list">
+                            <div class="mt-4">
+                                <div class="notebook-spinner"></div>
+                            </div>
+                        </div>
+                        <button class="btn btn-paper btn-primary mt-3" onclick="editRoutine()">Edit Routine</button>
+                    </div>
+
+                    <!-- Sleep Tracker -->
+                    <div class="section">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h3 class="section-title mb-0">{{ board_sleep_tracker_title }}</h3>
+                            <button class="btn btn-paper btn-sm btn-primary" onclick="openSleepModal()">
+                                <i class="fas fa-plus"></i> Add Entry
+                            </button>
+                        </div>
+                        <div class="sleep-graph">
+                            <canvas id="sleepChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- PANE: JOURNALS                              -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div class="pane" id="pane-journals" style="display:none;padding-top: 100px;">
+        <div class="container-fluid">
+            <!-- Journal Editor -->
+            <div class="journal-pane-content">
+                <!-- Calendar -->
+                <div class="journal-calendar-section">
+                    <div class="calendar-header">
+                        <h3 class="section-title mb-0" id="journal-month-title">July 2025</h3>
+                        <div class="calendar-nav">
+                            <button class="btn btn-paper btn-sm" onclick="JournalPane.prevMonth()"><i class="fas fa-chevron-left"></i></button>
+                            <button class="btn btn-paper btn-sm" onclick="JournalPane.goToday()">Today</button>
+                            <button class="btn btn-paper btn-sm" onclick="JournalPane.nextMonth()"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+                    <div class="calendar-grid" id="journal-calendar-grid"></div>
+                    <div class="calendar-legend">
+                        <div class="legend-item">
+                            <div class="legend-color has-journal"></div>
+                            <span>Has Entry</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color today"></div>
+                            <span>Today</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="journal-editor-section">
+                    <h3 class="section-title">Today's Journal</h3>
+                    <textarea class="form-control journal-area" placeholder="How was your day today?
+What did you learn? What are you grateful for?
+
+Write freely here, like you're writing in your personal journal..." id="journal-editor" onfocusout="updateJournal()" rows="20"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- PANE: TODOS                                 -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div class="pane" id="pane-todos" style="display:none;padding-top: 100px;">
+        <div class="container-fluid">
+            <div class="todos-pane-layout">
+                <!-- Sidebar: Groups -->
+                <div class="todos-sidebar">
+                    <div class="todos-sidebar-header">
+                        <h3 class="section-title-sm mb-0">Groups</h3>
+                        <button class="btn btn-paper btn-sm btn-primary" onclick="TodosPane.showAddGroupModal()">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    <div class="todos-group-list" id="todos-group-list">
+                        <div class="todos-group-item active" data-group="all" onclick="TodosPane.selectGroup('all')">
+                            <span class="group-name">All</span>
+                            <span class="group-count" id="group-count-all">0</span>
+                        </div>
+                        <!-- Dynamic groups loaded here -->
+                    </div>
+                </div>
+
+                <!-- Main: Task list -->
+                <div class="todos-main">
+                    <div class="todos-main-header">
+                        <h3 class="section-title" id="todos-current-group-title">All Tasks</h3>
+                        <div class="todos-filters">
+                            <button class="btn btn-paper btn-sm todo-filter active" data-filter="pending" onclick="TodosPane.setFilter('pending')">Pending</button>
+                            <button class="btn btn-paper btn-sm todo-filter" data-filter="done" onclick="TodosPane.setFilter('done')">Done</button>
+                            <button class="btn btn-paper btn-sm todo-filter" data-filter="all" onclick="TodosPane.setFilter('all')">All</button>
+                        </div>
+                    </div>
+                    <div class="todos-add-bar">
+                        <input type="text" class="form-control" id="todoPaneInput" placeholder="Add a new task...">
+                        <select class="form-control todos-group-select" id="todoPaneGroupSelect"></select>
+                        <input type="datetime-local" class="form-control todos-deadline-input" id="todoPaneDeadline">
+                        <button class="btn btn-paper btn-primary" onclick="TodosPane.addTask()">Add</button>
+                    </div>
+                    <div class="todos-list" id="todos-pane-list">
+                        <div class="mt-4 text-center">
+                            <div class="notebook-spinner"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- MODALS                                      -->
+    <!-- ═══════════════════════════════════════════ -->
+
+    <!-- Settings Modal -->
+    <div class="modal fade" id="settingsModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <div class="modal-icon info"><i class="fas fa-cog"></i></div>
+                        Settings
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Settings Tabs -->
+                    <ul class="nav nav-tabs settings-tabs" id="settingsTabs">
+                        <li class="nav-item">
+                            <a class="nav-link active" data-bs-toggle="tab" href="#settings-general">General</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#settings-pomodoro">Pomodoro</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#settings-sounds">Sounds</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#settings-shortcuts">Shortcuts</a>
+                        </li>
+                    </ul>
+                    <div class="tab-content mt-3" id="settingsTabContent">
+                        <!-- General -->
+                        <div class="tab-pane fade show active" id="settings-general">
+                            <div class="mb-3">
+                                <label class="form-label">Name</label>
+                                <input type="text" class="form-control" id="settingsName" value="{{ user.first_name }} {{ user.last_name }}" readonly>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Theme</label>
+                                <select class="form-control" id="themeSelect" onchange="Settings.changeTheme()">
+                                    <option value="light" {% if user_detail.default_theme == 'light' %}selected{% endif %}>Light</option>
+                                    <option value="dark" {% if user_detail.default_theme == 'dark' %}selected{% endif %}>Dark</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Font</label>
+                                <select class="form-control" id="fontSelect" onchange="Settings.changeFont()">
+                                    <option value="Montserrat" {% if user_detail.font_family == 'Montserrat' %}selected{% endif %}>Montserrat</option>
+                                    <option value="Lato" {% if user_detail.font_family == 'Lato' %}selected{% endif %}>Lato</option>
+                                    <option value="JetBrains Mono" {% if user_detail.font_family == 'JetBrains Mono' %}selected{% endif %}>JetBrains Mono</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Clock Format</label>
+                                <select class="form-control" id="clockFormatSelect" onchange="Settings.changeClockFormat()">
+                                    <option value="12h" {% if user_detail.clock_format == '12h' %}selected{% endif %}>12 Hour</option>
+                                    <option value="24h" {% if user_detail.clock_format == '24h' %}selected{% endif %}>24 Hour</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Default Search Engine</label>
+                                <select class="form-control" id="searchEngineSelect" onchange="Settings.changeSearchEngine()">
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Sleep Time</label>
+                                <input type="time" class="form-control" id="sleepTimeInput" value="{{ user_detail.sleep_time|default:'' }}" onchange="Settings.changeSleepTime()">
+                                <small class="form-text text-muted">Used for journal reminder & sleep notification</small>
+                            </div>
+                            <div class="mb-3">
+                                <a href="{% url 'logout' %}" class="btn btn-paper btn-danger">Logout</a>
+                            </div>
+                        </div>
+
+                        <!-- Pomodoro -->
+                        <div class="tab-pane fade" id="settings-pomodoro">
+                            <div class="mb-3">
+                                <label class="form-label">Focus Duration (minutes)</label>
+                                <input type="number" class="form-control" id="pomFocus" value="{{ user_detail.pomodoro_focus }}" min="1" max="120" onchange="Settings.savePomodoroSettings()">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Break Duration (minutes)</label>
+                                <input type="number" class="form-control" id="pomBreak" value="{{ user_detail.pomodoro_break }}" min="1" max="60" onchange="Settings.savePomodoroSettings()">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Long Break Duration (minutes)</label>
+                                <input type="number" class="form-control" id="pomLongBreak" value="{{ user_detail.pomodoro_long_break }}" min="1" max="60" onchange="Settings.savePomodoroSettings()">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Cycles Before Long Break</label>
+                                <input type="number" class="form-control" id="pomCycles" value="{{ user_detail.pomodoro_cycles }}" min="1" max="10" onchange="Settings.savePomodoroSettings()">
+                            </div>
+                        </div>
+
+                        <!-- Sounds -->
+                        <div class="tab-pane fade" id="settings-sounds">
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="soundPomodoro" {% if user_detail.sound_pomodoro %}checked{% endif %} onchange="Settings.saveSoundSettings()">
+                                    <label class="form-check-label" for="soundPomodoro">Pomodoro sounds (start, pause, end, state change)</label>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="soundNotifications" {% if user_detail.sound_notifications %}checked{% endif %} onchange="Settings.saveSoundSettings()">
+                                    <label class="form-check-label" for="soundNotifications">Notification sounds (timeline alerts, sleep reminder)</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Shortcuts -->
+                        <div class="tab-pane fade" id="settings-shortcuts">
+                            <div class="shortcuts-list">
+                                <div class="shortcut-item">
+                                    <kbd>Enter</kbd> <span>Search in default engine (new tab)</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <kbd>Ctrl/⌘ + T</kbd> <span>Quick add a todo</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <kbd>Ctrl/⌘ + H</kbd> <span>Quick add a habit</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <kbd>Ctrl/⌘ + J</kbd> <span>Open today's journal</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Todo Add Modal (Conversational) -->
+    <div class="modal fade" id="todoModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><div class="modal-icon info"><i class="fas fa-tasks"></i></div> New Task</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="conversational-form" id="todoConvoForm">
+                        <div class="convo-line">
+                            I want to
+                            <input type="text" class="form-input" id="todoTask" placeholder="finish the report" autofocus>
+                        </div>
+                        <div class="convo-line convo-step-2" id="todoDeadlineStep" style="display:none;">
+                            before
+                            <input type="datetime-local" class="form-input" id="todoDeadline">
+                            in
+                            <select class="form-input" id="todoGroup" style="min-width:120px;"></select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-paper" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-paper btn-primary" id="todoSaveBtn" onclick="Todo.saveTodo()">Add Task</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Habit Add Modal (Conversational) -->
+    <div class="modal fade" id="habitModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><div class="modal-icon info"><i class="fas fa-bolt"></i></div> New Habit</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="habit_message" style="margin-bottom: 10px;"></div>
+                    <div class="conversational-form" id="habitConvoForm">
+                        <div class="convo-line">
+                            I will
+                            <input type="text" class="form-input habit-input" id="habitName" placeholder="read a page">
+                        </div>
+                        <div class="convo-line convo-step-2" id="habitDetailStep" style="display:none;">
+                            <input type="text" class="form-input when-where-input" id="habitDetail" placeholder="when I wake up">
+                        </div>
+                        <div class="convo-line convo-step-3" id="habitIdentityStep" style="display:none;">
+                            so that I can become
+                            <input type="text" class="form-input identity-input" id="habitIdentity" placeholder="a wise person">
+                        </div>
+                        <div class="convo-line convo-step-4" id="habitNotifyStep" style="display:none;">
+                            remind me at
+                            <input type="time" class="form-input" id="habitNotify">
+                            <small class="text-muted ms-1">(optional)</small>
+                        </div>
+                        <div class="convo-line convo-step-5" id="habitFrequencyStep" style="display:none;">
+                            on every
+                            <div class="freq-days">
+                                <button type="button" class="freq-day-btn" data-day="0">Mon</button>
+                                <button type="button" class="freq-day-btn" data-day="1">Tue</button>
+                                <button type="button" class="freq-day-btn" data-day="2">Wed</button>
+                                <button type="button" class="freq-day-btn" data-day="3">Thu</button>
+                                <button type="button" class="freq-day-btn" data-day="4">Fri</button>
+                                <button type="button" class="freq-day-btn" data-day="5">Sat</button>
+                                <button type="button" class="freq-day-btn" data-day="6">Sun</button>
+                            </div>
+                            <small class="text-muted ms-1">(leave empty for every day)</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-paper" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-paper btn-primary" onclick="Habits.saveHabit()">Create Habit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Habit Settings Modal -->
+    <div class="modal fade" id="habitSettingsModal" tabindex="-1" aria-labelledby="habitSettingsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="habitSettingsModalLabel">
+                    <div class="modal-icon info">
+                        <i class="fas fa-cog"></i>
+                    </div>
+                    Habit Settings
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="habit_settings_message" class="mb-3"></div>
+
+                <!-- Current Habit Display -->
+                <div class="current-habit-display mb-4">
+                    <h6>Current Habit:</h6>
+                    <div class="habit-statement" id="currentHabitStatement">
+                        I will <span id="currentHabit">read a page</span> <span id="currentWhenWhere">when I wake up</span> so that I can become <span id="currentIdentity">a wise person</span>.
+                    </div>
+
+                    <!-- Accountability Partner Display -->
+                    <div class="accountability-partner-info mt-3" id="accountabilityInfo">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-user-friends me-2"></i>
+                            <span>Accountability Partner: </span>
+                            <span id="partnerDisplay" class="ms-2">None assigned</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="editHabitForm" style="display: none;">
+                    <h6 class="mb-3">Edit your habit:</h6>
+                    <div class="paragraph-form">
+                        I will
+                        <input type="text"
+                               class="form-input habit-input"
+                               name="habit"
+                               id="editHabit"
+                               placeholder="read a page"
+                               required>
+                        <input type="text"
+                               class="form-input when-where-input"
+                               name="whenWhere"
+                               id="editWhenWhere"
+                               placeholder="when I wake up"
+                               required>
+                        so that I can become
+                        <input type="text"
+                               class="form-input identity-input"
+                               name="identity"
+                               id="editIdentity"
+                               placeholder="a wise person"
+                               required>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="habit-actions mt-4">
+                    <div class="row">
+                        <div class="col-lg-4 col-md-6 mb-3">
+                            <button type="button" class="btn habit-action-btn" onclick="toggleEditForm()">
+                                <i class="fas fa-edit"></i>
+                                <span class="btn-text">Adjust Habit</span>
+                                <small class="btn-subtitle">Modify your habit details</small>
+                            </button>
+                        </div>
+{#                        <div class="col-lg-3 col-md-6 mb-3">#}
+{#                            <button type="button" class="btn habit-action-btn partner-btn" onclick="togglePartnerSection()">#}
+{#                                <i class="fas fa-user-friends"></i>#}
+{#                                <span class="btn-text">Accountability</span>#}
+{#                                <small class="btn-subtitle">Assign a partner</small>#}
+{#                            </button>#}
+{#                        </div>#}
+                        <div class="col-lg-4 col-md-6 mb-3">
+                            <button type="button" class="btn habit-action-btn" onclick="hallmarkHabit()">
+                                <i class="fas fa-star"></i>
+                                <span class="btn-text">Hallmark Habit</span>
+                                <small class="btn-subtitle">Mark as successfully formed</small>
+                            </button>
+                        </div>
+                        <div class="col-lg-4 col-md-6 mb-3">
+                            <button type="button" class="btn habit-action-btn" onclick="deleteHabit()">
+                                <i class="fas fa-trash"></i>
+                                <span class="btn-text">Delete Habit</span>
+                                <small class="btn-subtitle">Remove this habit</small>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Accountability Partner Section (Initially Hidden) -->
+                <div id="partnerSection" style="display: none;" class="mt-4">
+                    <div class="partner-management">
+                        <h6 class="mb-3">
+                            <i class="fas fa-user-friends me-2"></i>
+                            Accountability Partner Management
+                        </h6>
+
+                        <div class="current-partner mb-3" id="currentPartnerSection">
+                            <!-- Will be populated dynamically -->
+                        </div>
+
+                        <div class="assign-partner">
+                            <div class="mb-3">
+                                <label class="form-label">Assign New Partner:</label>
+                                <div class="input-group">
+                                    <input type="email"
+                                           class="form-control"
+                                           id="partnerEmail"
+                                           placeholder="Enter partner's email address">
+                                    <button class="btn btn-paper btn-primary" onclick="assignPartner()">
+                                        <i class="fas fa-plus"></i> Assign
+                                    </button>
+                                </div>
+                                <small class="form-text text-muted mt-1">
+                                    Your partner will receive notifications about your habit progress and can provide encouragement.
+                                </small>
+                            </div>
+
+                            <div class="partner-permissions mb-3">
+                                <label class="form-label">Partner Permissions:</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="canViewProgress" checked>
+                                    <label class="form-check-label" for="canViewProgress">
+                                        Can view my progress
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="canSendReminders">
+                                    <label class="form-check-label" for="canSendReminders">
+                                        Can send me reminders
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="receiveNotifications" checked>
+                                    <label class="form-check-label" for="receiveNotifications">
+                                        Receive progress notifications
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Save/Cancel buttons for edit mode -->
+                <div id="editActions" class="text-end mt-3" style="display: none;">
+                    <button type="button" class="btn btn-paper me-2" onclick="cancelEdit()">Cancel</button>
+                    <button type="button" class="btn btn-paper btn-primary" onclick="saveHabitChanges()">Save Changes</button>
+                </div>
+
+                <!-- Partner Section Actions -->
+                <div id="partnerActions" class="text-end mt-3" style="display: none;">
+                    <button type="button" class="btn btn-paper me-2" onclick="cancelPartnerEdit()">Close</button>
+                    <button type="button" class="btn btn-paper btn-primary" onclick="savePartnerSettings()">Save Settings</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- Hallmark Confirmation Modal -->
+    <div class="modal fade" id="hallmarkConfirmModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><div class="modal-icon success"><i class="fas fa-star"></i></div> Hallmark Habit</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Congratulations! You're about to hallmark this habit as successfully formed.</p>
+                    <p>Are you sure this habit has become automatic for you?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-paper" data-bs-dismiss="modal">Not Yet</button>
+                    <button type="button" class="btn btn-paper btn-success" onclick="confirmHallmark()"><i class="fas fa-star me-2"></i>Hallmark It!</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><div class="modal-icon info"><i class="fas fa-trash"></i></div> Delete Habit</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete this habit? This cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-paper" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-paper btn-danger" onclick="confirmDelete()">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sleep Entry Modal -->
+    <div class="modal fade" id="sleepModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><div class="modal-icon info"><i class="fas fa-moon"></i></div> Add Sleep Entry</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Date</label>
+                        <input type="date" class="form-control" id="sleepDate">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Hours Slept</label>
+                        <input type="number" class="form-control" id="sleepHours" placeholder="Hours slept" step="0.5" min="0" max="24" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-paper" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-paper btn-primary" onclick="saveSleepEntry()">Save Entry</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Routine Edit Modal -->
+    <div class="modal fade" id="routineModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><div class="modal-icon info"><i class="fas fa-edit"></i></div> Edit Routine</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="routineEntries">
+                        <!-- Dynamic routine entry rows -->
+                    </div>
+                    <button class="btn btn-paper btn-sm mt-2" onclick="RoutineEditor.addRow()">
+                        <i class="fas fa-plus me-1"></i>Add Entry
+                    </button>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-paper" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-paper btn-primary" onclick="RoutineEditor.save()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reading List Add/Edit Modal -->
+    <div class="modal fade" id="readingListModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><div class="modal-icon info"><i class="fas fa-bookmark"></i></div> <span id="readingListModalTitle">Add to Reading List</span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Name</label>
+                        <input type="text" class="form-control" id="rlName" placeholder="GitHub">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">URL</label>
+                        <input type="url" class="form-control" id="rlUrl" placeholder="https://github.com">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Icon URL (optional)</label>
+                        <input type="url" class="form-control" id="rlIcon" placeholder="https://github.com/favicon.ico">
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="rlFeatured" checked>
+                            <label class="form-check-label" for="rlFeatured">Show on Home</label>
+                        </div>
+                    </div>
+                    <input type="hidden" id="rlEditId" value="">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-paper btn-danger me-auto" id="rlDeleteBtn" style="display:none;" onclick="ReadingList.deleteSelected()"><i class="fas fa-trash me-1"></i>Delete</button>
+                    <button type="button" class="btn btn-paper" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-paper btn-primary" onclick="ReadingList.save()">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="modal fade" id="successModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="successModalLabel"><div class="modal-icon success"><i class="fas fa-check"></i></div> Success!</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="successMessage">Operation completed successfully!</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-paper btn-success" data-bs-dismiss="modal">Great!</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Modal -->
+    <div class="modal fade" id="errorModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="errorModalLabel"><div class="modal-icon info"><i class="fas fa-exclamation-triangle"></i></div> Oops!</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="errorMessage">Something went wrong.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-paper" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Modal -->
+    <div class="modal fade" id="infoModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="infoModalLabel"><div class="modal-icon info"><i class="fas fa-info-circle"></i></div> Info</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="infoMessage"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-paper" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+     <!-- Task Group Add/Rename Modal -->
+    <div class="modal fade" id="groupModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="groupModalTitle"><div class="modal-icon info"><i class="fas fa-folder-plus"></i></div> New Group</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Group Name</label>
+                        <input type="text" class="form-control" id="groupNameInput" placeholder="e.g. Work, Personal" autofocus>
+                    </div>
+                    <input type="hidden" id="groupEditId" value="">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-paper" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-paper btn-primary" onclick="TodosPane.saveGroup()">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Copyright -->
+    <div class="copyright">
+        &copy; <span id="year"></span> {{ copyright_text | safe }}
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://kit.fontawesome.com/22476b357e.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Global config from Django context
+        const True = true;
+        const None = null;
+        const False = false;
+        const HOST = `{{ host }}`;
+        const USER_DETAIL = {{ user_detail | safe }};
+        const GREETINGS = {
+            night: {{ board_greetings_night | safe }},
+            morning: {{ board_greetings_morning | safe }},
+            afternoon: {{ board_greetings_afternoon | safe }},
+            evening: {{ board_greetings_evening | safe }},
+        };
+        const MESSAGES = {
+            night: {{ board_messages_night | safe }},
+            morning: {{ board_messages_morning | safe }},
+            afternoon: {{ board_messages_afternoon | safe }},
+            evening: {{ board_messages_evening | safe }},
+        };
+    </script>
+    <script src="{% static 'board/js/utils.js' %}"></script>
+    <script src="{% static 'board/js/habits.js' %}"></script>
+    <script src="{% static 'board/js/todos.js' %}"></script>
+    <script src="{% static 'board/js/pomodoro.js' %}"></script>
+    <script src="{% static 'board/js/dashboard.js' %}"></script>
+    <script src="{% static 'board/js/timeline.js' %}"></script>
+    <script src="{% static 'board/js/default-pane.js' %}"></script>
+    <script src="{% static 'board/js/tracker-pane.js' %}"></script>
+    <script src="{% static 'board/js/todos-pane.js' %}"></script>
+    <script src="{% static 'board/js/journals-pane.js' %}"></script>
+    <script src="{% static 'board/js/reading-list.js' %}"></script>
+    <script src="{% static 'board/js/settings.js' %}"></script>
+    <script src="{% static 'board/js/todos-pane.js' %}"></script>
+</body>
+</html>
