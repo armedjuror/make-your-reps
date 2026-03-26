@@ -191,7 +191,7 @@ const Pomodoro = {
     },
 
     beep(freq, duration) {
-        if (!USER_DETAIL.sound_pomodoro) return;
+        if (!AppConfig.userDetail?.sound_pomodoro) return;
         try {
             if (!this.audioCtx) {
                 this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -223,10 +223,12 @@ const Pomodoro = {
 
     updateSettings(settings) {
         // Called from settings when pomodoro config changes
-        USER_DETAIL.pomodoro_focus = settings.focusMin;
-        USER_DETAIL.pomodoro_break = settings.breakMin;
-        USER_DETAIL.pomodoro_long_break = settings.longBreakMin;
-        USER_DETAIL.pomodoro_cycles = settings.cycles;
+        if (AppConfig.userDetail) {
+            AppConfig.userDetail.pomodoro_focus = settings.focusMin;
+            AppConfig.userDetail.pomodoro_break = settings.breakMin;
+            AppConfig.userDetail.pomodoro_long_break = settings.longBreakMin;
+            AppConfig.userDetail.pomodoro_cycles = settings.cycles;
+        }
         // If not running, reset timer to new duration
         if (!this.state.running) {
             this.reset();
