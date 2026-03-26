@@ -240,7 +240,6 @@ class RoutineEntry(models.Model):
     routine_type = models.CharField(max_length=10, choices=RoutineType.choices)
     title = models.CharField(max_length=255)
     time = models.TimeField()
-    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

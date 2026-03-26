@@ -58,8 +58,8 @@ class AccountabilityPartnerAdmin(admin.ModelAdmin):
 
 @admin.register(RoutineEntry)
 class RoutineEntryAdmin(admin.ModelAdmin):
-    list_display = ('user', 'routine_type', 'time', 'title', 'is_active')
-    list_filter = ('routine_type', 'is_active')
+    list_display = ('user', 'routine_type', 'time', 'title')
+    list_filter = ('routine_type', )
     search_fields = ('title',)
 
 

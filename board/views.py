@@ -465,7 +465,7 @@ class RoutineEntryViewSet(AuthenticatedModelViewSet):
     serializer_class = RoutineEntrySerializer
 
     def get_queryset(self):
-        return RoutineEntry.objects.filter(is_active=True)
+        return RoutineEntry.objects.all()
 
     def list(self, request, **kwargs):
         user_id = request.session.get('user_id')
@@ -507,9 +507,7 @@ class RoutineEntryViewSet(AuthenticatedModelViewSet):
 
     def destroy(self, request, **kwargs):
         pk = int(kwargs['pk'])
-        entry = self.get_queryset().get(pk=pk)
-        entry.is_active = False
-        entry.save()
+        self.get_queryset().get(pk=pk).delete()
         return Response({'status': 'success', 'message': 'Routine entry deleted'})
 
     @action(detail=False, methods=['post'])
@@ -525,10 +523,10 @@ class RoutineEntryViewSet(AuthenticatedModelViewSet):
                 'error': 'routine_type and entries are required'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        # Soft-delete existing entries for this type
+        # Delete existing entries for this type
         RoutineEntry.objects.filter(
-            user_id=user_id, routine_type=routine_type, is_active=True
-        ).update(is_active=False)
+            user_id=user_id, routine_type=routine_type
+        ).delete()
 
         created = []
         for entry_data in entries:
