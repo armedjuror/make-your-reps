@@ -222,3 +222,15 @@ document.querySelectorAll('.form-input').forEach(input => {
         this.style.width = this.value.length * 12 + 40 + 'px';
     });
 });
+
+document.getElementById('journal-editor').addEventListener('keyup', function(e) {
+    let line_count = this.value.split('\n').length;
+    let currentRows = parseInt(this.getAttribute('rows'));
+    if (currentRows < line_count + 10) {
+        this.setAttribute('rows', line_count + 10);
+        window.scrollBy(0, 200)
+    }else if (currentRows > line_count + 10) {
+        this.setAttribute('rows', line_count + 10);
+        window.scrollBy(0, -10)
+    }
+});
