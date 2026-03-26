@@ -223,8 +223,8 @@ const General = {
             messages = M.evening;
         }
 
+        if (!greetings?.length || !messages?.length) return;
         greeting = greetings[Math.floor(Math.random() * greetings.length)];
-        console.log(greeting)
         message = messages[Math.floor(Math.random() * messages.length)];
         document.querySelector('.greeting-main h1').textContent = greeting;
         document.querySelector('.greeting-main p').textContent = message;
