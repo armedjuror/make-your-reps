@@ -137,6 +137,14 @@ class ConfigManager:
         except ValueError:
             pass
 
+        # Try to parse JSON (handles lists and dicts)
+        if value.startswith(('[', '{')):
+            try:
+                import json
+                return json.loads(value)
+            except (ValueError, json.JSONDecodeError):
+                pass
+
         # Return as string if no conversion possible
         return value
 
@@ -157,7 +165,8 @@ class ConfigManager:
         else:
             # Check if cache expired by trying to reload
             self._load_config()
-        return self._config_data.get(key, default)
+        raw = self._config_data.get(key, default)
+        return self._convert_value(raw) if raw is not default else default
 
     def reload(self):
         """Force reload configuration data from the database."""
@@ -165,10 +174,10 @@ class ConfigManager:
         self._fetch_from_database()
 
     def get_all(self) -> dict:
-        """Return all configuration data as a dictionary."""
+        """Return all configuration data as a dictionary with values converted."""
         if not self._config_data:
             self._load_config()
-        return self._config_data.copy()
+        return {key: self._convert_value(value) for key, value in self._config_data.items()}
 
     def __getattr__(self, name: str) -> Any:
         """

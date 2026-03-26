@@ -80,7 +80,7 @@ class ApiClient {
 
     // Main API call method
     async makeRequest(url, options = {}) {
-        $('#loader').fadeIn()
+        if (!options.silent) $('#loader').fadeIn()
         const accessToken = this.getAccessToken();
         const csrfToken = this.getCSRFToken();
         // Prepare request options
@@ -100,7 +100,7 @@ class ApiClient {
 
             // If request is successful, return the data
             if (response.ok) {
-                $('#loader').fadeOut()
+                if (!options.silent) $('#loader').fadeOut()
                 return data;
             }
 
@@ -108,12 +108,12 @@ class ApiClient {
             if (response.status === 401) {
                 return await this.handleTokenRefresh(url, options);
             }
-            $('#loader').fadeOut()
+            if (!options.silent) $('#loader').fadeOut()
             // For other errors, return the error response
             return data;
 
         } catch (error) {
-            $('#loader').fadeOut()
+            if (!options.silent) $('#loader').fadeOut()
             return {
                 status: 'failed',
                 error: error.message || 'Network error occurred'

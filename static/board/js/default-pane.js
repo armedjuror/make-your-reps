@@ -5,8 +5,9 @@
 
 const DefaultPane = {
     searchEngines: [],
-    currentEngine: USER_DETAIL.default_search_engine || 'google',
+    currentEngine: 'google',
     init() {
+        this.currentEngine = AppConfig.userDetail?.default_search_engine || 'google';
         General.updateGreeting();
         General.startClock();
         General.loadProductivityScore();

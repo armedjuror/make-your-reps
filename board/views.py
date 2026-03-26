@@ -28,14 +28,7 @@ from main.utils import NoDestroyViewSet, AuthenticatedModelViewSet
 def dashboard(request):
     """Single unified dashboard view serving all panes."""
     if request.user.is_authenticated:
-        configs = get_config().get_all()
-        user_detail, _ = UserDetail.objects.get_or_create(user=request.user)
-        context = {
-            'user_detail': UserDetailSerializer(user_detail).data,
-            'host': os.environ.get("HOST", "http://127.0.0.1:8000/"),
-        }
-        context.update(configs)
-        return render(request, 'board/dashboard.html', context=context)
+        return render(request, 'board/dashboard.html')
     else:
         return redirect('/')
 
@@ -60,7 +53,11 @@ class UserDetailView(APIView):
         user_detail, _ = UserDetail.objects.get_or_create(user_id=user_id)
         return Response({
             'status': 'success',
-            'data': UserDetailSerializer(user_detail).data
+            'data': {
+                **UserDetailSerializer(user_detail).data,
+                'first_name': user_detail.user.first_name,
+                'last_name': user_detail.user.last_name,
+            }
         })
 
     def put(self, request):
@@ -79,6 +76,37 @@ class UserDetailView(APIView):
             'status': 'failed',
             'error': serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DashboardConfigView(APIView):
+    def get(self, request):
+        if not request.session.get('user_id'):
+            return Response({'status': 'failed', 'error': 'Not authenticated'}, status=401)
+        configs = get_config().get_all()
+        return Response({
+            'status': 'success',
+            'data': {
+                'greetings': {
+                    'night': configs.get('board_greetings_night', []),
+                    'morning': configs.get('board_greetings_morning', []),
+                    'afternoon': configs.get('board_greetings_afternoon', []),
+                    'evening': configs.get('board_greetings_evening', []),
+                },
+                'messages': {
+                    'night': configs.get('board_messages_night', []),
+                    'morning': configs.get('board_messages_morning', []),
+                    'afternoon': configs.get('board_messages_afternoon', []),
+                    'evening': configs.get('board_messages_evening', []),
+                },
+                'section_titles': {
+                    'tasks': configs.get('board_tasks_title', 'Tasks'),
+                    'habits': configs.get('board_habits_title', 'Habits'),
+                    'routines': configs.get('board_routines_title', 'Routines'),
+                    'sleep_tracker': configs.get('board_sleep_tracker_title', 'Sleep Tracker'),
+                },
+                'copyright_text': configs.get('copyright_text', ''),
+            }
+        })
 
 
 class TaskGroupViewSet(AuthenticatedModelViewSet):

@@ -18,7 +18,7 @@ const Settings = {
         const select = document.getElementById('searchEngineSelect');
         if (!select) return;
         select.innerHTML = this.searchEngines.map(e =>
-            `<option value="${e.key}" ${e.key === (USER_DETAIL.default_search_engine || 'google') ? 'selected' : ''}>${e.name}</option>`
+            `<option value="${e.key}" ${e.key === (AppConfig.userDetail?.default_search_engine || 'google') ? 'selected' : ''}>${e.name}</option>`
         ).join('');
     },
 
@@ -32,14 +32,14 @@ const Settings = {
 
     changeFont() {
         const font = document.getElementById('fontSelect').value;
-        USER_DETAIL.font_family = font;
+        if (AppConfig.userDetail) AppConfig.userDetail.font_family = font;
         applyFont(font);
         apiClient.put('board/api/user_details/', { font_family: font });
     },
 
     changeClockFormat() {
         const format = document.getElementById('clockFormatSelect').value;
-        USER_DETAIL.clock_format = format;
+        if (AppConfig.userDetail) AppConfig.userDetail.clock_format = format;
         document.body.setAttribute('data-clock', format);
         apiClient.put('board/api/user_details/', { clock_format: format });
         // Refresh the clock display
@@ -48,7 +48,7 @@ const Settings = {
 
     changeSearchEngine() {
         const engine = document.getElementById('searchEngineSelect').value;
-        USER_DETAIL.default_search_engine = engine;
+        if (AppConfig.userDetail) AppConfig.userDetail.default_search_engine = engine;
         DefaultPane.currentEngine = engine;
         DefaultPane.updateSearchIcon();
         DefaultPane.buildSearchDropdown();
@@ -57,7 +57,7 @@ const Settings = {
 
     changeSleepTime() {
         const time = document.getElementById('sleepTimeInput').value;
-        USER_DETAIL.sleep_time = time || null;
+        if (AppConfig.userDetail) AppConfig.userDetail.sleep_time = time || null;
         apiClient.put('board/api/user_details/', { sleep_time: time || null });
     },
 
@@ -85,8 +85,10 @@ const Settings = {
     saveSoundSettings() {
         const pomSound = document.getElementById('soundPomodoro').checked;
         const notifSound = document.getElementById('soundNotifications').checked;
-        USER_DETAIL.sound_pomodoro = pomSound;
-        USER_DETAIL.sound_notifications = notifSound;
+        if (AppConfig.userDetail) {
+            AppConfig.userDetail.sound_pomodoro = pomSound;
+            AppConfig.userDetail.sound_notifications = notifSound;
+        }
         apiClient.put('board/api/user_details/', {
             sound_pomodoro: pomSound,
             sound_notifications: notifSound,

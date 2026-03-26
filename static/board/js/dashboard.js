@@ -5,7 +5,7 @@
 
 let currentPane = 'home';
 let panesLoaded = { home: false, todos: false, trackers: false, journals: false };
-let currentTheme = USER_DETAIL.default_theme || 'light';
+let currentTheme = 'light';
 
 // ── Pane Switching ──
 function switchPane(pane) {
@@ -117,21 +117,20 @@ const General = {
         const hour = now.getHours();
         let greeting, message = '';
         let greetings, messages;
+        const G = AppConfig.dashboardConfig?.greetings || {};
+        const M = AppConfig.dashboardConfig?.messages || {};
         if (hour < 4 || hour > 22) {
-            greetings = GREETINGS.night;
-            messages = MESSAGES.night;
+            greetings = G.night;
+            messages = M.night;
         } else if (hour < 9) {
-            greetings = GREETINGS.morning;
-            messages = MESSAGES.morning;
+            greetings = G.morning;
+            messages = M.morning;
         } else if (hour < 17) {
-            console.log("Here")
-            console.log(GREETINGS)
-            greetings = GREETINGS.afternoon;
-            console.log(greetings)
-            messages = MESSAGES.afternoon;
+            greetings = G.afternoon;
+            messages = M.afternoon;
         } else {
-            greetings = GREETINGS.evening;
-            messages = MESSAGES.evening;
+            greetings = G.evening;
+            messages = M.evening;
         }
 
         greeting = greetings[Math.floor(Math.random() * greetings.length)];
@@ -191,21 +190,20 @@ document.addEventListener('DOMContentLoaded', function () {
     // Set year
     document.getElementById('year').innerText = new Date().getFullYear();
 
-    // Apply font
-    applyFont(USER_DETAIL.font_family || 'Montserrat');
-
-    // Check hash for initial pane
     const hash = window.location.hash.replace('#', '') || 'home';
-    const validPanes =  ['home', 'todos', 'trackers', 'journals'];
+    const validPanes = ['home', 'todos', 'trackers', 'journals'];
     const initialPane = validPanes.includes(hash) ? hash : 'home';
 
-    // Always init home first
-    panesLoaded.home = true;
-    initHomePane();
+    AppConfig.load().then(() => {
+        currentTheme = AppConfig.userDetail?.default_theme || 'light';
 
-    if (initialPane !== 'home') {
-        switchPane(initialPane);
-    }
+        panesLoaded.home = true;
+        initHomePane();
+
+        if (initialPane !== 'home') {
+            switchPane(initialPane);
+        }
+    });
 });
 
 // Listen for hash changes

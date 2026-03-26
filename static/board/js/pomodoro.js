@@ -8,11 +8,12 @@ const Pomodoro = {
     audioCtx: null,
 
     defaults() {
+        const d = AppConfig.userDetail || {};
         return {
-            focusMin: USER_DETAIL.pomodoro_focus || 25,
-            breakMin: USER_DETAIL.pomodoro_break || 5,
-            longBreakMin: USER_DETAIL.pomodoro_long_break || 15,
-            cycles: USER_DETAIL.pomodoro_cycles || 4,
+            focusMin: d.pomodoro_focus || 25,
+            breakMin: d.pomodoro_break || 5,
+            longBreakMin: d.pomodoro_long_break || 15,
+            cycles: d.pomodoro_cycles || 4,
         };
     },
 
