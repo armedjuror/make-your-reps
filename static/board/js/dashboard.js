@@ -96,18 +96,92 @@ document.addEventListener('keydown', function (e) {
     }
 });
 
-// Search bar enter key
-document.addEventListener('DOMContentLoaded', function () {
-    const searchInput = document.getElementById('search-input');
-    if (searchInput) {
-        searchInput.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                DefaultPane.doSearch();
-            }
-        });
-    }
-});
+// ── Event Listeners ──
+function bindEvents() {
+    // Navigation — desktop tab bar
+    document.querySelectorAll('.tab-item[data-pane]').forEach(item => {
+        item.addEventListener('click', () => switchPane(item.dataset.pane));
+    });
+    document.getElementById('tab-theme-btn').addEventListener('click', toggleTheme);
+    document.getElementById('tab-settings-btn').addEventListener('click', showSettings);
+
+    // Navigation — mobile menu
+    document.getElementById('hamburger-btn').addEventListener('click', toggleMobileMenu);
+    document.getElementById('mobile-menu-overlay').addEventListener('click', closeMobileMenu);
+    document.getElementById('mobile-menu-close-btn').addEventListener('click', closeMobileMenu);
+    document.querySelectorAll('.mobile-menu-item[data-pane]').forEach(item => {
+        item.addEventListener('click', () => { switchPane(item.dataset.pane); closeMobileMenu(); });
+    });
+    document.getElementById('mobile-theme-btn').addEventListener('click', () => { toggleTheme(); closeMobileMenu(); });
+    document.getElementById('mobile-settings-btn').addEventListener('click', () => { showSettings(); closeMobileMenu(); });
+
+    // Pomodoro
+    document.getElementById('pomodoro-start').addEventListener('click', () => Pomodoro.toggle());
+    document.getElementById('pomodoro-reset').addEventListener('click', () => Pomodoro.reset());
+    document.getElementById('pomodoro-toggle-mode').addEventListener('click', () => Pomodoro.toggleMode());
+
+    // Search
+    document.getElementById('search-engine-btn').addEventListener('click', toggleSearchEngineDropdown);
+    document.getElementById('search-input').addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); DefaultPane.doSearch(); }
+    });
+
+    // Home — habits & routines & sleep
+    document.getElementById('new-habit-btn').addEventListener('click', () => Habits.showHabitModal());
+    document.getElementById('workday_routine_button').addEventListener('click', () => showRoutine('workday'));
+    document.getElementById('holiday_routine_button').addEventListener('click', () => showRoutine('holiday'));
+    document.getElementById('edit-routine-btn').addEventListener('click', editRoutine);
+    document.getElementById('add-sleep-btn').addEventListener('click', openSleepModal);
+
+    // Journal pane
+    document.getElementById('journal-prev-month').addEventListener('click', () => JournalPane.prevMonth());
+    document.getElementById('journal-today').addEventListener('click', () => JournalPane.goToday());
+    document.getElementById('journal-next-month').addEventListener('click', () => JournalPane.nextMonth());
+    document.getElementById('journal-editor').addEventListener('focusout', updateJournal);
+
+    // Todos pane
+    document.getElementById('todos-add-group-btn').addEventListener('click', () => TodosPane.showAddGroupModal());
+    document.querySelector('.todos-group-item[data-group="all"]').addEventListener('click', () => TodosPane.selectGroup('all'));
+    document.querySelector('.todos-filters').addEventListener('click', e => {
+        const btn = e.target.closest('.todo-filter[data-filter]');
+        if (btn) TodosPane.setFilter(btn.dataset.filter);
+    });
+    document.getElementById('todos-add-task-btn').addEventListener('click', () => TodosPane.addTask());
+
+    // Modal — Todo
+    document.getElementById('todoSaveBtn').addEventListener('click', () => Todo.saveTodo());
+
+    // Modal — Habit add
+    document.getElementById('habit-save-btn').addEventListener('click', () => Habits.saveHabit());
+
+    // Modal — Habit settings
+    document.getElementById('habit-toggle-edit-btn').addEventListener('click', toggleEditForm);
+    document.getElementById('habit-hallmark-btn').addEventListener('click', hallmarkHabit);
+    document.getElementById('habit-delete-btn').addEventListener('click', deleteHabit);
+    document.getElementById('assign-partner-btn').addEventListener('click', assignPartner);
+    document.getElementById('habit-cancel-edit-btn').addEventListener('click', cancelEdit);
+    document.getElementById('habit-save-changes-btn').addEventListener('click', saveHabitChanges);
+    document.getElementById('partner-cancel-btn').addEventListener('click', cancelPartnerEdit);
+    document.getElementById('partner-save-btn').addEventListener('click', savePartnerSettings);
+
+    // Modal — Hallmark & Delete confirmation
+    document.getElementById('hallmark-confirm-btn').addEventListener('click', confirmHallmark);
+    document.getElementById('delete-confirm-btn').addEventListener('click', confirmDelete);
+
+    // Modal — Sleep
+    document.getElementById('save-sleep-btn').addEventListener('click', saveSleepEntry);
+
+    // Modal — Routine editor
+    document.getElementById('routine-add-row-btn').addEventListener('click', () => RoutineEditor.addRow());
+    document.getElementById('routine-save-btn').addEventListener('click', () => RoutineEditor.save());
+
+    // Modal — Reading list
+    document.getElementById('rlDeleteBtn').addEventListener('click', () => ReadingList.deleteSelected());
+    document.getElementById('reading-list-save-btn').addEventListener('click', () => ReadingList.save());
+
+    // Modal — Group
+    document.getElementById('group-save-btn').addEventListener('click', () => TodosPane.saveGroup());
+}
 
 
 const General = {
@@ -187,6 +261,8 @@ const General = {
 
 // ── Initialize ──
 document.addEventListener('DOMContentLoaded', function () {
+    bindEvents();
+
     // Set year
     document.getElementById('year').innerText = new Date().getFullYear();
 

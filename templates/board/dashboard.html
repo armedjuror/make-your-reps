@@ -27,33 +27,33 @@
     </div>
 
     <!-- ═══════════════════════════════════════════ -->
-    <!-- BOTTOM TAB BAR                              -->
+    <!-- TAB BAR                              -->
     <!-- ═══════════════════════════════════════════ -->
     <nav class="tab-bar" id="tab-bar">
         <!-- Desktop nav items -->
         <div class="tab-nav-group" id="tab-nav-group">
-            <a class="tab-item active" data-pane="home" onclick="switchPane('home')">
+            <a class="tab-item active" data-pane="home">
                 <i class="fas fa-home"></i>
                 <span>Home</span>
             </a>
-            <a class="tab-item" data-pane="todos" onclick="switchPane('todos')">
+            <a class="tab-item" data-pane="todos">
                 <i class="fas fa-tasks"></i>
                 <span>Todos</span>
             </a>
-            <a class="tab-item" data-pane="trackers" onclick="switchPane('trackers')">
+            <a class="tab-item" data-pane="trackers">
                 <i class="fas fa-chart-line"></i>
                 <span>Trackers</span>
             </a>
 
-            <a class="tab-item" data-pane="journals" onclick="switchPane('journals')">
+            <a class="tab-item" data-pane="journals">
                 <i class="fas fa-book"></i>
                 <span>Journals</span>
             </a>
-            <a class="tab-item" onclick="toggleTheme()">
+            <a class="tab-item" id="tab-theme-btn">
                 <i class="fas fa-moon" id="themeIcon"></i>
                 <span>Theme</span>
             </a>
-            <a class="tab-item" onclick="showSettings()">
+            <a class="tab-item" id="tab-settings-btn">
                 <i class="fas fa-cog"></i>
                 <span>Settings</span>
             </a>
@@ -75,33 +75,33 @@
             <div class="tab-item home-datetime" id="home-datetime"></div>
         </div>
         <!-- Mobile: hamburger -->
-        <button class="hamburger-btn" id="hamburger-btn" onclick="toggleMobileMenu()">
+        <button class="hamburger-btn" id="hamburger-btn">
             <i class="fas fa-bars"></i>
         </button>
     </nav>
 
     <!-- Mobile slide-out menu -->
-    <div class="mobile-menu-overlay" id="mobile-menu-overlay" onclick="closeMobileMenu()"></div>
+    <div class="mobile-menu-overlay" id="mobile-menu-overlay"></div>
     <div class="mobile-menu" id="mobile-menu">
         <div class="mobile-menu-header">
-            <button class="mobile-menu-close" onclick="closeMobileMenu()"><i class="fas fa-times"></i></button>
+            <button class="mobile-menu-close" id="mobile-menu-close-btn"><i class="fas fa-times"></i></button>
         </div>
-        <a class="mobile-menu-item active" data-pane="home" onclick="switchPane('home'); closeMobileMenu()">
+        <a class="mobile-menu-item active" data-pane="home">
             <i class="fas fa-home"></i> Home
         </a>
-        <a class="mobile-menu-item" data-pane="todos" onclick="switchPane('todos'); closeMobileMenu()">
-            v<i class="fas fa-tasks"></i> Todos
+        <a class="mobile-menu-item" data-pane="todos">
+            <i class="fas fa-tasks"></i> Todos
         </a>
-        <a class="mobile-menu-item" data-pane="trackers" onclick="switchPane('trackers'); closeMobileMenu()">
+        <a class="mobile-menu-item" data-pane="trackers">
             <i class="fas fa-chart-line"></i> Trackers
         </a>
-        <a class="mobile-menu-item" data-pane="journals" onclick="switchPane('journals'); closeMobileMenu()">
+        <a class="mobile-menu-item" data-pane="journals">
             <i class="fas fa-book"></i> Journals
         </a>
-        <a class="mobile-menu-item" onclick="toggleTheme(); closeMobileMenu()">
+        <a class="mobile-menu-item" id="mobile-theme-btn">
             <i class="fas fa-circle-half-stroke"></i> Toggle Theme
         </a>
-        <a class="mobile-menu-item" onclick="showSettings(); closeMobileMenu()">
+        <a class="mobile-menu-item" id="mobile-settings-btn">
             <i class="fas fa-cog"></i> Settings
         </a>
     </div>
@@ -133,13 +133,13 @@
                             <span class="pomodoro-mode" id="pomodoro-mode">Focus</span>
                             <span class="pomodoro-time" id="pomodoro-time">25:00</span>
                         </div>
-                        <button class="btn btn-paper btn-primary btn-sm" id="pomodoro-start" onclick="Pomodoro.toggle()">
+                        <button class="btn btn-paper btn-primary btn-sm" id="pomodoro-start">
                             <i class="fas fa-play"></i>
                         </button>
-                        <button class="btn btn-paper btn-sm" id="pomodoro-reset" onclick="Pomodoro.reset()">
+                        <button class="btn btn-paper btn-sm" id="pomodoro-reset">
                             <i class="fas fa-redo"></i>
                         </button>
-                        <button class="btn btn-paper btn-sm" id="pomodoro-toggle-mode" onclick="Pomodoro.toggleMode()">
+                        <button class="btn btn-paper btn-sm" id="pomodoro-toggle-mode">
                             <i class="fas fa-coffee"></i>
                         </button>
                     </div>
@@ -162,7 +162,7 @@
                                placeholder="Search (Ctrl+k: Search, Ctrl+;: Todo, Ctrl+h: New Habit, Ctrl+j: Journal)"
                                autocomplete="off">
                         <div class="search-engine-dropdown" id="search-engine-dropdown"></div>
-                        <div class="search-engine-select" id="search-engine-btn" onclick="toggleSearchEngineDropdown()">
+                        <div class="search-engine-select" id="search-engine-btn">
                         <i class="fab fa-google" id="search-engine-icon"></i>
                     </div>
                     </div>
@@ -222,7 +222,7 @@
                                 <h3 class="section-title" id="section-title-habits">Habits</h3>
                             </div>
                             <div class="col-md-6 text-end">
-                                <button class="btn btn-paper btn-primary btn-sm" onclick="Habits.showHabitModal()">New Habit <i class="fa fa-add"></i></button>
+                                <button class="btn btn-paper btn-primary btn-sm" id="new-habit-btn">New Habit <i class="fa fa-add"></i></button>
                             </div>
                         </div>
                         <div class="habit-tracker" id="habitTracker">
@@ -240,22 +240,22 @@
                     <div class="section">
                         <h3 class="section-title" id="section-title-routines">Routines</h3>
                         <div class="routine-tabs">
-                            <button class="routine-tab active" onclick="showRoutine('workday')" id="workday_routine_button">Workday</button>
-                            <button class="routine-tab" onclick="showRoutine('holiday')" id="holiday_routine_button">Holiday</button>
+                            <button class="routine-tab active" id="workday_routine_button">Workday</button>
+                            <button class="routine-tab" id="holiday_routine_button">Holiday</button>
                         </div>
                         <div id="routine-list">
                             <div class="mt-4">
                                 <div class="notebook-spinner"></div>
                             </div>
                         </div>
-                        <button class="btn btn-paper btn-primary mt-3" onclick="editRoutine()">Edit Routine</button>
+                        <button class="btn btn-paper btn-primary mt-3" id="edit-routine-btn">Edit Routine</button>
                     </div>
 
                     <!-- Sleep Tracker -->
                     <div class="section">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <h3 class="section-title mb-0" id="section-title-sleep">Sleep Tracker</h3>
-                            <button class="btn btn-paper btn-sm btn-primary" onclick="openSleepModal()">
+                            <button class="btn btn-paper btn-sm btn-primary" id="add-sleep-btn">
                                 <i class="fas fa-plus"></i> Add Entry
                             </button>
                         </div>
@@ -280,9 +280,9 @@
                     <div class="calendar-header">
                         <h3 class="section-title mb-0" id="journal-month-title">July 2025</h3>
                         <div class="calendar-nav">
-                            <button class="btn btn-paper btn-sm" onclick="JournalPane.prevMonth()"><i class="fas fa-chevron-left"></i></button>
-                            <button class="btn btn-paper btn-sm" onclick="JournalPane.goToday()">Today</button>
-                            <button class="btn btn-paper btn-sm" onclick="JournalPane.nextMonth()"><i class="fas fa-chevron-right"></i></button>
+                            <button class="btn btn-paper btn-sm" id="journal-prev-month"><i class="fas fa-chevron-left"></i></button>
+                            <button class="btn btn-paper btn-sm" id="journal-today">Today</button>
+                            <button class="btn btn-paper btn-sm" id="journal-next-month"><i class="fas fa-chevron-right"></i></button>
                         </div>
                     </div>
                     <div class="calendar-grid" id="journal-calendar-grid"></div>
@@ -302,7 +302,7 @@
                     <textarea class="form-control journal-area" placeholder="How was your day today?
 What did you learn? What are you grateful for?
 
-Write freely here, like you're writing in your personal journal..." id="journal-editor" onfocusout="updateJournal()" rows="20"></textarea>
+Write freely here, like you're writing in your personal journal..." id="journal-editor" rows="20"></textarea>
                 </div>
             </div>
         </div>
@@ -318,12 +318,12 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                 <div class="todos-sidebar">
                     <div class="todos-sidebar-header">
                         <h3 class="section-title-sm mb-0">Groups</h3>
-                        <button class="btn btn-paper btn-sm btn-primary" onclick="TodosPane.showAddGroupModal()">
+                        <button class="btn btn-paper btn-sm btn-primary" id="todos-add-group-btn">
                             <i class="fas fa-plus"></i>
                         </button>
                     </div>
                     <div class="todos-group-list" id="todos-group-list">
-                        <div class="todos-group-item active" data-group="all" onclick="TodosPane.selectGroup('all')">
+                        <div class="todos-group-item active" data-group="all">
                             <span class="group-name">All</span>
                             <span class="group-count" id="group-count-all">0</span>
                         </div>
@@ -336,16 +336,16 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                     <div class="todos-main-header">
                         <h3 class="section-title" id="todos-current-group-title">All Tasks</h3>
                         <div class="todos-filters">
-                            <button class="btn btn-paper btn-sm todo-filter active" data-filter="pending" onclick="TodosPane.setFilter('pending')">Pending</button>
-                            <button class="btn btn-paper btn-sm todo-filter" data-filter="done" onclick="TodosPane.setFilter('done')">Done</button>
-                            <button class="btn btn-paper btn-sm todo-filter" data-filter="all" onclick="TodosPane.setFilter('all')">All</button>
+                            <button class="btn btn-paper btn-sm todo-filter active" data-filter="pending">Pending</button>
+                            <button class="btn btn-paper btn-sm todo-filter" data-filter="done">Done</button>
+                            <button class="btn btn-paper btn-sm todo-filter" data-filter="all">All</button>
                         </div>
                     </div>
                     <div class="todos-add-bar">
                         <input type="text" class="form-control" id="todoPaneInput" placeholder="Add a new task...">
                         <select class="form-control todos-group-select" id="todoPaneGroupSelect"></select>
                         <input type="datetime-local" class="form-control todos-deadline-input" id="todoPaneDeadline">
-                        <button class="btn btn-paper btn-primary" onclick="TodosPane.addTask()">Add</button>
+                        <button class="btn btn-paper btn-primary" id="todos-add-task-btn">Add</button>
                     </div>
                     <div class="todos-list" id="todos-pane-list">
                         <div class="mt-4 text-center">
@@ -515,7 +515,7 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-paper" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-paper btn-primary" id="todoSaveBtn" onclick="Todo.saveTodo()">Add Task</button>
+                    <button type="button" class="btn btn-paper btn-primary" id="todoSaveBtn">Add Task</button>
                 </div>
             </div>
         </div>
@@ -565,7 +565,7 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-paper" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-paper btn-primary" onclick="Habits.saveHabit()">Create Habit</button>
+                    <button type="button" class="btn btn-paper btn-primary" id="habit-save-btn">Create Habit</button>
                 </div>
             </div>
         </div>
@@ -634,7 +634,7 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                 <div class="habit-actions mt-4">
                     <div class="row">
                         <div class="col-lg-4 col-md-6 mb-3">
-                            <button type="button" class="btn habit-action-btn" onclick="toggleEditForm()">
+                            <button type="button" class="btn habit-action-btn" id="habit-toggle-edit-btn">
                                 <i class="fas fa-edit"></i>
                                 <span class="btn-text">Adjust Habit</span>
                                 <small class="btn-subtitle">Modify your habit details</small>
@@ -648,14 +648,14 @@ Write freely here, like you're writing in your personal journal..." id="journal-
 {#                            </button>#}
 {#                        </div>#}
                         <div class="col-lg-4 col-md-6 mb-3">
-                            <button type="button" class="btn habit-action-btn" onclick="hallmarkHabit()">
+                            <button type="button" class="btn habit-action-btn" id="habit-hallmark-btn">
                                 <i class="fas fa-star"></i>
                                 <span class="btn-text">Hallmark Habit</span>
                                 <small class="btn-subtitle">Mark as successfully formed</small>
                             </button>
                         </div>
                         <div class="col-lg-4 col-md-6 mb-3">
-                            <button type="button" class="btn habit-action-btn" onclick="deleteHabit()">
+                            <button type="button" class="btn habit-action-btn" id="habit-delete-btn">
                                 <i class="fas fa-trash"></i>
                                 <span class="btn-text">Delete Habit</span>
                                 <small class="btn-subtitle">Remove this habit</small>
@@ -684,7 +684,7 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                                            class="form-control"
                                            id="partnerEmail"
                                            placeholder="Enter partner's email address">
-                                    <button class="btn btn-paper btn-primary" onclick="assignPartner()">
+                                    <button class="btn btn-paper btn-primary" id="assign-partner-btn">
                                         <i class="fas fa-plus"></i> Assign
                                     </button>
                                 </div>
@@ -720,14 +720,14 @@ Write freely here, like you're writing in your personal journal..." id="journal-
 
                 <!-- Save/Cancel buttons for edit mode -->
                 <div id="editActions" class="text-end mt-3" style="display: none;">
-                    <button type="button" class="btn btn-paper me-2" onclick="cancelEdit()">Cancel</button>
-                    <button type="button" class="btn btn-paper btn-primary" onclick="saveHabitChanges()">Save Changes</button>
+                    <button type="button" class="btn btn-paper me-2" id="habit-cancel-edit-btn">Cancel</button>
+                    <button type="button" class="btn btn-paper btn-primary" id="habit-save-changes-btn">Save Changes</button>
                 </div>
 
                 <!-- Partner Section Actions -->
                 <div id="partnerActions" class="text-end mt-3" style="display: none;">
-                    <button type="button" class="btn btn-paper me-2" onclick="cancelPartnerEdit()">Close</button>
-                    <button type="button" class="btn btn-paper btn-primary" onclick="savePartnerSettings()">Save Settings</button>
+                    <button type="button" class="btn btn-paper me-2" id="partner-cancel-btn">Close</button>
+                    <button type="button" class="btn btn-paper btn-primary" id="partner-save-btn">Save Settings</button>
                 </div>
             </div>
         </div>
@@ -748,7 +748,7 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-paper" data-bs-dismiss="modal">Not Yet</button>
-                    <button type="button" class="btn btn-paper btn-success" onclick="confirmHallmark()"><i class="fas fa-star me-2"></i>Hallmark It!</button>
+                    <button type="button" class="btn btn-paper btn-success" id="hallmark-confirm-btn"><i class="fas fa-star me-2"></i>Hallmark It!</button>
                 </div>
             </div>
         </div>
@@ -767,7 +767,7 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-paper" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-paper btn-danger" onclick="confirmDelete()">Delete</button>
+                    <button type="button" class="btn btn-paper btn-danger" id="delete-confirm-btn">Delete</button>
                 </div>
             </div>
         </div>
@@ -793,7 +793,7 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-paper" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-paper btn-primary" onclick="saveSleepEntry()">Save Entry</button>
+                    <button type="button" class="btn btn-paper btn-primary" id="save-sleep-btn">Save Entry</button>
                 </div>
             </div>
         </div>
@@ -811,13 +811,13 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                     <div id="routineEntries">
                         <!-- Dynamic routine entry rows -->
                     </div>
-                    <button class="btn btn-paper btn-sm mt-2" onclick="RoutineEditor.addRow()">
+                    <button class="btn btn-paper btn-sm mt-2" id="routine-add-row-btn">
                         <i class="fas fa-plus me-1"></i>Add Entry
                     </button>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-paper" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-paper btn-primary" onclick="RoutineEditor.save()">Save Changes</button>
+                    <button type="button" class="btn btn-paper btn-primary" id="routine-save-btn">Save Changes</button>
                 </div>
             </div>
         </div>
@@ -853,9 +853,9 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                     <input type="hidden" id="rlEditId" value="">
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-paper btn-danger me-auto" id="rlDeleteBtn" style="display:none;" onclick="ReadingList.deleteSelected()"><i class="fas fa-trash me-1"></i>Delete</button>
+                    <button type="button" class="btn btn-paper btn-danger me-auto" id="rlDeleteBtn" style="display:none;"><i class="fas fa-trash me-1"></i>Delete</button>
                     <button type="button" class="btn btn-paper" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-paper btn-primary" onclick="ReadingList.save()">Save</button>
+                    <button type="button" class="btn btn-paper btn-primary" id="reading-list-save-btn">Save</button>
                 </div>
             </div>
         </div>
@@ -932,7 +932,7 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-paper" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-paper btn-primary" onclick="TodosPane.saveGroup()">Save</button>
+                    <button type="button" class="btn btn-paper btn-primary" id="group-save-btn">Save</button>
                 </div>
             </div>
         </div>
