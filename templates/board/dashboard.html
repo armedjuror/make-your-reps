@@ -298,7 +298,10 @@
                     </div>
                 </div>
                 <div class="journal-editor-section">
-                    <h3 class="section-title">Today's Journal</h3>
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <h3 class="section-title mb-0">Today's Journal</h3>
+                        <span id="journal-save-status" class="journal-save-status"></span>
+                    </div>
                     <textarea class="form-control journal-area" placeholder="How was your day today?
 What did you learn? What are you grateful for?
 
@@ -397,14 +400,14 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Theme</label>
-                                <select class="form-control" id="themeSelect" onchange="Settings.changeTheme()">
+                                <select class="form-control" id="themeSelect">
                                     <option value="light">Light</option>
                                     <option value="dark">Dark</option>
                                 </select>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Font</label>
-                                <select class="form-control" id="fontSelect" onchange="Settings.changeFont()">
+                                <select class="form-control" id="fontSelect">
                                     <option value="Montserrat">Montserrat</option>
                                     <option value="Lato">Lato</option>
                                     <option value="JetBrains Mono">JetBrains Mono</option>
@@ -412,19 +415,19 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Clock Format</label>
-                                <select class="form-control" id="clockFormatSelect" onchange="Settings.changeClockFormat()">
+                                <select class="form-control" id="clockFormatSelect">
                                     <option value="12h">12 Hour</option>
                                     <option value="24h">24 Hour</option>
                                 </select>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Default Search Engine</label>
-                                <select class="form-control" id="searchEngineSelect" onchange="Settings.changeSearchEngine()">
+                                <select class="form-control" id="searchEngineSelect">
                                 </select>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Sleep Time</label>
-                                <input type="time" class="form-control" id="sleepTimeInput" onchange="Settings.changeSleepTime()">
+                                <input type="time" class="form-control" id="sleepTimeInput">
                                 <small class="form-text text-muted">Used for journal reminder & sleep notification</small>
                             </div>
                             <div class="mb-3">
@@ -436,19 +439,19 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                         <div class="tab-pane fade" id="settings-pomodoro">
                             <div class="mb-3">
                                 <label class="form-label">Focus Duration (minutes)</label>
-                                <input type="number" class="form-control" id="pomFocus" min="1" max="120" onchange="Settings.savePomodoroSettings()">
+                                <input type="number" class="form-control" id="pomFocus" min="1" max="120">
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Break Duration (minutes)</label>
-                                <input type="number" class="form-control" id="pomBreak" min="1" max="60" onchange="Settings.savePomodoroSettings()">
+                                <input type="number" class="form-control" id="pomBreak" min="1" max="60">
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Long Break Duration (minutes)</label>
-                                <input type="number" class="form-control" id="pomLongBreak" min="1" max="60" onchange="Settings.savePomodoroSettings()">
+                                <input type="number" class="form-control" id="pomLongBreak" min="1" max="60">
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Cycles Before Long Break</label>
-                                <input type="number" class="form-control" id="pomCycles" min="1" max="10" onchange="Settings.savePomodoroSettings()">
+                                <input type="number" class="form-control" id="pomCycles" min="1" max="10">
                             </div>
                         </div>
 
@@ -456,13 +459,13 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                         <div class="tab-pane fade" id="settings-sounds">
                             <div class="mb-3">
                                 <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="soundPomodoro" onchange="Settings.saveSoundSettings()">
+                                    <input class="form-check-input" type="checkbox" id="soundPomodoro">
                                     <label class="form-check-label" for="soundPomodoro">Pomodoro sounds (start, pause, end, state change)</label>
                                 </div>
                             </div>
                             <div class="mb-3">
                                 <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="soundNotifications" onchange="Settings.saveSoundSettings()">
+                                    <input class="form-check-input" type="checkbox" id="soundNotifications">
                                     <label class="form-check-label" for="soundNotifications">Notification sounds (timeline alerts, sleep reminder)</label>
                                 </div>
                             </div>

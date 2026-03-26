@@ -895,6 +895,14 @@
     min-height: 500px;
 }
 
+.journal-save-status {
+    font-size: 0.75rem;
+    opacity: 0.6;
+    transition: opacity 0.3s;
+}
+.journal-save-status.saved { color: var(--accent-green, #4caf50); opacity: 0.8; }
+.journal-save-status.unsaved { color: var(--accent-orange, #ff9800); opacity: 0.9; }
+
 .journal-calendar-section {
     flex: 1;
     display: flex;

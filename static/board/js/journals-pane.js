@@ -149,8 +149,21 @@ function updateJournal() {
     const dateStr = customDate || getDate(new Date());
     const journal = editor.value;
 
-    apiClient.put(`board/api/daily_data/${dateStr}/`, { journal }).then(res => {
-        if (res.status !== 'success') {
+    const statusEl = document.getElementById('journal-save-status');
+
+    apiClient.put(`board/api/daily_data/${dateStr}/`, { journal }, { silent: true }).then(res => {
+        if (res.status === 'success') {
+            if (statusEl) {
+                statusEl.textContent = 'Saved';
+                statusEl.className = 'journal-save-status saved';
+                setTimeout(() => { statusEl.textContent = ''; statusEl.className = 'journal-save-status'; }, 2000);
+            }
+        } else if (res.error && res.error.toLowerCase().includes('network')) {
+            if (statusEl) {
+                statusEl.textContent = 'Not saved — check connection';
+                statusEl.className = 'journal-save-status unsaved';
+            }
+        } else {
             showError(res.error);
         }
     });

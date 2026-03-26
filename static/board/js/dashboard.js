@@ -181,6 +181,22 @@ function bindEvents() {
 
     // Modal — Group
     document.getElementById('group-save-btn').addEventListener('click', () => TodosPane.saveGroup());
+
+    // Settings — general
+    document.getElementById('themeSelect').addEventListener('change', () => Settings.changeTheme());
+    document.getElementById('fontSelect').addEventListener('change', () => Settings.changeFont());
+    document.getElementById('clockFormatSelect').addEventListener('change', () => Settings.changeClockFormat());
+    document.getElementById('searchEngineSelect').addEventListener('change', () => Settings.changeSearchEngine());
+    document.getElementById('sleepTimeInput').addEventListener('change', () => Settings.changeSleepTime());
+
+    // Settings — pomodoro
+    ['pomFocus', 'pomBreak', 'pomLongBreak', 'pomCycles'].forEach(id => {
+        document.getElementById(id).addEventListener('change', () => Settings.savePomodoroSettings());
+    });
+
+    // Settings — sounds
+    document.getElementById('soundPomodoro').addEventListener('change', () => Settings.saveSoundSettings());
+    document.getElementById('soundNotifications').addEventListener('change', () => Settings.saveSoundSettings());
 }
 
 
@@ -306,5 +322,11 @@ document.getElementById('journal-editor').addEventListener('keyup', function(e) 
     }else if (currentRows > line_count + 10) {
         this.setAttribute('rows', line_count + 10);
         window.scrollBy(0, -10)
+    }
+});
+
+document.addEventListener('hide.bs.modal', function () {
+    if (document.activeElement) {
+        document.activeElement.blur();
     }
 });
