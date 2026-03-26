@@ -60,14 +60,6 @@
 
 
 class ExtensionCorsMiddleware:
-    """
-    Lightweight CORS middleware that allows Chrome extension origins
-    to make cross-origin requests with credentials.
-
-    Add to MIDDLEWARE (before CommonMiddleware):
-        'main.middlewares.cors_middleware.ExtensionCorsMiddleware',
-    """
-
     def __init__(self, get_response):
         self.get_response = get_response
 
@@ -134,10 +126,10 @@ class ExtensionCorsMiddleware:
 #
 # Fix: In settings.py, set:
 #
-#   SESSION_COOKIE_SAMESITE = 'None'
-#   SESSION_COOKIE_SECURE = True
-#   CSRF_COOKIE_SAMESITE = 'None'
-#   CSRF_COOKIE_SECURE = True
+  # SESSION_COOKIE_SAMESITE = 'None'
+  # SESSION_COOKIE_SECURE = True
+  # CSRF_COOKIE_SAMESITE = 'None'
+  # CSRF_COOKIE_SECURE = True
 #
 # This is safe because:
 #   - Cookies are only sent by the extension (not arbitrary sites)
