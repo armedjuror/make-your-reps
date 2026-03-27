@@ -138,6 +138,18 @@ const JournalPane = {
             editor.setAttribute('data-date', dateStr);
             editor.focus();
         }
+        const titleEl = document.getElementById('journal-editor-title');
+        if (titleEl) {
+            const today = getDate(new Date());
+            if (dateStr === today) {
+                titleEl.textContent = "Today's Journal";
+            } else {
+                const [year, month, day] = dateStr.split('-');
+                const date = new Date(year, month - 1, day);
+                const formatted = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                titleEl.textContent = `${formatted}'s Journal`;
+            }
+        }
     }
 };
 
@@ -153,6 +165,10 @@ function updateJournal() {
 
     apiClient.put(`board/api/daily_data/${dateStr}/`, { journal }, { silent: true }).then(res => {
         if (res.status === 'success') {
+            // Update in-memory cache so navigating back to this day shows updated content
+            if (!JournalPane.journalData[dateStr]) JournalPane.journalData[dateStr] = {};
+            JournalPane.journalData[dateStr].journal = journal;
+            JournalPane.renderCalendar();
             if (statusEl) {
                 statusEl.textContent = 'Saved';
                 statusEl.className = 'journal-save-status saved';
