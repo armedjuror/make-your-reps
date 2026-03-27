@@ -18,12 +18,12 @@ const Timeline = {
         if (this.loading || !this.hasMore) return;
         this.loading = true;
 
-        let url = 'board/api/timeline/?limit=5';
+        let url = 'board/api/timeline/';
         const today = getDate(new Date());
         if (before) {
-            url += `&before=${before}`;
+            url += `?before=${before}`;
         } else {
-            url += `&date=${today}`;
+            url += `?date=${today}`;
         }
 
         const res = await apiClient.get(url);

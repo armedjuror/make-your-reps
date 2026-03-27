@@ -19,6 +19,7 @@ from board.serializers import (
 )
 from main.config_manager import get_config
 from main.utils import NoDestroyViewSet, AuthenticatedModelViewSet
+from board.tasks import generate_timeline_for_new_item
 
 
 # ──────────────────────────────────────
@@ -221,6 +222,7 @@ class TaskViewSet(AuthenticatedModelViewSet):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             serializer.save(user_id=user_id)
+            generate_timeline_for_new_item.delay('todo', serializer.data['id'])
             return Response({
                 "status": "success",
                 "data": serializer.data
@@ -364,6 +366,7 @@ class HabitViewSet(AuthenticatedModelViewSet):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             serializer.save(user_id=user_id)
+            generate_timeline_for_new_item.delay('habit', serializer.data['id'])
             return Response({
                 "status": "success",
                 "data": serializer.data
@@ -481,6 +484,7 @@ class RoutineEntryViewSet(AuthenticatedModelViewSet):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             serializer.save(user_id=user_id)
+            generate_timeline_for_new_item.delay('routine', serializer.data['id'])
             return Response({
                 'status': 'success',
                 'data': serializer.data
@@ -535,6 +539,7 @@ class RoutineEntryViewSet(AuthenticatedModelViewSet):
             if serializer.is_valid():
                 obj = serializer.save(user_id=user_id)
                 created.append(serializer.data)
+                generate_timeline_for_new_item.delay('routine', serializer.data['id'])
 
         return Response({
             'status': 'success',

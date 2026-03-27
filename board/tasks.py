@@ -111,7 +111,6 @@ def _generate_routine_events(user, today, weekday):
     entries = RoutineEntry.objects.filter(
         user=user,
         routine_type=routine_type,
-        is_active=True
     )
 
     for entry in entries:
