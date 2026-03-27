@@ -642,7 +642,7 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
         user_id = request.session.get('user_id')
         target_date = request.GET.get('date')
         before = request.GET.get('before')
-        limit = int(request.GET.get('limit', 5))
+        limit = int(request.GET.get('limit', 100))
 
         queryset = self.get_queryset().filter(user_id=user_id)
 
