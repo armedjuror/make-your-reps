@@ -268,7 +268,7 @@ def generate_timeline_for_new_item(item_type, item_id):
 
     elif item_type == 'routine':
         try:
-            entry = RoutineEntry.objects.get(pk=item_id, is_active=True)
+            entry = RoutineEntry.objects.get(pk=item_id)
         except RoutineEntry.DoesNotExist:
             return
 
