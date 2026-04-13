@@ -71,18 +71,9 @@ def _generate_habit_events(user, today, weekday):
 
 
 def _generate_todo_events(user, today):
-    """Create timeline events for todos with deadline = today."""
-    todos = Task.objects.filter(
-        user=user,
-        is_deleted=False,
-        is_done=False,
-        deadline__date=today
-    )
-    for todo in todos:
-        timestamp = todo.deadline if todo.deadline else timezone.make_aware(
-            datetime.combine(today, time(9, 0))
-        )
-
+    """Create timeline events for todos due today or overdue."""
+    # Due today
+    for todo in Task.objects.filter(user=user, is_deleted=False, is_done=False, deadline__date=today):
         exists = TimelineEvent.objects.filter(
             user=user,
             event_type=TimelineEventType.TODO,
@@ -90,13 +81,33 @@ def _generate_todo_events(user, today):
             reference__id=todo.id,
             timestamp__date=today
         ).exists()
-
         if not exists:
             TimelineEvent.objects.create(
                 user=user,
-                timestamp=timestamp,
+                timestamp=todo.deadline,
                 event_type=TimelineEventType.TODO,
                 event=f"Due today: {todo.task_name}",
+                reference={'model': 'Task', 'id': todo.id},
+                action={'mark_done': [True, False]},
+            )
+
+    # Overdue (deadline before today, still pending)
+    for todo in Task.objects.filter(user=user, is_deleted=False, is_done=False, deadline__date__lt=today):
+        days = (today - todo.deadline.date()).days
+        label = f"{days} day" if days == 1 else f"{days} days"
+        exists = TimelineEvent.objects.filter(
+            user=user,
+            event_type=TimelineEventType.TODO,
+            reference__model='Task',
+            reference__id=todo.id,
+            timestamp__date=today
+        ).exists()
+        if not exists:
+            TimelineEvent.objects.create(
+                user=user,
+                timestamp=timezone.make_aware(datetime.combine(today, time(9, 0))),
+                event_type=TimelineEventType.TODO,
+                event=f"Overdue by {label}: {todo.task_name}",
                 reference={'model': 'Task', 'id': todo.id},
                 action={'mark_done': [True, False]},
             )
@@ -251,20 +262,36 @@ def generate_timeline_for_new_item(item_type, item_id):
         except Task.DoesNotExist:
             return
 
-        if not todo.deadline or todo.deadline.date() != today:
+        if not todo.deadline or todo.is_done:
             return
 
-        TimelineEvent.objects.get_or_create(
-            user=todo.user,
-            event_type=TimelineEventType.TODO,
-            reference={'model': 'Task', 'id': todo.id},
-            timestamp__date=today,
-            defaults={
-                'timestamp': todo.deadline,
-                'event': f"Due today: {todo.task_name}",
-                'action': {'mark_done': [True, False]},
-            }
-        )
+        deadline_date = todo.deadline.date()
+        if deadline_date == today:
+            TimelineEvent.objects.get_or_create(
+                user=todo.user,
+                event_type=TimelineEventType.TODO,
+                reference={'model': 'Task', 'id': todo.id},
+                timestamp__date=today,
+                defaults={
+                    'timestamp': todo.deadline,
+                    'event': f"Due today: {todo.task_name}",
+                    'action': {'mark_done': [True, False]},
+                }
+            )
+        elif deadline_date < today:
+            days = (today - deadline_date).days
+            label = f"{days} day" if days == 1 else f"{days} days"
+            TimelineEvent.objects.get_or_create(
+                user=todo.user,
+                event_type=TimelineEventType.TODO,
+                reference={'model': 'Task', 'id': todo.id},
+                timestamp__date=today,
+                defaults={
+                    'timestamp': timezone.make_aware(datetime.combine(today, time(9, 0))),
+                    'event': f"Overdue by {label}: {todo.task_name}",
+                    'action': {'mark_done': [True, False]},
+                }
+            )
 
     elif item_type == 'routine':
         try:

@@ -265,6 +265,11 @@ class TaskViewSet(AuthenticatedModelViewSet):
         task = self.get_queryset().get(pk=task_id)
         task.is_deleted = True
         task.save()
+        TimelineEvent.objects.filter(
+            event_type=TimelineEventType.TODO,
+            reference__model='Task',
+            reference__id=task_id,
+        ).delete()
         return Response({
             'status': 'success',
             'message': 'Task deleted successfully',
@@ -432,6 +437,11 @@ class HabitViewSet(AuthenticatedModelViewSet):
         habit = self.get_queryset().get(pk=habit_id)
         habit.status = HabitStatus.DELETED.value
         habit.save()
+        TimelineEvent.objects.filter(
+            event_type=TimelineEventType.HABIT,
+            reference__model='Habit',
+            reference__id=habit_id,
+        ).delete()
         return Response({
             "status": "success",
             "message": "Habit deleted successfully"
