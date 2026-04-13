@@ -140,8 +140,6 @@ function bindEvents() {
     document.getElementById('journal-editor').addEventListener('focusout', updateJournal);
 
     // Todos pane
-    document.getElementById('todos-add-group-btn').addEventListener('click', () => TodosPane.showAddGroupModal());
-    document.querySelector('.todos-group-item[data-group="all"]').addEventListener('click', () => TodosPane.selectGroup('all'));
     document.querySelector('.todos-filters').addEventListener('click', e => {
         const btn = e.target.closest('.todo-filter[data-filter]');
         if (btn) TodosPane.setFilter(btn.dataset.filter);

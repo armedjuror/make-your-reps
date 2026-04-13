@@ -344,6 +344,66 @@
     box-shadow: 0 0 0 3px rgba(152, 117, 63, 0.2);
 }
 
+.pomodoro-focus-today {
+    text-align: center;
+    min-height: 1.2em;
+    margin-top: 6px;
+}
+
+.pomodoro-focus-today span {
+    font-size: 0.7rem;
+    color: var(--ink-gray);
+    font-style: italic;
+}
+
+/* ── Pomodoro Toast ── */
+.pomo-toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-80px);
+    z-index: 9999;
+    background: var(--paper-bg, #faf7f2);
+    border: 1.5px solid var(--coffee-stain, rgba(152, 117, 63, 0.3));
+    border-radius: 10px;
+    padding: 12px 18px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    opacity: 0;
+    transition: transform 0.35s ease, opacity 0.35s ease;
+    pointer-events: none;
+    min-width: 240px;
+    max-width: 340px;
+}
+
+.pomo-toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.pomo-toast-inner {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.pomo-toast-icon {
+    color: var(--ink-brown, #98753f);
+    font-size: 1rem;
+    margin-top: 2px;
+}
+
+.pomo-toast-title {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--ink-brown, #98753f);
+}
+
+.pomo-toast-body {
+    font-size: 0.78rem;
+    color: var(--ink-gray, #666);
+}
+
 /* ── Search Bar ── */
 .search-section {
     margin-bottom: 30px;
@@ -1071,6 +1131,11 @@
 
 /* ── Responsive ── */
 @media (max-width: 768px) {
+    /* Hide search bar — redundant on mobile (browser has its own) */
+    .search-section {
+        display: none;
+    }
+
     /* Hide desktop nav, show hamburger */
     .tab-nav-group {
         display: none;
@@ -1406,38 +1471,131 @@
 }
 
 @media (max-width: 768px) {
+    /* ── Layout ── */
     .todos-pane-layout {
         flex-direction: column;
-        gap: 16px;
+        gap: 0;
+        padding: 20px;
     }
 
+    /* ── Sidebar → compact filter strip ── */
     .todos-sidebar {
         width: 100%;
+        padding-top: 10px;
+        padding-bottom: 12px;
+        border-bottom: 1px dotted var(--grid-dots);
+        margin-bottom: 14px;
     }
 
+    .todos-sidebar-header {
+        margin-bottom: 8px;
+    }
+
+    .todos-sidebar-header .section-title-sm {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        opacity: 0.55;
+    }
+
+    /* ── Group chips ── */
     .todos-group-list {
         flex-direction: row;
         overflow-x: auto;
         gap: 6px;
-        padding-bottom: 4px;
+        padding-bottom: 2px;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .todos-group-list::-webkit-scrollbar {
+        display: none;
     }
 
     .todos-group-item {
         white-space: nowrap;
         flex-shrink: 0;
-        padding: 6px 12px;
+        padding: 5px 14px;
+        border-radius: 20px;
+        border: 1px solid rgba(152, 117, 63, 0.25);
+        font-size: 0.82rem;
+        background: transparent;
+    }
+
+    .todos-group-item.active {
+        background: var(--ink-brown) !important;
+        color: var(--paper-bg) !important;
+        border-color: var(--ink-brown) !important;
+        font-weight: 600;
+    }
+
+    /* hide count badge inside chips — too noisy */
+    .todos-group-item .group-count {
+        display: none;
     }
 
     .group-actions {
         display: none !important;
     }
 
-    .todos-add-bar {
-        flex-direction: column;
+    /* ── Main ── */
+    .todos-main {
+        padding: 0;
     }
 
-    .todos-group-select,
-    .todos-deadline-input {
+    /* ── Add bar → 2-row grid ── */
+    .todos-add-bar {
+        display: grid;
+        grid-template-columns: 1fr minmax(110px, auto);
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    .todos-add-bar .form-control {
+        flex: unset;
+        width: 100%;
+        min-width: 0;
+    }
+
+    #todoPaneInput {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    #todos-add-task-btn {
+        grid-column: 2;
+        grid-row: 1;
+        white-space: nowrap;
+    }
+
+    #todoPaneGroupSelect {
+        grid-column: 1;
+        grid-row: 2;
         max-width: 100% !important;
+    }
+
+    #todoPaneDeadline {
+        grid-column: 2;
+        grid-row: 2;
+        max-width: 100% !important;
+        min-width: 0;
+        width: 100%;
+        font-size: 0.78rem;
+    }
+
+    /* ── Task rows ── */
+    .todo-item-row {
+        padding: 12px 8px;
+        gap: 8px;
+    }
+
+    .todo-check {
+        font-size: 1.25rem;
+        padding-top: 0;
+    }
+
+    .btn-icon {
+        padding: 6px 8px;
+        font-size: 0.85rem;
     }
 }

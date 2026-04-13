@@ -194,6 +194,7 @@ function saveSleepEntry() {
                 sleepChart.data.datasets[0].data = { ...sleepData };
                 sleepChart.update();
             }
+            General.loadProductivityScore();
         } else {
             showError(res.error || 'Failed to save sleep entry');
         }

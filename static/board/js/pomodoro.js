@@ -1,11 +1,12 @@
 /**
- * pomodoro.js — Pomodoro timer with persistence and audio
+ * pomodoro.js — Pomodoro timer with persistence, audio, notifications, and focus tracking
  */
 
 const Pomodoro = {
     state: null, // { mode: 'focus'|'break'|'long_break', remaining: seconds, running: bool, cycle: number }
     interval: null,
     audioCtx: null,
+    todayFocusMinutes: 0,
 
     defaults() {
         const d = AppConfig.userDetail || {};
@@ -17,7 +18,10 @@ const Pomodoro = {
         };
     },
 
-    init() {
+    async init() {
+        await this.loadTodayFocus();
+        this.requestNotificationPermission();
+
         // Restore state from localStorage
         const saved = localStorage.getItem('pomodoro_state');
         if (saved) {
@@ -49,6 +53,47 @@ const Pomodoro = {
         }
 
         this.render();
+    },
+
+    async loadTodayFocus() {
+        const today = new Date().toISOString().slice(0, 10);
+        const res = await apiClient.get(`board/api/daily_data/${today}/`);
+        if (res.status === 'success') {
+            this.todayFocusMinutes = res.data.focus_minutes || 0;
+        }
+    },
+
+    async addFocusMinutes(minutes) {
+        const res = await apiClient.post('board/api/daily_data/add_focus/', { minutes });
+        if (res.status === 'success') {
+            this.todayFocusMinutes = res.data.focus_minutes;
+            this.renderFocusTime();
+        }
+    },
+
+    requestNotificationPermission() {
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+    },
+
+    notify(title, body) {
+        // Browser notification
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification(title, { body, icon: '/static/board/img/favicon.ico' });
+        }
+        // In-app toast (always shown)
+        this.showToast(title, body);
+    },
+
+    showToast(title, body) {
+        const toast = document.getElementById('pomodoro-toast');
+        if (!toast) return;
+        toast.querySelector('.pomo-toast-title').textContent = title;
+        toast.querySelector('.pomo-toast-body').textContent = body;
+        toast.classList.add('show');
+        clearTimeout(this._toastTimeout);
+        this._toastTimeout = setTimeout(() => toast.classList.remove('show'), 5000);
     },
 
     save() {
@@ -137,28 +182,48 @@ const Pomodoro = {
         this.chime();
 
         const d = this.defaults();
+        const prevMode = this.state.mode;
 
-        if (this.state.mode === 'focus') {
-            // Check if it's time for a long break
+        if (prevMode === 'focus') {
+            // Track the completed focus session
+            this.addFocusMinutes(d.focusMin);
+
             if (this.state.cycle >= d.cycles) {
                 this.state.mode = 'long_break';
                 this.state.remaining = d.longBreakMin * 60;
                 this.state.cycle = 1;
+                this.notify('Focus session complete!', `Great work! Time for a ${d.longBreakMin}-min long break.`);
+                document.title = 'Long Break — Steps';
             } else {
                 this.state.mode = 'break';
                 this.state.remaining = d.breakMin * 60;
+                this.notify('Focus session complete!', `Nice! Take a ${d.breakMin}-min break.`);
+                document.title = 'Break — Steps';
             }
         } else {
-            // Break ended, start new focus
-            if (this.state.mode === 'break') {
+            if (prevMode === 'break') {
                 this.state.cycle++;
             }
             this.state.mode = 'focus';
             this.state.remaining = d.focusMin * 60;
+            this.notify('Break over!', `Ready for another ${d.focusMin}-min focus session?`);
+            document.title = 'Focus — Steps';
         }
 
         this.save();
         this.render();
+    },
+
+    renderFocusTime() {
+        const el = document.getElementById('pomodoro-focused-today');
+        if (!el) return;
+        const h = Math.floor(this.todayFocusMinutes / 60);
+        const m = this.todayFocusMinutes % 60;
+        if (h > 0) {
+            el.textContent = `${h}h ${m}m focused today`;
+        } else {
+            el.textContent = `${m}m focused today`;
+        }
     },
 
     render() {
@@ -188,6 +253,8 @@ const Pomodoro = {
             }
             cyclesEl.innerHTML = dots;
         }
+
+        this.renderFocusTime();
     },
 
     beep(freq, duration) {

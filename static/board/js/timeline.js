@@ -249,7 +249,7 @@ const Timeline = {
             }
             this.render();
             // Refresh productivity score
-            DefaultPane.loadProductivityScore();
+            General.loadProductivityScore();
         }
     },
 
@@ -264,6 +264,7 @@ const Timeline = {
                 this.events[idx] = res.data;
             }
             this.render();
+            General.loadProductivityScore();
         }
     }
 };

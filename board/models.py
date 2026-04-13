@@ -114,6 +114,7 @@ class DailyData(models.Model):
     date = models.DateField()
     journal = models.TextField(null=True, blank=True, default='')
     sleep_hours = models.DecimalField(max_digits=5, decimal_places=2, default=None, null=True)
+    focus_minutes = models.IntegerField(default=0)
 
     class Meta:
         ordering = ['date']

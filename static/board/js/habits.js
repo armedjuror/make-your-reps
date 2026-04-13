@@ -160,6 +160,7 @@ const Habits = {
                         const habitMessage = document.querySelector('.habit-remark[data-habit="' + habit_id + '"]');
                         habitMessage.innerText = res.message;
                     }
+                    General.loadProductivityScore();
                 }else{
                     showError(res.error);
                 }

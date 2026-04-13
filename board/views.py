@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 
 from board.models import (
     Task, TaskGroup, DailyData, UserDetail, Habit, HabitStatus, HabitLog,
-    RoutineEntry, ReadingListItem, TimelineEvent, SearchEngine
+    RoutineEntry, ReadingListItem, TimelineEvent, TimelineEventType, SearchEngine
 )
 from board.serializers import (
     TaskSerializer, TaskGroupSerializer, DailyDataSerializer, UserDetailSerializer, HabitSerializer,
@@ -236,9 +236,19 @@ class TaskViewSet(AuthenticatedModelViewSet):
     def update(self, request, **kwargs):
         task_id = kwargs.get('pk')
         task = self.get_queryset().get(pk=task_id)
+        deadline_changing = 'deadline' in request.data and request.data['deadline'] != (
+            task.deadline.isoformat() if task.deadline else None
+        )
         serializer = self.get_serializer(task, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            if deadline_changing:
+                TimelineEvent.objects.filter(
+                    event_type=TimelineEventType.TODO,
+                    reference__model='Task',
+                    reference__id=task_id,
+                ).delete()
+                generate_timeline_for_new_item.delay('todo', task_id)
             return Response({
                 'status': 'success',
                 'data': serializer.data,
@@ -341,6 +351,25 @@ class DailyDataViewSet(NoDestroyViewSet):
                 "status": "failed",
                 "error": serializer.errors
             }, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['post'], url_path='add_focus')
+    def add_focus_minutes(self, request, **kwargs):
+        """Atomically add minutes to today's focus_minutes."""
+        from django.db.models import F
+        user_id = request.session.get('user_id')
+        if not user_id:
+            return Response({'status': 'failed', 'error': 'Not authenticated'}, status=401)
+        minutes = request.data.get('minutes', 0)
+        try:
+            minutes = int(minutes)
+        except (ValueError, TypeError):
+            return Response({'status': 'failed', 'error': 'Invalid minutes'}, status=400)
+
+        today = timezone.now().date()
+        obj, _ = DailyData.objects.get_or_create(user_id=user_id, date=today)
+        DailyData.objects.filter(pk=obj.pk).update(focus_minutes=F('focus_minutes') + minutes)
+        obj.refresh_from_db()
+        return Response({'status': 'success', 'data': {'focus_minutes': obj.focus_minutes}})
 
 
 class HabitViewSet(AuthenticatedModelViewSet):

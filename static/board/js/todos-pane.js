@@ -12,6 +12,7 @@ const TodosPane = {
         await this.loadGroups();
         await this.loadTodos();
         this.setupEnterKey();
+        document.getElementById('todos-manage-groups-btn').addEventListener('click', () => this.showManageGroupsModal());
     },
 
     setupEnterKey() {
@@ -196,6 +197,9 @@ const TodosPane = {
                             ${deadlineHtml}
                         </div>
                     </div>
+                    <button class="btn-icon todo-edit" onclick="TodosPane.showEditTaskModal(${todo.id})">
+                        <i class="fas fa-pen fa-xs"></i>
+                    </button>
                     <button class="btn-icon todo-delete" onclick="TodosPane.deleteTodo(${todo.id})">
                         <i class="fas fa-trash"></i>
                     </button>
@@ -232,6 +236,7 @@ const TodosPane = {
         if (res.status === 'success') {
             await this.loadTodos();
             await this.loadGroups();
+            General.loadProductivityScore();
         }
     },
 
@@ -240,6 +245,103 @@ const TodosPane = {
         if (res.status === 'success') {
             await this.loadTodos();
             await this.loadGroups();
+        }
+    },
+
+    showEditTaskModal(id) {
+        const todo = this.todos.find(t => t.id === id);
+        if (!todo) return;
+
+        document.getElementById('editTaskId').value = id;
+        document.getElementById('editTaskName').value = todo.task_name;
+
+        // Populate group select
+        const select = document.getElementById('editTaskGroup');
+        select.innerHTML = this.groups.map(g =>
+            `<option value="${g.id}" ${g.id == todo.group ? 'selected' : ''}>${g.name}</option>`
+        ).join('');
+
+        // Set deadline
+        const deadlineInput = document.getElementById('editTaskDeadline');
+        if (todo.deadline) {
+            const d = new Date(todo.deadline);
+            const pad = n => String(n).padStart(2, '0');
+            deadlineInput.value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        } else {
+            deadlineInput.value = '';
+        }
+
+        new bootstrap.Modal(document.getElementById('editTaskModal')).show();
+        setTimeout(() => document.getElementById('editTaskName').focus(), 300);
+    },
+
+    async saveEditTask() {
+        const id = document.getElementById('editTaskId').value;
+        const task_name = document.getElementById('editTaskName').value.trim();
+        if (!task_name) return;
+
+        const data = { task_name, group: parseInt(document.getElementById('editTaskGroup').value) };
+        const deadlineVal = document.getElementById('editTaskDeadline').value;
+        data.deadline = deadlineVal ? new Date(deadlineVal).toISOString() : null;
+
+        const res = await apiClient.put(`board/api/tasks/${id}/`, data);
+        if (res.status === 'success') {
+            bootstrap.Modal.getInstance(document.getElementById('editTaskModal')).hide();
+            await this.loadTodos();
+            await this.loadGroups();
+        } else {
+            showError(res.error);
+        }
+    },
+
+    // ── Manage Groups ──
+    showManageGroupsModal() {
+        this.renderManageGroupsList();
+        new bootstrap.Modal(document.getElementById('manageGroupsModal')).show();
+    },
+
+    renderManageGroupsList() {
+        const list = document.getElementById('manageGroupsList');
+        if (!list) return;
+        if (this.groups.length === 0) {
+            list.innerHTML = '<p class="text-center text-muted small">No groups yet.</p>';
+            return;
+        }
+        list.innerHTML = this.groups.map(g => {
+            const isGeneral = g.name.toLowerCase() === 'general';
+            const deleteBtn = isGeneral
+                ? `<button class="btn btn-paper btn-sm" disabled title="Cannot delete General group"><i class="fas fa-trash fa-xs"></i></button>`
+                : `<button class="btn btn-paper btn-sm" style="color:var(--ink-red);" onclick="TodosPane.deleteGroupFromManager(${g.id}, '${g.name.replace(/'/g, "\\'")}')"><i class="fas fa-trash fa-xs"></i></button>`;
+            return `
+                <div class="d-flex align-items-center gap-2 py-2 border-bottom">
+                    <span style="flex:1">${g.name}</span>
+                    <span class="text-muted small">${g.pending_count} pending</span>
+                    <button class="btn btn-paper btn-sm" onclick="TodosPane.renameGroupFromManager(${g.id}, '${g.name.replace(/'/g, "\\'")}')"><i class="fas fa-pen fa-xs"></i></button>
+                    ${deleteBtn}
+                </div>`;
+        }).join('');
+    },
+
+    renameGroupFromManager(id, name) {
+        bootstrap.Modal.getInstance(document.getElementById('manageGroupsModal')).hide();
+        setTimeout(() => this.showRenameGroupModal(id, name), 350);
+    },
+
+    addGroupFromManager() {
+        bootstrap.Modal.getInstance(document.getElementById('manageGroupsModal')).hide();
+        setTimeout(() => this.showAddGroupModal(), 350);
+    },
+
+    async deleteGroupFromManager(id, name) {
+        if (!confirm(`Delete "${name}"? Tasks will be moved to General.`)) return;
+        const res = await apiClient.delete(`board/api/task_groups/${id}/`);
+        if (res.status === 'success') {
+            if (this.selectedGroup == id) this.selectedGroup = 'all';
+            await this.loadGroups();
+            this.renderManageGroupsList();
+            await this.loadTodos();
+        } else {
+            showError(res.error);
         }
     }
 };

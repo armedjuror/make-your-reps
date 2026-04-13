@@ -169,6 +169,7 @@ function updateJournal() {
             if (!JournalPane.journalData[dateStr]) JournalPane.journalData[dateStr] = {};
             JournalPane.journalData[dateStr].journal = journal;
             JournalPane.renderCalendar();
+            General.loadProductivityScore();
             if (statusEl) {
                 statusEl.textContent = 'Saved';
                 statusEl.className = 'journal-save-status saved';
