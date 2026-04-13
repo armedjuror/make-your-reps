@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.admin import register
 
-from main.models import Config, ErrorLog, LoginActivity
+from main.models import Config, ErrorLog, LoginActivity, ReleaseLog
 
 
 # Register your models here.
@@ -31,3 +31,12 @@ class LoginActivityAdmin(admin.ModelAdmin):
 
     def has_change_permission(self, request, obj=None):
         return False
+
+
+@register(ReleaseLog)
+class ReleaseLogAdmin(admin.ModelAdmin):
+    list_display = ('version', 'title', 'release_type', 'released_at', 'is_public')
+    list_filter = ('release_type', 'is_public')
+    list_editable = ('is_public',)
+    search_fields = ('version', 'title', 'description')
+    ordering = ('-released_at',)

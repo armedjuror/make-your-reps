@@ -4,6 +4,7 @@ from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
 
 from main.config_manager import get_config
+from main.models import ReleaseLog
 from main.utils import handle_exceptions
 
 
@@ -26,6 +27,13 @@ def privacy_policy(request):
     config = get_config()
     context = config.get_all()
     return render(request, 'board/privacy.html', context=context)
+
+
+def release_log(request):
+    config = get_config()
+    context = config.get_all()
+    context['releases'] = ReleaseLog.objects.filter(is_public=True)
+    return render(request, 'board/release_log.html', context=context)
 
 @csrf_exempt
 @handle_exceptions

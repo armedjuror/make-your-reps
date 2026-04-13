@@ -81,3 +81,27 @@ class ErrorLog(models.Model):
     class Meta:
         ordering = ['-created_at']
 
+
+class ReleaseType(TextChoices):
+    major = 'major', 'Major'
+    minor = 'minor', 'Minor'
+    patch = 'patch', 'Patch'
+    hotfix = 'hotfix', 'Hotfix'
+
+
+class ReleaseLog(models.Model):
+    id = models.AutoField(primary_key=True)
+    version = models.CharField(max_length=32)
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    release_type = models.CharField(max_length=16, choices=ReleaseType.choices, default=ReleaseType.minor)
+    released_at = models.DateField()
+    is_public = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-released_at', '-id']
+
+    def __str__(self):
+        return f'v{self.version} — {self.title}'
+
