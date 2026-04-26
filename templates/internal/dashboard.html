@@ -382,7 +382,7 @@
             <div class="release-meta">{{ latest_release.get_release_type_display }} &bull; {{ latest_release.released_at }}</div>
           </div>
         </div>
-        <a href="/admin/main/releaselog/?q={{ latest_release.version }}" class="btn-announce">
+        <a href="/admin/main/releaselog/{{ latest_release.version }}/send-announcement" class="btn-announce">
           Announce This Release &rarr;
         </a>
       {% else %}
