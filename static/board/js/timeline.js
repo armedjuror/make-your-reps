@@ -206,7 +206,7 @@ const Timeline = {
                     </button>`;
             } else if (key === 'check') {
                 const apId = event.reference?.id;
-                html += `<button class="btn btn-paper btn-sm btn-primary" id="check-btn-${event.id}"
+                html += `<button class="btn btn-paper btn-sm" id="check-btn-${event.id}"
                     onclick="Timeline.checkHabit(${event.id}, ${apId})">
                     <i class="fas fa-eye me-1"></i>Check
                 </button>`;
