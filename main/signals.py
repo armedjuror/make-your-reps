@@ -1,16 +1,60 @@
-from datetime import timedelta, datetime, time
+from datetime import datetime, time
 
-import jwt
 from allauth.account.signals import user_logged_in, user_signed_up
-from django.contrib.auth import user_logged_out
-
 from django.dispatch import receiver
-from django.http import JsonResponse
 
-from board.models import Habit, Task, UserDetail, RoutineEntry, DailyData
+from board.models import Habit, Task, UserDetail, RoutineEntry, DailyData, FriendRequest, FriendRequestStatus, \
+    AccountabilityPartner, AccountabilityPartnerStatus
 from board.tasks import generate_daily_timeline
-from main.models import UserAuthToken, LoginActivity
-from main.utils import get_auth_token, get_client_ip, AccessToken, RefreshToken
+from main.models import LoginActivity
+from main.utils import get_client_ip, AccessToken, RefreshToken
+
+
+def _accept_pending_invites(user):
+    """
+    After a new user signs up, link and accept any invites that were sent to their email
+    before they had an account.
+    """
+    from board.models import TimelineEvent, TimelineEventType
+    from django.utils import timezone
+
+    # Friend requests
+    pending_freq = FriendRequest.objects.filter(
+        invited_email__iexact=user.email,
+        to_user=None,
+        status=FriendRequestStatus.PENDING,
+    )
+    for freq in pending_freq:
+        freq.to_user = user
+        freq.save()
+        from_name = freq.from_user.get_full_name() or freq.from_user.username
+        TimelineEvent.objects.create(
+            user=user,
+            timestamp=timezone.now(),
+            event_type=TimelineEventType.FRIEND_REQUEST,
+            event=f"{from_name} sent you a friend request",
+            reference={'model': 'FriendRequest', 'id': freq.id},
+            action={'accept': [True, False]},
+        )
+
+    # Accountability partner invites
+    pending_ap = AccountabilityPartner.objects.filter(
+        invited_email__iexact=user.email,
+        partner=None,
+        status=AccountabilityPartnerStatus.REQUEST_SENT,
+    )
+    for ap in pending_ap:
+        ap.partner = user
+        ap.save()
+        owner_name = ap.habit.user.get_full_name() or ap.habit.user.username
+        TimelineEvent.objects.create(
+            user=user,
+            timestamp=timezone.now(),
+            event_type=TimelineEventType.ACCOUNTABILITY_INVITE,
+            event=f"{owner_name} invited you as accountability partner for: {ap.habit.habit}",
+            reference={'model': 'AccountabilityPartner', 'id': ap.id},
+            action={'accept': [True, False]},
+        )
 
 
 @receiver(user_signed_up)
@@ -137,6 +181,9 @@ def user_signed_up_handler(sender, request, user, **kwargs):
 
     # Generate today's timeline for the new user
     generate_daily_timeline.delay(user_id=user.id)
+
+    # Link and accept any pending invites sent to this email before signup
+    _accept_pending_invites(user)
 
 
 @receiver(user_logged_in)

@@ -109,23 +109,84 @@ def _accept_accountability_invite(ap, user_id):
     )
 
 
-def _send_accountability_email(to_email, owner_name, habit_name):
+def _invite_email_html(title, body_text, accept_url, button_label):
+    """Return a minimal HTML email with an accept button."""
+    return f"""
+<html><body style="font-family:sans-serif;color:#333;max-width:600px;margin:0 auto;padding:24px">
+<h2 style="margin-bottom:8px">{title}</h2>
+<p style="line-height:1.6">{body_text}</p>
+<p style="margin-top:32px">
+  <a href="{accept_url}"
+     style="background:#4f46e5;color:#fff;text-decoration:none;padding:12px 24px;border-radius:6px;font-weight:bold;display:inline-block">
+    {button_label}
+  </a>
+</p>
+<p style="margin-top:32px;font-size:13px;color:#888">
+  If the button doesn't work, copy and paste this link:<br>
+  <a href="{accept_url}" style="color:#4f46e5">{accept_url}</a>
+</p>
+<p style="margin-top:24px;font-size:13px;color:#888">— The Make Your Reps Team</p>
+</body></html>
+"""
+
+
+def _send_accountability_email(to_email, owner_name, habit_name, token, site_url):
     """Send an email invite to a non-registered user."""
-    from django.core.mail import send_mail
+    from django.core.mail import EmailMultiAlternatives
     from django.conf import settings
-    send_mail(
-        subject=f"{owner_name} invited you as an accountability partner on Make Your Reps",
-        message=(
-            f"Hi,\n\n"
-            f"{owner_name} has invited you to be their accountability partner "
-            f"for the habit: \"{habit_name}\"\n\n"
-            f"Register at Make Your Reps and accept the invite in your timeline.\n\n"
-            f"— The Make Your Reps Team"
-        ),
-        from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@makeyourreps.com'),
-        recipient_list=[to_email],
-        fail_silently=True,
+
+    accept_url = f"{site_url}accept-invite/{token}/"
+    subject = f"{owner_name} invited you as an accountability partner on Make Your Reps"
+    plain = (
+        f"Hi,\n\n"
+        f"{owner_name} has invited you to be their accountability partner "
+        f"for the habit: \"{habit_name}\"\n\n"
+        f"Accept the invite here: {accept_url}\n\n"
+        f"— The Make Your Reps Team"
     )
+    html = _invite_email_html(
+        title=f"{owner_name} invited you as an accountability partner",
+        body_text=f"{owner_name} wants you to be their accountability partner for the habit: <strong>{habit_name}</strong>.<br>Sign up (or log in) to accept.",
+        accept_url=accept_url,
+        button_label="Accept Invite",
+    )
+    msg = EmailMultiAlternatives(
+        subject=subject,
+        body=plain,
+        from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@makeyourreps.com'),
+        to=[to_email],
+    )
+    msg.attach_alternative(html, "text/html")
+    msg.send(fail_silently=True)
+
+
+def _send_friend_request_email(to_email, from_name, token, site_url):
+    """Send a friend-request email to a non-registered user."""
+    from django.core.mail import EmailMultiAlternatives
+    from django.conf import settings
+
+    accept_url = f"{site_url}accept-invite/{token}/"
+    subject = f"{from_name} sent you a friend request on Make Your Reps"
+    plain = (
+        f"Hi,\n\n"
+        f"{from_name} has sent you a friend request on Make Your Reps.\n\n"
+        f"Accept the request here: {accept_url}\n\n"
+        f"— The Make Your Reps Team"
+    )
+    html = _invite_email_html(
+        title=f"{from_name} sent you a friend request",
+        body_text=f"{from_name} wants to connect with you on Make Your Reps.<br>Sign up (or log in) to accept.",
+        accept_url=accept_url,
+        button_label="Accept Friend Request",
+    )
+    msg = EmailMultiAlternatives(
+        subject=subject,
+        body=plain,
+        from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@makeyourreps.com'),
+        to=[to_email],
+    )
+    msg.attach_alternative(html, "text/html")
+    msg.send(fail_silently=True)
 
 
 # ──────────────────────────────────────
@@ -1076,7 +1137,24 @@ class FriendViewSet(AuthenticatedModelViewSet):
         try:
             to_user = User.objects.get(email=email)
         except User.DoesNotExist:
-            return Response({'status': 'failed', 'error': 'No user found with this email'}, status=404)
+            to_user = None
+
+        from_user = User.objects.get(pk=user_id)
+        from_name = from_user.get_full_name() or from_user.username
+
+        if to_user is None:
+            # Non-registered user — store by email and send invite
+            if FriendRequest.objects.filter(from_user=from_user, invited_email=email).exists():
+                return Response({'status': 'failed', 'error': 'Friend request already sent'}, status=400)
+            freq = FriendRequest.objects.create(
+                from_user=from_user,
+                to_user=None,
+                invited_email=email,
+                status=FriendRequestStatus.PENDING,
+            )
+            site_url = request.build_absolute_uri('/')
+            _send_friend_request_email(email, from_name, freq.token, site_url)
+            return Response({'status': 'success', 'message': 'Friend request sent'})
 
         if to_user.id == user_id:
             return Response({'status': 'failed', 'error': 'Cannot send friend request to yourself'}, status=400)
@@ -1092,7 +1170,6 @@ class FriendViewSet(AuthenticatedModelViewSet):
             _accept_friend_request(existing_reverse)
             return Response({'status': 'success', 'message': 'Mutual request found — you are now friends!'})
 
-        from_user = User.objects.get(pk=user_id)
         freq, created = FriendRequest.objects.get_or_create(
             from_user=from_user,
             to_user=to_user,
@@ -1104,7 +1181,6 @@ class FriendViewSet(AuthenticatedModelViewSet):
             freq.status = FriendRequestStatus.PENDING
             freq.save()
 
-        from_name = from_user.get_full_name() or from_user.username
         TimelineEvent.objects.create(
             user=to_user,
             timestamp=timezone.now(),
@@ -1113,6 +1189,8 @@ class FriendViewSet(AuthenticatedModelViewSet):
             reference={'model': 'FriendRequest', 'id': freq.id},
             action={'accept': [True, False]},
         )
+        site_url = request.build_absolute_uri('/')
+        _send_friend_request_email(to_user.email, from_name, freq.token, site_url)
         return Response({'status': 'success', 'message': 'Friend request sent'})
 
     @action(detail=False, methods=['get'])
@@ -1244,8 +1322,11 @@ class AccountabilityPartnerViewSet(AuthenticatedModelViewSet):
                     reference={'model': 'AccountabilityPartner', 'id': ap.id},
                     action={'accept': [True, False]},
                 )
+                site_url = request.build_absolute_uri('/')
+                _send_accountability_email(partner_user.email, owner_name, habit.habit, ap.token, site_url)
         else:
-            _send_accountability_email(email, owner_name, habit.habit)
+            site_url = request.build_absolute_uri('/')
+            _send_accountability_email(email, owner_name, habit.habit, ap.token, site_url)
 
         return Response({'status': 'success', 'data': AccountabilityPartnerSerializer(ap).data}, status=201)
 
@@ -1466,3 +1547,56 @@ class ProductivityScoreHistoryView(APIView):
             history.append({'date': d.isoformat(), 'score': score['total']})
 
         return Response({'status': 'success', 'data': history})
+
+
+def accept_invite_by_token(request, token):
+    """
+    Token-based invite acceptance link used in emails.
+    - If the user is logged in: accept immediately and redirect to the app.
+    - If not: redirect to signup with ?next= pointing back here.
+    """
+    from django.shortcuts import redirect as _redirect
+    import uuid as _uuid
+
+    try:
+        token_uuid = _uuid.UUID(str(token))
+    except ValueError:
+        from django.http import HttpResponseBadRequest
+        return HttpResponseBadRequest("Invalid invite link.")
+
+    user_id = request.session.get('user_id') or (request.user.id if request.user.is_authenticated else None)
+    if not user_id:
+        from urllib.parse import quote
+        next_url = quote(f"/accept-invite/{token}/")
+        return _redirect(f"/accounts/signup/?next={next_url}")
+
+    # Try FriendRequest first
+    freq = FriendRequest.objects.filter(token=token_uuid, status=FriendRequestStatus.PENDING).first()
+    if freq:
+        if freq.to_user_id and freq.to_user_id != user_id:
+            return _redirect('/?invite_error=not_yours')
+        if freq.to_user_id is None:
+            # Bind to this user if email matches
+            user = User.objects.get(pk=user_id)
+            if freq.invited_email and freq.invited_email.lower() != user.email.lower():
+                return _redirect('/?invite_error=email_mismatch')
+            freq.to_user = user
+            freq.save()
+        _accept_friend_request(freq)
+        return _redirect('/?invite_accepted=friend')
+
+    # Try AccountabilityPartner
+    ap = AccountabilityPartner.objects.filter(token=token_uuid, status=AccountabilityPartnerStatus.REQUEST_SENT).first()
+    if ap:
+        if ap.partner_id and ap.partner_id != user_id:
+            return _redirect('/?invite_error=not_yours')
+        if ap.partner_id is None:
+            user = User.objects.get(pk=user_id)
+            if ap.invited_email and ap.invited_email.lower() != user.email.lower():
+                return _redirect('/?invite_error=email_mismatch')
+            ap.partner = user
+            ap.save()
+        _accept_accountability_invite(ap, user_id)
+        return _redirect('/?invite_accepted=partner')
+
+    return _redirect('/?invite_error=not_found')

@@ -89,7 +89,9 @@ class FriendRequestStatus(models.TextChoices):
 
 class FriendRequest(models.Model):
     from_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_friend_requests')
-    to_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_friend_requests')
+    to_user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='received_friend_requests')
+    invited_email = models.EmailField(null=True, blank=True)
+    token = models.UUIDField(default=uuid.uuid4, unique=True)
     status = models.CharField(max_length=10, choices=FriendRequestStatus.choices, default=FriendRequestStatus.PENDING)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -249,6 +251,7 @@ class AccountabilityPartner(models.Model):
     habit = models.ForeignKey(Habit, on_delete=models.CASCADE, related_name='accountability_partners')
     partner = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='accountability_partnerships')
     invited_email = models.EmailField(null=True, blank=True)
+    token = models.UUIDField(default=uuid.uuid4, unique=True)
     status = models.CharField(max_length=20, choices=AccountabilityPartnerStatus.choices, default=AccountabilityPartnerStatus.REQUEST_SENT)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
