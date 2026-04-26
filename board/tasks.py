@@ -6,7 +6,8 @@ from django.utils import timezone
 
 from board.models import (
     Habit, HabitStatus, Task, RoutineEntry, TimelineEvent,
-    TimelineEventType, UserDetail
+    TimelineEventType, UserDetail,
+    AccountabilityPartner, AccountabilityPartnerStatus,
 )
 
 
@@ -29,6 +30,7 @@ def generate_daily_timeline(user_id=None):
         _generate_todo_events(user, today)
         _generate_routine_events(user, today, weekday)
         _generate_system_reminders(user, today)
+        _generate_accountability_partner_events(user, today)
 
 
 def _generate_habit_events(user, today, weekday):
@@ -222,6 +224,35 @@ def _generate_system_reminders(user, today):
             )
 
 
+def _generate_accountability_partner_events(user, today):
+    """Create daily monitoring entries for each active accountability partnership where user is the partner."""
+    partnerships = AccountabilityPartner.objects.filter(
+        partner=user,
+        status=AccountabilityPartnerStatus.ACTIVE,
+    ).select_related('habit__user')
+
+    for ap in partnerships:
+        owner_name = ap.habit.user.get_full_name() or ap.habit.user.username
+        timestamp = timezone.make_aware(datetime.combine(today, time(8, 0)))
+        exists = TimelineEvent.objects.filter(
+            user=user,
+            event_type=TimelineEventType.ACCOUNTABILITY_HABIT,
+            reference__model='AccountabilityPartner',
+            reference__id=ap.id,
+            reference__type='monitor',
+            timestamp__date=today,
+        ).exists()
+        if not exists:
+            TimelineEvent.objects.create(
+                user=user,
+                timestamp=timestamp,
+                event_type=TimelineEventType.ACCOUNTABILITY_HABIT,
+                event=f"Check on {owner_name}'s habit: {ap.habit.habit}",
+                reference={'model': 'AccountabilityPartner', 'id': ap.id, 'type': 'monitor'},
+                action={'check': [True, False], 'remind': [True, False]},
+            )
+
+
 @shared_task
 def generate_timeline_for_new_item(item_type, item_id):
     """
@@ -243,18 +274,22 @@ def generate_timeline_for_new_item(item_type, item_id):
         if not habit.notify_at:
             return
 
-        timestamp = timezone.make_aware(datetime.combine(today, habit.notify_at))
-        TimelineEvent.objects.get_or_create(
+        exists = TimelineEvent.objects.filter(
             user=habit.user,
             event_type=TimelineEventType.HABIT,
             reference={'model': 'Habit', 'id': habit.id},
             timestamp__date=today,
-            defaults={
-                'timestamp': timestamp,
-                'event': f"Time to: {habit.habit} ({habit.detail})",
-                'action': {'mark_done': [True, False]},
-            }
-        )
+        ).exists()
+        if not exists:
+            timestamp = timezone.make_aware(datetime.combine(today, habit.notify_at))
+            TimelineEvent.objects.create(
+                user=habit.user,
+                timestamp=timestamp,
+                event_type=TimelineEventType.HABIT,
+                event=f"Time to: {habit.habit} ({habit.detail})",
+                reference={'model': 'Habit', 'id': habit.id},
+                action={'mark_done': [True, False]},
+            )
 
     elif item_type == 'todo':
         try:
@@ -266,32 +301,33 @@ def generate_timeline_for_new_item(item_type, item_id):
             return
 
         deadline_date = todo.deadline.date()
-        if deadline_date == today:
-            TimelineEvent.objects.get_or_create(
-                user=todo.user,
-                event_type=TimelineEventType.TODO,
-                reference={'model': 'Task', 'id': todo.id},
-                timestamp__date=today,
-                defaults={
-                    'timestamp': todo.deadline,
-                    'event': f"Due today: {todo.task_name}",
-                    'action': {'mark_done': [True, False]},
-                }
-            )
-        elif deadline_date < today:
-            days = (today - deadline_date).days
-            label = f"{days} day" if days == 1 else f"{days} days"
-            TimelineEvent.objects.get_or_create(
-                user=todo.user,
-                event_type=TimelineEventType.TODO,
-                reference={'model': 'Task', 'id': todo.id},
-                timestamp__date=today,
-                defaults={
-                    'timestamp': timezone.make_aware(datetime.combine(today, time(9, 0))),
-                    'event': f"Overdue by {label}: {todo.task_name}",
-                    'action': {'mark_done': [True, False]},
-                }
-            )
+        exists = TimelineEvent.objects.filter(
+            user=todo.user,
+            event_type=TimelineEventType.TODO,
+            reference={'model': 'Task', 'id': todo.id},
+            timestamp__date=today,
+        ).exists()
+        if not exists:
+            if deadline_date == today:
+                TimelineEvent.objects.create(
+                    user=todo.user,
+                    timestamp=todo.deadline,
+                    event_type=TimelineEventType.TODO,
+                    event=f"Due today: {todo.task_name}",
+                    reference={'model': 'Task', 'id': todo.id},
+                    action={'mark_done': [True, False]},
+                )
+            elif deadline_date < today:
+                days = (today - deadline_date).days
+                label = f"{days} day" if days == 1 else f"{days} days"
+                TimelineEvent.objects.create(
+                    user=todo.user,
+                    timestamp=timezone.make_aware(datetime.combine(today, time(9, 0))),
+                    event_type=TimelineEventType.TODO,
+                    event=f"Overdue by {label}: {todo.task_name}",
+                    reference={'model': 'Task', 'id': todo.id},
+                    action={'mark_done': [True, False]},
+                )
 
     elif item_type == 'routine':
         try:
@@ -304,15 +340,19 @@ def generate_timeline_for_new_item(item_type, item_id):
         if entry.routine_type != expected_type:
             return
 
-        timestamp = timezone.make_aware(datetime.combine(today, entry.time))
-        TimelineEvent.objects.get_or_create(
+        exists = TimelineEvent.objects.filter(
             user=entry.user,
             event_type=TimelineEventType.ROUTINE,
             reference={'model': 'RoutineEntry', 'id': entry.id},
             timestamp__date=today,
-            defaults={
-                'timestamp': timestamp,
-                'event': entry.title,
-                'action': None,
-            }
-        )
+        ).exists()
+        if not exists:
+            timestamp = timezone.make_aware(datetime.combine(today, entry.time))
+            TimelineEvent.objects.create(
+                user=entry.user,
+                timestamp=timestamp,
+                event_type=TimelineEventType.ROUTINE,
+                event=entry.title,
+                reference={'model': 'RoutineEntry', 'id': entry.id},
+                action=None,
+            )

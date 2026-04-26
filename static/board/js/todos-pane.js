@@ -234,6 +234,9 @@ const TodosPane = {
     async toggleTodo(id, isDone) {
         const res = await apiClient.put(`board/api/tasks/${id}/`, { is_done: !isDone });
         if (res.status === 'success') {
+            if (res.gamification) {
+                document.dispatchEvent(new CustomEvent('gamification', {detail: res.gamification}));
+            }
             await this.loadTodos();
             await this.loadGroups();
             General.loadProductivityScore();
@@ -304,7 +307,7 @@ const TodosPane = {
         const list = document.getElementById('manageGroupsList');
         if (!list) return;
         if (this.groups.length === 0) {
-            list.innerHTML = '<p class="text-center text-muted small">No groups yet.</p>';
+            list.innerHTML = '<p class="text-center text-brown small">No groups yet.</p>';
             return;
         }
         list.innerHTML = this.groups.map(g => {
@@ -315,7 +318,7 @@ const TodosPane = {
             return `
                 <div class="d-flex align-items-center gap-2 py-2 border-bottom">
                     <span style="flex:1">${g.name}</span>
-                    <span class="text-muted small">${g.pending_count} pending</span>
+                    <span class="text-brown small">${g.pending_count} pending</span>
                     <button class="btn btn-paper btn-sm" onclick="TodosPane.renameGroupFromManager(${g.id}, '${g.name.replace(/'/g, "\\'")}')"><i class="fas fa-pen fa-xs"></i></button>
                     ${deleteBtn}
                 </div>`;

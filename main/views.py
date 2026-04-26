@@ -53,6 +53,17 @@ def logout_view(request):
     return redirect('/')
 
 
+def delete_account(request):
+    if not request.user.is_authenticated:
+        return redirect('/')
+    if request.method == 'POST':
+        user = request.user
+        logout(request)
+        user.delete()
+        return redirect('/')
+    return redirect('privacy-policy')
+
+
 def manifest(request):
     """Serve PWA manifest"""
     manifest_data = {

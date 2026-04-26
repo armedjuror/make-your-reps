@@ -359,9 +359,9 @@
 /* ── Pomodoro Toast ── */
 .pomo-toast {
     position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%) translateY(-80px);
+    bottom: 110px;
+    right: 24px;
+    transform: translateX(80px);
     z-index: 9999;
     background: var(--paper-bg, #faf7f2);
     border: 1.5px solid var(--coffee-stain, rgba(152, 117, 63, 0.3));
@@ -376,7 +376,7 @@
 }
 
 .pomo-toast.show {
-    transform: translateX(-50%) translateY(0);
+    transform: translateX(0);
     opacity: 1;
     pointer-events: auto;
 }
@@ -842,6 +842,69 @@
 
 .rl-name {
     display: none;
+}
+
+/* Reading List — all items view */
+.rl-all-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--ink-brown-light);
+    transition: background 0.15s;
+}
+.rl-all-item:last-child { border-bottom: none; }
+.rl-all-item:hover { background: rgba(152,117,63,0.05); }
+
+.rl-icon-sm {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+.rl-icon-sm .rl-letter { width: 28px; height: 28px; font-size: 0.75rem; }
+
+.rl-all-info {
+    flex: 1;
+    min-width: 0;
+}
+.rl-all-name {
+    display: block;
+    font-weight: 600;
+    color: var(--ink-brown);
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.9rem;
+}
+.rl-all-name:hover { text-decoration: underline; }
+.rl-all-url {
+    font-size: 0.75rem;
+    color: var(--ink-gray);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0.7;
+}
+.rl-featured-badge {
+    margin-left: 5px;
+    color: var(--ink-brown);
+    font-size: 0.65rem;
+    vertical-align: middle;
+}
+.rl-all-item .rl-edit-btn {
+    position: static;
+    display: flex;
+    opacity: 0;
+    width: 26px;
+    height: 26px;
+    flex-shrink: 0;
+    transition: opacity 0.15s;
+}
+.rl-all-item:hover .rl-edit-btn { opacity: 1; }
+@media (hover: none) {
+    .rl-all-item .rl-edit-btn { opacity: 0.75; }
 }
 
 .reading-list-add-btn {
@@ -1599,3 +1662,556 @@
         font-size: 0.85rem;
     }
 }
+
+/* ══════════════════════════════════════════
+   Misc Pane — Friends
+══════════════════════════════════════════ */
+
+.misc-pane-layout {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 16px 60px;
+}
+
+/* Sub-tabs */
+.misc-sub-tabs {
+    display: flex;
+    gap: 8px;
+    border-bottom: 2px solid var(--border-color, rgba(152, 117, 63, 0.18));
+    padding-bottom: 0;
+}
+
+.misc-sub-tab {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    padding: 8px 18px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--ink-brown, #888);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+    font-family: inherit;
+}
+
+.misc-sub-tab.active,
+.misc-sub-tab:hover {
+    color: var(--ink-brown, #6b4c2a);
+    border-bottom-color: var(--ink-brown, #6b4c2a);
+}
+
+/* Friend item row */
+.misc-friend-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color, rgba(152, 117, 63, 0.15));
+    margin-bottom: 8px;
+    background: var(--card-bg, transparent);
+    transition: background 0.15s;
+}
+
+.misc-friend-item:hover {
+    background: var(--hover-bg, rgba(152, 117, 63, 0.06));
+}
+
+.misc-friend-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--ink-brown, #6b4c2a);
+    color: var(--paper-bg, #fff);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.misc-friend-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.misc-friend-name {
+    font-weight: 600;
+    font-size: 0.92rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.misc-friend-email {
+    font-size: 0.78rem;
+    opacity: 0.55;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Request item row */
+.misc-request-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color, rgba(152, 117, 63, 0.15));
+    margin-bottom: 8px;
+    background: var(--card-bg, transparent);
+}
+
+.misc-request-info {
+    min-width: 0;
+}
+
+.misc-request-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+/* Status colours */
+.misc-status-pending  { color: var(--accent-orange, #e6920a); }
+.misc-status-accepted { color: var(--accent-green,  #2e7d32); }
+.misc-status-declined { color: var(--text-brown,    #888);    }
+
+/* Mobile */
+@media (max-width: 768px) {
+    .misc-pane-layout {
+        padding: 0 4px 40px;
+    }
+
+    .misc-sub-tab {
+        padding: 6px 12px;
+        font-size: 0.82rem;
+    }
+}
+
+/* ══════════════════════════════════════════════════
+   GAMIFICATION — Status Bar (inside pomodoro section)
+══════════════════════════════════════════════════ */
+
+.gami-status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+    padding: 3px 0 1px;
+    font-size: 0.68rem;
+    color: var(--ink-gray);
+}
+
+.gami-stat {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-weight: 600;
+    color: var(--ink-brown);
+}
+
+.gami-stat small {
+    font-weight: 400;
+    color: var(--ink-gray);
+}
+
+.gami-sep {
+    color: var(--ink-brown-light);
+    opacity: 0.5;
+}
+
+.gami-icon-streak,
+.gami-icon-level,
+.gami-icon-pts {
+    color: var(--ink-brown);
+    font-size: 0.65rem;
+}
+
+.gami-xp-bar-wrap {
+    width: 60px;
+    display: flex;
+    align-items: center;
+}
+
+.gami-xp-bar {
+    height: 3px;
+    width: 100%;
+    border-radius: 2px;
+    background: var(--ink-brown-light);
+    opacity: 0.3;
+    overflow: hidden;
+}
+
+.gami-xp-fill {
+    height: 100%;
+    background: var(--ink-brown);
+    border-radius: 2px;
+    transition: width 0.6s ease;
+    opacity: 1;
+}
+
+/* ── Floating +N pts animation ── */
+
+#gami-float-container {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9998;
+}
+
+.gami-float-pts {
+    position: absolute;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--ink-brown);
+    animation: gamiFloat 1.5s ease forwards;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.gami-float-pts-neg {
+    color: var(--ink-red);
+}
+
+@keyframes gamiFloat {
+    0%   { opacity: 1; transform: translateY(0) scale(1); }
+    60%  { opacity: 1; transform: translateY(-40px) scale(1.1); }
+    100% { opacity: 0; transform: translateY(-70px) scale(0.9); }
+}
+
+/* ── Achievement unlock toast ── */
+
+.gami-achievement-toast {
+    position: fixed;
+    bottom: 28px;
+    right: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 18px;
+    border-radius: 10px;
+    background: transparent;
+    border: 1px solid var(--ink-brown-light);
+    backdrop-filter: blur(8px);
+    z-index: 9999;
+    opacity: 0;
+    transform: translateX(80px);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+    max-width: 280px;
+}
+
+.gami-achievement-toast.visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.gami-toast-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--ink-brown);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-brown);
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.gami-toast-title {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-gray);
+    font-weight: 600;
+}
+
+.gami-toast-name {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--ink-brown);
+}
+
+.gami-toast-pts {
+    font-size: 0.72rem;
+    color: var(--ink-brown);
+    opacity: 0.7;
+    font-weight: 600;
+}
+
+/* ══════════════════════════════════════════════════
+   GAMIFICATION — Achievements Tab
+══════════════════════════════════════════════════ */
+
+.gami-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--ink-brown-light);
+    height: 100%;
+}
+
+.gami-card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    border: 1px solid var(--ink-brown-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-brown);
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.gami-card-value {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--ink-brown);
+    line-height: 1.2;
+}
+
+.gami-card-label {
+    font-size: 0.75rem;
+    color: var(--ink-gray);
+    font-weight: 500;
+}
+
+.gami-card-sub {
+    font-size: 0.72rem;
+    color: var(--ink-gray);
+    opacity: 0.7;
+    margin-top: 2px;
+}
+
+/* ── Badge grid ── */
+
+.ach-category-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-brown);
+    opacity: 0.7;
+    font-weight: 700;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--ink-brown-light);
+    padding-bottom: 5px;
+}
+
+.hallmark-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.hallmark-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border: 1px solid var(--ink-brown-light);
+    border-radius: 8px;
+}
+
+.hallmark-icon {
+    color: var(--ink-brown);
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    width: 28px;
+    text-align: center;
+}
+
+.hallmark-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--ink-brown);
+}
+
+.hallmark-meta {
+    font-size: 0.72rem;
+    color: var(--ink-gray);
+    opacity: 0.7;
+    margin-top: 2px;
+}
+
+.ach-score-chart-wrap {
+    width: 100%;
+    height: 180px;
+}
+
+.ach-score-chart-wrap canvas {
+    width: 100% !important;
+    height: 180px !important;
+}
+
+.ach-badge-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+}
+
+.ach-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 14px 10px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--ink-brown-light);
+    transition: transform 0.15s ease;
+    cursor: default;
+}
+
+.ach-badge.unlocked {
+    border-color: var(--ink-brown);
+}
+
+.ach-badge.locked {
+    opacity: 0.35;
+}
+
+.ach-badge.unlocked:hover {
+    transform: translateY(-2px);
+}
+
+.ach-badge-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--ink-brown-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+    color: var(--ink-brown);
+}
+
+.ach-badge.unlocked .ach-badge-icon {
+    border-color: var(--ink-brown);
+    background: transparent;
+}
+
+.ach-badge-name {
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: var(--ink-brown);
+    line-height: 1.3;
+}
+
+.ach-badge-date {
+    font-size: 0.65rem;
+    color: var(--ink-gray);
+    opacity: 0.6;
+    margin-top: 3px;
+}
+
+.ach-badge-desc {
+    font-size: 0.63rem;
+    color: var(--ink-gray);
+    opacity: 0.5;
+    margin-top: 3px;
+    line-height: 1.3;
+}
+
+@media (max-width: 768px) {
+    .ach-badge-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    }
+}
+/* ── Onboarding Modal ── */
+.onboarding-modal {
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--ink-brown-light);
+}
+.ob-slides {
+    min-height: 320px;
+    position: relative;
+}
+.ob-slide {
+    display: none;
+    padding: 48px 40px 24px;
+    text-align: center;
+}
+.ob-slide.active { display: block; }
+
+.ob-hero { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.ob-logo { width: 64px; height: 64px; object-fit: contain; border-radius: 12px; }
+.ob-title { font-size: 1.6rem; font-weight: 700; color: var(--ink-brown); margin: 0; }
+.ob-subtitle { color: var(--ink-gray); font-size: 0.95rem; max-width: 420px; margin: 0 auto; }
+
+.ob-feature { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.ob-icon {
+    width: 56px; height: 56px; border-radius: 16px;
+    background: rgba(152,117,63,0.1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem; color: var(--ink-brown);
+}
+.ob-feature h3 { font-size: 1.2rem; font-weight: 700; color: var(--ink-brown); margin: 0; }
+.ob-feature p { color: var(--ink-gray); font-size: 0.9rem; max-width: 400px; margin: 0; line-height: 1.6; }
+.ob-hint {
+    background: rgba(152,117,63,0.08);
+    border-left: 3px solid var(--ink-brown-light);
+    padding: 8px 14px;
+    border-radius: 0 8px 8px 0;
+    font-size: 0.82rem;
+    color: var(--ink-brown);
+    max-width: 420px;
+    text-align: left;
+}
+
+.ob-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 40px 32px;
+}
+.ob-dots { display: flex; gap: 8px; }
+.ob-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--ink-brown-light);
+    cursor: pointer; transition: background 0.2s, transform 0.2s;
+}
+.ob-dot.active { background: var(--ink-brown); transform: scale(1.3); }
+.ob-actions { display: flex; gap: 8px; }
+
+/* ── Footer Pomodoro (replaces copyright when timer is running off home) ── */
+#footer-pomodoro {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+#pomo-mini-mode {
+    font-size: 0.7rem;
+    opacity: 0.6;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+#pomo-mini-time {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+.pomo-mini-btn {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    opacity: 0.7;
+    transition: opacity 0.15s;
+}
+.pomo-mini-btn:hover { opacity: 1; }

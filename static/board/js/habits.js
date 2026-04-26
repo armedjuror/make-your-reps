@@ -8,7 +8,7 @@ const Habits = {
         ['habitDetailStep', 'habitIdentityStep', 'habitNotifyStep', 'habitFrequencyStep'].forEach(id => {
             document.getElementById(id).style.display = 'none';
         });
-        document.querySelectorAll('.freq-day-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.freq-day-btn').forEach(btn => btn.classList.add('active'));
 
         const el = document.getElementById('habitModal');
         const nameInput = document.getElementById('habitName');
@@ -67,6 +67,10 @@ const Habits = {
         const frequency = [...document.querySelectorAll('.freq-day-btn.active')].map(b => parseInt(b.dataset.day));
         if (!habit || !detail || !identity) {
             showError('Please complete the habit, when/where, and identity fields');
+            return;
+        }
+        if (frequency.length === 0) {
+            showError('Please select at least one day for this habit.');
             return;
         }
         apiClient.post('board/api/habits/', {habit, detail, identity, notify_at, frequency}).then(res => {
@@ -159,6 +163,9 @@ const Habits = {
                         if (res.data.is_done)showSuccess(res.message)
                         const habitMessage = document.querySelector('.habit-remark[data-habit="' + habit_id + '"]');
                         habitMessage.innerText = res.message;
+                    }
+                    if (res.gamification) {
+                        document.dispatchEvent(new CustomEvent('gamification', {detail: res.gamification}));
                     }
                     General.loadProductivityScore();
                 }else{
@@ -323,150 +330,99 @@ function confirmDelete() {
 }
 
 
-// Update partner display
+// Update inline partner display (shows count of active partners)
 function updatePartnerDisplay() {
     const partnerDisplay = document.getElementById('partnerDisplay');
-    if (currentHabitData.partnerEmail) {
-        partnerDisplay.innerHTML = `<span class="partner-badge">${currentHabitData.partnerEmail}</span>`;
-    } else {
-        partnerDisplay.innerHTML = '<span>Feature coming soon</span>';
-    }
+    if (!partnerDisplay) return;
+    apiClient.get(`board/api/accountability_partners/?habit_id=${currentHabitData.id}`).then(res => {
+        if (res.status === 'success') {
+            const count = res.data.length;
+            partnerDisplay.innerHTML = count > 0
+                ? `<span class="partner-badge">${count} partner${count > 1 ? 's' : ''}</span>`
+                : '<span style="color: var(--ink-brown)">None assigned</span>';
+        }
+    });
 }
 
-// Toggle partner section
+// Toggle partner section — load and show real partner list
 function togglePartnerSection() {
     const partnerSection = document.getElementById('partnerSection');
     const partnerActions = document.getElementById('partnerActions');
 
     if (partnerSection.style.display === 'none') {
-        // Show partner section
         partnerSection.style.display = 'block';
         partnerActions.style.display = 'block';
-
-        // Update current partner section
-        updateCurrentPartnerSection();
-
-        document.getElementById('habit_settings_message').innerHTML =
-            '<div class="alert alert-info"><i class="fas fa-user-friends me-2"></i>Manage your accountability partner below.</div>';
+        loadPartnersList();
     } else {
-        cancelPartnerEdit();
+        partnerSection.style.display = 'none';
+        partnerActions.style.display = 'none';
+        document.getElementById('habit_settings_message').innerHTML = '';
+        document.getElementById('partnerEmail').value = '';
     }
 }
 
-// Update current partner section
-function updateCurrentPartnerSection() {
-    const currentPartnerSection = document.getElementById('currentPartnerSection');
-
-    if (currentHabitData.partnerEmail) {
-        currentPartnerSection.innerHTML = `
-            <div class="current-partner-card">
-                <div class="partner-info">
-                    <div class="partner-details">
-                        <div class="partner-avatar">
-                            ${currentHabitData.partnerEmail.charAt(0).toUpperCase()}
-                        </div>
-                        <div class="partner-meta">
-                            <h6>${currentHabitData.partnerEmail}</h6>
-                            <small>Accountability Partner</small>
-                        </div>
-                    </div>
-                    <div class="partner-actions">
-                        <button class="btn btn-sm btn-outline-danger" onclick="removePartner()">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-    } else {
-        currentPartnerSection.innerHTML = `
-            <div class="alert alert-secondary mb-3">
-                <i class="fas fa-info-circle me-2"></i>
-                No accountability partner assigned yet.
-            </div>
-        `;
-    }
+function loadPartnersList() {
+    const listEl = document.getElementById('partnersList');
+    listEl.innerHTML = '<div class="notebook-spinner"></div>';
+    apiClient.get(`board/api/accountability_partners/?habit_id=${currentHabitData.id}`).then(res => {
+        if (res.status !== 'success') { listEl.innerHTML = ''; return; }
+        const partners = res.data;
+        if (partners.length === 0) {
+            listEl.innerHTML = '<p class="text-brown small">No partners yet.</p>';
+            return;
+        }
+        listEl.innerHTML = partners.map(ap => {
+            const statusBadge = ap.status === 'active'
+                ? '<span class="badge bg-success ms-2">Active</span>'
+                : ap.status === 'request-sent'
+                    ? '<span class="badge bg-warning ms-2">Pending</span>'
+                    : '<span class="badge bg-secondary ms-2">Inactive</span>';
+            return `
+                <div class="d-flex align-items-center justify-content-between mb-2 p-2 border rounded">
+                    <span><i class="fas fa-user me-2"></i>${ap.partner_name}${statusBadge}</span>
+                    <button class="btn btn-paper btn-sm btn-danger" onclick="removePartner(${ap.id})">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>`;
+        }).join('');
+    });
 }
 
-// Cancel partner edit
-function cancelPartnerEdit() {
-    document.getElementById('partnerSection').style.display = 'none';
-    document.getElementById('partnerActions').style.display = 'none';
-    document.getElementById('habit_settings_message').innerHTML = '';
-    document.getElementById('partnerEmail').value = '';
-}
-
-// Assign partner
+// Assign partner — real API call
 function assignPartner() {
     const email = document.getElementById('partnerEmail').value.trim();
+    const msgEl = document.getElementById('habit_settings_message');
 
-    if (!email) {
-        document.getElementById('habit_settings_message').innerHTML =
-            '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-2"></i>Please enter a valid email address.</div>';
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        msgEl.innerHTML = '<div class="alert alert-danger">Please enter a valid email address.</div>';
         return;
     }
 
-    if (!isValidEmail(email)) {
-        document.getElementById('habit_settings_message').innerHTML =
-            '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-2"></i>Please enter a valid email format.</div>';
-        return;
-    }
-
-    // Update current data
-    currentHabitData.partnerEmail = email;
-
-    // Update displays
-    updatePartnerDisplay();
-    updateCurrentPartnerSection();
-
-    // Clear input
-    document.getElementById('partnerEmail').value = '';
-
-    // Show success message
-    document.getElementById('habit_settings_message').innerHTML =
-        '<div class="alert alert-success"><i class="fas fa-check me-2"></i>Accountability partner assigned successfully! They will receive an invitation.</div>';
-
-    // Here you would make an API call to assign the partner
-    // apiClient.post(`habits/${currentHabitData.id}/assign-partner/`, { email, permissions: getPartnerPermissions() });
+    apiClient.post('board/api/accountability_partners/', {
+        habit_id: currentHabitData.id,
+        email,
+    }).then(res => {
+        if (res.status === 'success') {
+            document.getElementById('partnerEmail').value = '';
+            msgEl.innerHTML = '<div class="alert alert-success"><i class="fas fa-check me-2"></i>Partner added successfully!</div>';
+            loadPartnersList();
+            updatePartnerDisplay();
+        } else {
+            msgEl.innerHTML = `<div class="alert alert-danger">${res.error || 'Failed to add partner.'}</div>`;
+        }
+    });
 }
 
-// Remove partner
-function removePartner() {
-    currentHabitData.partnerEmail = null;
-    currentHabitData.partnerId = null;
-
-    updatePartnerDisplay();
-    updateCurrentPartnerSection();
-
-    document.getElementById('habit_settings_message').innerHTML =
-        '<div class="alert alert-info"><i class="fas fa-info-circle me-2"></i>Accountability partner removed.</div>';
-
-    // Here you would make an API call to remove the partner
-    // apiClient.delete(`habits/${currentHabitData.id}/remove-partner/`);
-}
-
-// Save partner settings
-function savePartnerSettings() {
-    const permissions = getPartnerPermissions();
-
-    document.getElementById('habit_settings_message').innerHTML =
-        '<div class="alert alert-success"><i class="fas fa-check me-2"></i>Partner settings saved successfully!</div>';
-
-    // Here you would make an API call to save partner settings
-    // apiClient.put(`habits/${currentHabitData.id}/partner-settings/`, { permissions });
-}
-
-// Get partner permissions
-function getPartnerPermissions() {
-    return {
-        canViewProgress: document.getElementById('canViewProgress').checked,
-        canSendReminders: document.getElementById('canSendReminders').checked,
-        receiveNotifications: document.getElementById('receiveNotifications').checked
-    };
-}
-
-// Validate email
-function isValidEmail(email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+// Remove partner — real API call
+function removePartner(apId) {
+    apiClient.delete(`board/api/accountability_partners/${apId}/`).then(res => {
+        if (res.status === 'success') {
+            loadPartnersList();
+            updatePartnerDisplay();
+            document.getElementById('habit_settings_message').innerHTML =
+                '<div class="alert alert-info">Partner removed.</div>';
+        } else {
+            showError(res.error || 'Failed to remove partner.');
+        }
+    });
 }

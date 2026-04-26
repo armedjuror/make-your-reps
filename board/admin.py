@@ -14,8 +14,7 @@ class UserDetailAdmin(admin.ModelAdmin):
 
 @admin.register(Friend)
 class FriendAdmin(admin.ModelAdmin):
-    list_display = ('user', 'friend', 'is_active', 'created_at')
-    list_filter = ('is_active',)
+    list_display = ('user', 'friend', 'created_at')
 
 
 @admin.register(Task)
@@ -53,7 +52,8 @@ class HabitLogAdmin(admin.ModelAdmin):
 
 @admin.register(AccountabilityPartner)
 class AccountabilityPartnerAdmin(admin.ModelAdmin):
-    list_display = ('habit', 'partner', 'is_active')
+    list_display = ('habit', 'partner', 'status', 'created_at')
+    list_filter = ('status',)
 
 
 @admin.register(RoutineEntry)

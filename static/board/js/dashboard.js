@@ -4,12 +4,21 @@
  */
 
 let currentPane = 'home';
-let panesLoaded = { home: false, todos: false, trackers: false, journals: false };
+let panesLoaded = { home: false, todos: false, trackers: false, journals: false, others: false };
 let currentTheme = 'light';
 
+// Sub-tab hashes that map to the others pane
+const OTHERS_TABS = ['friends', 'achievements', 'reading-list'];
+
 // ── Pane Switching ──
-function switchPane(pane) {
-    if (pane === currentPane) return;
+function switchPane(pane, subTab = null) {
+    // #friends and #achievements deep-link into the others pane
+    if (OTHERS_TABS.includes(pane)) {
+        subTab = pane;
+        pane = 'others';
+    }
+
+    if (pane === currentPane && !subTab) return;
 
     // Hide all panes
     document.querySelectorAll('.pane').forEach(p => p.style.display = 'none');
@@ -28,7 +37,14 @@ function switchPane(pane) {
     if (activeMobileItem) activeMobileItem.classList.add('active');
 
     currentPane = pane;
-    window.location.hash = pane === 'home' ? '' : pane;
+
+    // Refresh footer bar pomodoro visibility on pane switch
+    if (typeof Pomodoro !== 'undefined' && Pomodoro.state) Pomodoro.render();
+
+    // Sync URL hash (sub-tabs inside others update it themselves via misc.js)
+    if (pane !== 'others') {
+        history.replaceState(null, '', pane === 'home' ? window.location.pathname : `#${pane}`);
+    }
 
     // Lazy load pane data on first visit
     if (!panesLoaded[pane]) {
@@ -37,6 +53,9 @@ function switchPane(pane) {
         else if (pane === 'trackers') initTrackersPane();
         else if (pane === 'journals') initJournalsPane();
         else if (pane === 'todos') initTodosPane();
+        else if (pane === 'others') MiscPane.init(subTab);
+    } else if (pane === 'others' && subTab) {
+        MiscPane.switchTab(subTab);
     }
 }
 
@@ -156,11 +175,11 @@ function bindEvents() {
     document.getElementById('habit-toggle-edit-btn').addEventListener('click', toggleEditForm);
     document.getElementById('habit-hallmark-btn').addEventListener('click', hallmarkHabit);
     document.getElementById('habit-delete-btn').addEventListener('click', deleteHabit);
+    document.getElementById('habit-accountability-btn').addEventListener('click', togglePartnerSection);
     document.getElementById('assign-partner-btn').addEventListener('click', assignPartner);
     document.getElementById('habit-cancel-edit-btn').addEventListener('click', cancelEdit);
     document.getElementById('habit-save-changes-btn').addEventListener('click', saveHabitChanges);
-    document.getElementById('partner-cancel-btn').addEventListener('click', cancelPartnerEdit);
-    document.getElementById('partner-save-btn').addEventListener('click', savePartnerSettings);
+    document.getElementById('partner-close-btn').addEventListener('click', togglePartnerSection);
 
     // Modal — Hallmark & Delete confirmation
     document.getElementById('hallmark-confirm-btn').addEventListener('click', confirmHallmark);
@@ -273,6 +292,60 @@ const General = {
     }
 }
 
+// ── Onboarding ──
+const Onboarding = {
+    _total: 6,
+    _current: 0,
+    _modal: null,
+
+    show() {
+        this._modal = new bootstrap.Modal(document.getElementById('onboardingModal'));
+        this._renderDots();
+        this._goTo(0);
+        this._modal.show();
+    },
+
+    _renderDots() {
+        const el = document.getElementById('ob-dots');
+        el.innerHTML = Array.from({length: this._total}, (_, i) =>
+            `<span class="ob-dot" data-i="${i}" onclick="Onboarding._goTo(${i})"></span>`
+        ).join('');
+    },
+
+    _goTo(i) {
+        this._current = i;
+        document.querySelectorAll('.ob-slide').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.ob-dot').forEach((d, idx) => d.classList.toggle('active', idx === i));
+        const slide = document.querySelector(`.ob-slide[data-slide="${i}"]`);
+        if (slide) slide.classList.add('active');
+        document.getElementById('ob-prev').style.display = i === 0 ? 'none' : '';
+        const nextBtn = document.getElementById('ob-next');
+        if (i === this._total - 1) {
+            nextBtn.innerHTML = 'Get Started <i class="fas fa-check ms-1"></i>';
+        } else {
+            nextBtn.innerHTML = 'Next <i class="fas fa-arrow-right ms-1"></i>';
+        }
+    },
+
+    next() {
+        if (this._current < this._total - 1) {
+            this._goTo(this._current + 1);
+        } else {
+            this.complete();
+        }
+    },
+
+    prev() {
+        if (this._current > 0) this._goTo(this._current - 1);
+    },
+
+    complete() {
+        apiClient.post('board/api/onboarding_complete/');
+        if (AppConfig.userDetail) AppConfig.userDetail.is_onboarded = true;
+        this._modal.hide();
+    },
+};
+
 // ── Initialize ──
 document.addEventListener('DOMContentLoaded', function () {
     bindEvents();
@@ -281,7 +354,7 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('year').innerText = new Date().getFullYear();
 
     const hash = window.location.hash.replace('#', '') || 'home';
-    const validPanes = ['home', 'todos', 'trackers', 'journals'];
+    const validPanes = ['home', 'todos', 'trackers', 'journals', 'others', 'friends', 'achievements', 'reading-list'];
     const initialPane = validPanes.includes(hash) ? hash : 'home';
 
     AppConfig.load().then(() => {
@@ -293,14 +366,22 @@ document.addEventListener('DOMContentLoaded', function () {
         if (initialPane !== 'home') {
             switchPane(initialPane);
         }
+
+        document.dispatchEvent(new Event('appConfigLoaded'));
+        BrowserNotify.updatePermissionUI();
+        BrowserNotify.startTimelinePoller();
+
+        if (!AppConfig.userDetail?.is_onboarded) {
+            Onboarding.show();
+        }
     });
 });
 
 // Listen for hash changes
 window.addEventListener('hashchange', function () {
     const hash = window.location.hash.replace('#', '') || 'home';
-    const validPanes = ['home', 'todos', 'trackers', 'journals'];
-    if (validPanes.includes(hash) && hash !== currentPane) {
+    const validPanes = ['home', 'todos', 'trackers', 'journals', 'others', 'friends', 'achievements', 'reading-list'];
+    if (validPanes.includes(hash)) {
         switchPane(hash);
     }
 });

@@ -36,8 +36,10 @@ const AppConfig = {
         if (icon) icon.className = d.default_theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
 
         // Settings — general
-        const nameEl = document.getElementById('settingsName');
-        if (nameEl) nameEl.value = `${d.first_name || ''} ${d.last_name || ''}`.trim();
+        const firstNameEl = document.getElementById('settingsFirstName');
+        if (firstNameEl) firstNameEl.value = d.first_name || '';
+        const lastNameEl = document.getElementById('settingsLastName');
+        if (lastNameEl) lastNameEl.value = d.last_name || '';
 
         const themeSelect = document.getElementById('themeSelect');
         if (themeSelect) themeSelect.value = d.default_theme || 'light';

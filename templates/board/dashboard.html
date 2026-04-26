@@ -49,6 +49,10 @@
                 <i class="fas fa-book"></i>
                 <span>Journals</span>
             </a>
+            <a class="tab-item" data-pane="others">
+                <i class="fas fa-layer-group"></i>
+                <span>Others</span>
+            </a>
             <a class="tab-item" id="tab-theme-btn">
                 <i class="fas fa-moon" id="themeIcon"></i>
                 <span>Theme</span>
@@ -98,6 +102,9 @@
         <a class="mobile-menu-item" data-pane="journals">
             <i class="fas fa-book"></i> Journals
         </a>
+        <a class="mobile-menu-item" data-pane="others">
+            <i class="fas fa-layer-group"></i> Others
+        </a>
         <a class="mobile-menu-item" id="mobile-theme-btn">
             <i class="fas fa-circle-half-stroke"></i> Toggle Theme
         </a>
@@ -146,6 +153,30 @@
                         </div>
                     <div class="pomodoro-cycles" id="pomodoro-cycles"></div>
                     <div class="pomodoro-focus-today"><span id="pomodoro-focused-today"></span></div>
+                    <!-- Gamification Status Bar -->
+                    <div class="gami-status-bar" id="gami-status-bar">
+                        <div class="gami-stat" title="Daily streak">
+                            <i class="fas fa-fire gami-icon-streak"></i>
+                            <span id="gami-streak">0</span>
+                            <small>streak</small>
+                        </div>
+                        <div class="gami-sep">·</div>
+                        <div class="gami-stat" title="Level">
+                            <i class="fas fa-bolt gami-icon-level"></i>
+                            <span id="gami-level-name">Newcomer</span>
+                        </div>
+                        <div class="gami-sep">·</div>
+                        <div class="gami-stat" title="Total points">
+                            <i class="fas fa-star gami-icon-pts"></i>
+                            <span id="gami-points">0</span>
+                            <small>pts</small>
+                        </div>
+                        <div class="gami-xp-bar-wrap" title="XP to next level">
+                            <div class="gami-xp-bar">
+                                <div class="gami-xp-fill" id="gami-xp-fill" style="width:0%"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Pomodoro Toast -->
@@ -164,7 +195,6 @@
                     <h1 id="greeting-text">Good Morning!</h1>
                     <p id="greeting-sub">Let's make today amazing</p>
                 </div>
-
 
 
                 <!-- Search Bar -->
@@ -221,7 +251,7 @@
 {#                            </div>#}
 {#                            <div class="d-flex align-items-center gap-2 mt-1">#}
 {#                                <input type="datetime-local" class="form-control form-control-sm" id="todoDeadlineInput" style="max-width:230px;">#}
-{#                                <small class="text-muted">deadline (optional)</small>#}
+{#                                <small class="text-brown">deadline (optional)</small>#}
 {#                            </div>#}
 {#                        </div>#}
 {#                        <div id="todoList"></div>#}
@@ -324,6 +354,151 @@ Write freely here, like you're writing in your personal journal..." id="journal-
     </div>
 
     <!-- ═══════════════════════════════════════════ -->
+    <!-- PANE: MISC                                  -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div class="pane" id="pane-others" style="display:none;padding-top: 100px;">
+        <div class="container-fluid">
+            <div class="misc-pane-layout">
+                <!-- Sub-tabs -->
+                <div class="misc-sub-tabs mb-4">
+                    <button class="misc-sub-tab active" data-misc-tab="friends">
+                        <i class="fas fa-user-friends me-1"></i> Friends
+                    </button>
+                    <button class="misc-sub-tab" data-misc-tab="achievements">
+                        <i class="fas fa-trophy me-1"></i> Achievements
+                    </button>
+                    <button class="misc-sub-tab" data-misc-tab="reading-list">
+                        <i class="fas fa-bookmark me-1"></i> Reading List
+                    </button>
+                </div>
+
+                <!-- Achievements Tab -->
+                <div class="misc-tab-content" id="misc-tab-achievements" style="display:none;">
+                    <!-- Level + Streak summary -->
+                    <div class="row mb-4">
+                        <div class="col-md-4 mb-3">
+                            <div class="gami-card">
+                                <div class="gami-card-icon"><i class="fas fa-bolt"></i></div>
+                                <div class="gami-card-body">
+                                    <div class="gami-card-value" id="ach-level-name">Newcomer</div>
+                                    <div class="gami-card-label">Level <span id="ach-level-num">1</span></div>
+                                    <div class="gami-xp-bar mt-2">
+                                        <div class="gami-xp-fill" id="ach-xp-fill" style="width:0%"></div>
+                                    </div>
+                                    <small id="ach-xp-label" class="text-muted">0 / 500 XP</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="gami-card">
+                                <div class="gami-card-icon gami-icon-streak"><i class="fas fa-fire"></i></div>
+                                <div class="gami-card-body">
+                                    <div class="gami-card-value" id="ach-streak">0</div>
+                                    <div class="gami-card-label">Day Streak</div>
+                                    <div class="gami-card-sub">Best: <span id="ach-longest-streak">0</span> days</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="gami-card">
+                                <div class="gami-card-icon gami-icon-pts"><i class="fas fa-star"></i></div>
+                                <div class="gami-card-body">
+                                    <div class="gami-card-value" id="ach-points">0</div>
+                                    <div class="gami-card-label">Total Points</div>
+                                    <div class="gami-card-sub"><span id="ach-unlocked">0</span> / <span id="ach-total">29</span> badges</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hallmarked Habits -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <h5 class="ach-category-title">Hallmarked Habits</h5>
+                                <div id="hallmarked-habits-list">
+                                    <div class="notebook-spinner"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <!-- Productivity Score — Last 7 Days -->
+                            <div class="mb-4">
+                                <h5 class="ach-category-title">Productivity Score — Last 7 Days</h5>
+                                <div class="ach-score-chart-wrap">
+                                    <canvas id="productivityScoreChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Badge grid by category -->
+                    <div id="achievements-grid">
+                        <div class="notebook-spinner"></div>
+                    </div>
+                </div>
+
+                <!-- Reading List Tab -->
+                <div class="misc-tab-content" id="misc-tab-reading-list" style="display:none;">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h5 class="ach-category-title mb-0">All Bookmarks</h5>
+                        <button class="btn btn-paper btn-sm btn-primary" onclick="ReadingList.showAddModal()">
+                            <i class="fas fa-plus me-1"></i> Add Bookmark
+                        </button>
+                    </div>
+                    <div id="rl-all-list">
+                        <div class="notebook-spinner"></div>
+                    </div>
+                </div>
+
+                <!-- Friends Tab -->
+                <div class="misc-tab-content" id="misc-tab-friends">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <!-- Send Friend Request -->
+                            <div class="section mb-4">
+                                <h3 class="section-title-sm">Add Friend</h3>
+                                <div class="input-group">
+                                    <input type="email" class="form-control" id="friend-request-email" placeholder="Enter email address">
+                                    <button class="btn btn-paper btn-primary" id="send-friend-request-btn">
+                                        <i class="fas fa-paper-plane me-1"></i>Send Request
+                                    </button>
+                                </div>
+                                <div id="friend-request-msg" class="mt-2"></div>
+                            </div>
+
+                            <!-- Friends List -->
+                            <div class="section">
+                                <h3 class="section-title-sm">My Friends</h3>
+                                <div id="friends-list">
+                                    <div class="notebook-spinner"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <!-- Received Requests -->
+                            <div class="section mb-4">
+                                <h3 class="section-title-sm">Received Requests</h3>
+                                <div id="friend-received-list">
+                                    <div class="notebook-spinner"></div>
+                                </div>
+                            </div>
+
+                            <!-- Sent Requests -->
+                            <div class="section">
+                                <h3 class="section-title-sm">Sent Requests</h3>
+                                <div id="friend-sent-list">
+                                    <div class="notebook-spinner"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
     <!-- PANE: TODOS                                 -->
     <!-- ═══════════════════════════════════════════ -->
     <div class="pane" id="pane-todos" style="display:none;padding-top: 100px;">
@@ -408,7 +583,11 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                         <div class="tab-pane fade show active" id="settings-general">
                             <div class="mb-3">
                                 <label class="form-label">Name</label>
-                                <input type="text" class="form-control" id="settingsName" readonly>
+                                <div class="d-flex gap-2">
+                                    <input type="text" class="form-control" id="settingsFirstName" placeholder="First name">
+                                    <input type="text" class="form-control" id="settingsLastName" placeholder="Last name">
+                                    <button class="btn btn-paper btn-sm btn-primary" id="settings-name-save-btn" onclick="Settings.saveName()">Save</button>
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Theme</label>
@@ -440,10 +619,13 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                             <div class="mb-3">
                                 <label class="form-label">Sleep Time</label>
                                 <input type="time" class="form-control" id="sleepTimeInput">
-                                <small class="form-text text-muted">Used for journal reminder & sleep notification</small>
+                                <small class="form-text text-brown">Used for journal reminder & sleep notification</small>
                             </div>
-                            <div class="mb-3">
+                            <div class="mb-3 d-flex gap-2">
                                 <a href="{% url 'logout' %}" class="btn btn-paper btn-danger">Logout</a>
+                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                                    <i class="fas fa-trash-alt me-1"></i>Delete Account
+                                </button>
                             </div>
                         </div>
 
@@ -481,6 +663,12 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                                     <label class="form-check-label" for="soundNotifications">Notification sounds (timeline alerts, sleep reminder)</label>
                                 </div>
                             </div>
+                            <div class="mb-3 d-flex align-items-center gap-3">
+                                <button class="btn btn-paper btn-sm" id="notif-permission-btn" onclick="BrowserNotify.requestPermission().then(()=>BrowserNotify.updatePermissionUI())">
+                                    Enable Browser Notifications
+                                </button>
+                                <small id="notif-permission-status" class="text-brown"></small>
+                            </div>
                         </div>
 
                         <!-- Shortcuts -->
@@ -501,6 +689,36 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Account Confirmation Modal -->
+    <div class="modal fade" id="deleteAccountModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-exclamation-triangle text-danger me-2"></i>Delete Account</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>This will permanently delete your account and all associated data:</p>
+                    <ul>
+                        <li>All habits and habit logs</li>
+                        <li>All tasks and task groups</li>
+                        <li>All journal entries</li>
+                        <li>All routines and timeline events</li>
+                        <li>Your profile and settings</li>
+                    </ul>
+                    <p class="text-danger mb-0"><strong>This action cannot be undone.</strong></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-paper" data-bs-dismiss="modal">Cancel</button>
+                    <form method="POST" action="{% url 'delete-account' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">Yes, Delete My Account</button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -561,7 +779,7 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                         <div class="convo-line convo-step-4" id="habitNotifyStep" style="display:none;">
                             remind me at
                             <input type="time" class="form-input" id="habitNotify">
-                            <small class="text-muted ms-1">(optional)</small>
+                            <small class="text-brown ms-1">(optional)</small>
                         </div>
                         <div class="convo-line convo-step-5" id="habitFrequencyStep" style="display:none;">
                             on every
@@ -574,7 +792,6 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                                 <button type="button" class="freq-day-btn" data-day="5">Sat</button>
                                 <button type="button" class="freq-day-btn" data-day="6">Sun</button>
                             </div>
-                            <small class="text-muted ms-1">(leave empty for every day)</small>
                         </div>
                     </div>
                 </div>
@@ -614,7 +831,7 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                         <div class="d-flex align-items-center">
                             <i class="fas fa-user-friends me-2"></i>
                             <span>Accountability Partner: </span>
-                            <span id="partnerDisplay" class="ms-2">None assigned</span>
+                            <span id="partnerDisplay" class="ms-2 text-brown">None assigned</span>
                         </div>
                     </div>
                 </div>
@@ -655,13 +872,13 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                                 <small class="btn-subtitle">Modify your habit details</small>
                             </button>
                         </div>
-{#                        <div class="col-lg-3 col-md-6 mb-3">#}
-{#                            <button type="button" class="btn habit-action-btn partner-btn" onclick="togglePartnerSection()">#}
-{#                                <i class="fas fa-user-friends"></i>#}
-{#                                <span class="btn-text">Accountability</span>#}
-{#                                <small class="btn-subtitle">Assign a partner</small>#}
-{#                            </button>#}
-{#                        </div>#}
+                        <div class="col-lg-4 col-md-6 mb-3">
+                            <button type="button" class="btn habit-action-btn partner-btn" id="habit-accountability-btn">
+                                <i class="fas fa-user-friends"></i>
+                                <span class="btn-text">Accountability</span>
+                                <small class="btn-subtitle">Manage partners</small>
+                            </button>
+                        </div>
                         <div class="col-lg-4 col-md-6 mb-3">
                             <button type="button" class="btn habit-action-btn" id="habit-hallmark-btn">
                                 <i class="fas fa-star"></i>
@@ -684,51 +901,22 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                     <div class="partner-management">
                         <h6 class="mb-3">
                             <i class="fas fa-user-friends me-2"></i>
-                            Accountability Partner Management
+                            Accountability Partners
                         </h6>
-
-                        <div class="current-partner mb-3" id="currentPartnerSection">
-                            <!-- Will be populated dynamically -->
+                        <div id="partnersList" class="mb-3">
+                            <!-- Loaded dynamically -->
                         </div>
-
                         <div class="assign-partner">
-                            <div class="mb-3">
-                                <label class="form-label">Assign New Partner:</label>
-                                <div class="input-group">
-                                    <input type="email"
-                                           class="form-control"
-                                           id="partnerEmail"
-                                           placeholder="Enter partner's email address">
-                                    <button class="btn btn-paper btn-primary" id="assign-partner-btn">
-                                        <i class="fas fa-plus"></i> Assign
-                                    </button>
-                                </div>
-                                <small class="form-text text-muted mt-1">
-                                    Your partner will receive notifications about your habit progress and can provide encouragement.
-                                </small>
+                            <label class="form-label">Add Partner:</label>
+                            <div class="input-group">
+                                <input type="email" class="form-control" id="partnerEmail" placeholder="Enter partner's email address">
+                                <button class="btn btn-paper btn-primary" id="assign-partner-btn">
+                                    <i class="fas fa-plus"></i> Add
+                                </button>
                             </div>
-
-                            <div class="partner-permissions mb-3">
-                                <label class="form-label">Partner Permissions:</label>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="canViewProgress" checked>
-                                    <label class="form-check-label" for="canViewProgress">
-                                        Can view my progress
-                                    </label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="canSendReminders">
-                                    <label class="form-check-label" for="canSendReminders">
-                                        Can send me reminders
-                                    </label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="receiveNotifications" checked>
-                                    <label class="form-check-label" for="receiveNotifications">
-                                        Receive progress notifications
-                                    </label>
-                                </div>
-                            </div>
+                            <small class="form-text text-brown mt-1">
+                                Friends are added immediately. Others receive an invitation.
+                            </small>
                         </div>
                     </div>
                 </div>
@@ -741,8 +929,7 @@ Write freely here, like you're writing in your personal journal..." id="journal-
 
                 <!-- Partner Section Actions -->
                 <div id="partnerActions" class="text-end mt-3" style="display: none;">
-                    <button type="button" class="btn btn-paper me-2" id="partner-cancel-btn">Close</button>
-                    <button type="button" class="btn btn-paper btn-primary" id="partner-save-btn">Save Settings</button>
+                    <button type="button" class="btn btn-paper" id="partner-close-btn">Close</button>
                 </div>
             </div>
         </div>
@@ -948,7 +1135,7 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                         <select class="form-control" id="editTaskGroup"></select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Deadline <small class="text-muted">(optional — clear to remove)</small></label>
+                        <label class="form-label">Deadline <small class="text-brown">(optional — clear to remove)</small></label>
                         <input type="datetime-local" class="form-control" id="editTaskDeadline">
                     </div>
                     <input type="hidden" id="editTaskId" value="">
@@ -1001,18 +1188,116 @@ Write freely here, like you're writing in your personal journal..." id="journal-
         </div>
     </div>
 
-    <!-- Copyright -->
-    <div class="copyright">
-        &copy; <span id="year"></span> <span id="copyright-text"></span>
+    <!-- Onboarding Modal -->
+    <div class="modal fade" id="onboardingModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content onboarding-modal">
+                <div class="modal-body p-0">
+                    <!-- Slides -->
+                    <div class="ob-slides">
+
+                        <div class="ob-slide active" data-slide="0">
+                            <div class="ob-hero">
+                                <img src="{% static 'images/logo.png' %}" alt="Make Your Reps" class="ob-logo">
+                                <h2 class="ob-title">Welcome to Make Your Reps</h2>
+                                <p class="ob-subtitle">Your personal productivity companion. Let's take a quick look at what you can do.</p>
+                            </div>
+                        </div>
+
+                        <div class="ob-slide" data-slide="1">
+                            <div class="ob-feature">
+                                <div class="ob-icon"><i class="fas fa-fire"></i></div>
+                                <h3>Build Habits</h3>
+                                <p>Track daily habits with streaks, reminders, and accountability partners. Small reps every day add up to who you become.</p>
+                                <div class="ob-hint">Go to <strong>Trackers</strong> to see your 3 sample habits ready to go.</div>
+                            </div>
+                        </div>
+
+                        <div class="ob-slide" data-slide="2">
+                            <div class="ob-feature">
+                                <div class="ob-icon"><i class="fas fa-check-square"></i></div>
+                                <h3>Manage Tasks</h3>
+                                <p>Keep your to-do list organised by groups with deadlines. Use <kbd>Ctrl/⌘ + T</kbd> to add a task from anywhere.</p>
+                                <div class="ob-hint">Your <strong>Todos</strong> tab already has a few tasks to get you started.</div>
+                            </div>
+                        </div>
+
+                        <div class="ob-slide" data-slide="3">
+                            <div class="ob-feature">
+                                <div class="ob-icon"><i class="fas fa-book-open"></i></div>
+                                <h3>Journal Daily</h3>
+                                <p>Write a short journal entry every day. Use <kbd>Ctrl/⌘ + J</kbd> to jump straight to the journal editor.</p>
+                                <div class="ob-hint">Today's journal already has a welcome note — open it and make it yours.</div>
+                            </div>
+                        </div>
+
+                        <div class="ob-slide" data-slide="4">
+                            <div class="ob-feature">
+                                <div class="ob-icon"><i class="fas fa-clock"></i></div>
+                                <h3>Focus with Pomodoro</h3>
+                                <p>Use the built-in Pomodoro timer to stay focused. Every completed session earns you points and tracks your focus time.</p>
+                                <div class="ob-hint">The timer lives in the top-right corner — always visible no matter which tab you're on.</div>
+                            </div>
+                        </div>
+
+                        <div class="ob-slide" data-slide="5">
+                            <div class="ob-feature">
+                                <div class="ob-icon"><i class="fas fa-trophy"></i></div>
+                                <h3>Earn Achievements</h3>
+                                <p>Every action earns points. Level up, maintain daily streaks, and unlock 29 achievements as you build better habits.</p>
+                                <div class="ob-hint">Check your progress anytime under <strong>Others → Achievements</strong>.</div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Navigation -->
+                    <div class="ob-nav">
+                        <div class="ob-dots" id="ob-dots"></div>
+                        <div class="ob-actions">
+                            <button class="btn btn-paper btn-sm" id="ob-prev" style="display:none" onclick="Onboarding.prev()">
+                                <i class="fas fa-arrow-left"></i>
+                            </button>
+                            <button class="btn btn-paper btn-primary" id="ob-next" onclick="Onboarding.next()">
+                                Next <i class="fas fa-arrow-right ms-1"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Copyright / Pomodoro footer bar -->
+    <div class="copyright" id="footer-bar">
+        <span id="footer-copyright">&copy; <span id="year"></span> <span id="copyright-text"></span></span>
+        <span id="footer-pomodoro" style="display:none;">
+            <span id="pomo-mini-mode">Focus</span>
+            <span id="pomo-mini-time">25:00</span>
+            <button class="pomo-mini-btn" id="pomo-mini-start" onclick="Pomodoro.toggle()"><i class="fas fa-play"></i></button>
+            <button class="pomo-mini-btn" id="pomo-mini-reset" onclick="Pomodoro.reset()"><i class="fas fa-redo"></i></button>
+        </span>
     </div>
 
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="https://kit.fontawesome.com/22476b357e.js" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <!-- Gamification: floating points + achievement toast -->
+    <div id="gami-float-container"></div>
+    <div id="gami-achievement-toast" class="gami-achievement-toast" style="display:none;">
+        <div class="gami-toast-icon"><i class="fas fa-trophy"></i></div>
+        <div class="gami-toast-body">
+            <div class="gami-toast-title">Achievement Unlocked!</div>
+            <div class="gami-toast-name" id="gami-toast-name"></div>
+            <div class="gami-toast-pts">+50 pts</div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>const HOST = window.location.origin + '/';</script>
     <script src="{% static 'board/js/utils.js' %}"></script>
+    <script src="{% static 'board/js/notifications.js' %}"></script>
     <script src="{% static 'board/js/config.js' %}"></script>
     <script src="{% static 'board/js/habits.js' %}"></script>
     <script src="{% static 'board/js/todos.js' %}"></script>
@@ -1025,5 +1310,7 @@ Write freely here, like you're writing in your personal journal..." id="journal-
     <script src="{% static 'board/js/journals-pane.js' %}"></script>
     <script src="{% static 'board/js/reading-list.js' %}"></script>
     <script src="{% static 'board/js/settings.js' %}"></script>
+    <script src="{% static 'board/js/misc.js' %}"></script>
+    <script src="{% static 'board/js/gamification.js' %}"></script>
 </body>
 </html>

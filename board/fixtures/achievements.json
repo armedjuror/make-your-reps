@@ -1,0 +1,38 @@
+[
+  {"model": "board.achievement", "pk": 1,  "fields": {"key": "first_habit_done",       "name": "First Step",          "description": "Complete your first habit",                              "icon": "fas fa-shoe-prints",      "category": "habits"}},
+  {"model": "board.achievement", "pk": 2,  "fields": {"key": "streak_7",               "name": "Week Warrior",        "description": "Maintain a 7-day streak on any habit",                  "icon": "fas fa-fire",             "category": "habits"}},
+  {"model": "board.achievement", "pk": 3,  "fields": {"key": "streak_30",              "name": "Month Strong",        "description": "Maintain a 30-day streak on any habit",                 "icon": "fas fa-fire-alt",         "category": "habits"}},
+  {"model": "board.achievement", "pk": 4,  "fields": {"key": "streak_100",             "name": "Unstoppable",         "description": "Maintain a 100-day streak on any habit",                "icon": "fas fa-bolt",             "category": "habits"}},
+  {"model": "board.achievement", "pk": 5,  "fields": {"key": "clean_sweep_7",          "name": "Clean Sweep",         "description": "Complete all habits for 7 consecutive days",            "icon": "fas fa-broom",            "category": "habits"}},
+  {"model": "board.achievement", "pk": 6,  "fields": {"key": "five_habits",            "name": "Creature of Habit",   "description": "Have 5 or more active habits simultaneously",           "icon": "fas fa-list-check",       "category": "habits"}},
+
+  {"model": "board.achievement", "pk": 7,  "fields": {"key": "first_pomodoro",         "name": "First Focus",         "description": "Complete your first pomodoro cycle",                    "icon": "fas fa-circle",           "category": "focus"}},
+  {"model": "board.achievement", "pk": 8,  "fields": {"key": "night_owl",              "name": "Night Owl",           "description": "Complete 4 pomodoros between 12am and 6am",            "icon": "fas fa-moon",             "category": "focus"}},
+  {"model": "board.achievement", "pk": 9,  "fields": {"key": "early_bird",             "name": "Early Bird",          "description": "Complete 4 pomodoros before 9am",                       "icon": "fas fa-sun",              "category": "focus"}},
+  {"model": "board.achievement", "pk": 10, "fields": {"key": "deep_work",              "name": "Deep Work",           "description": "Complete 8 pomodoros in a single day",                  "icon": "fas fa-brain",            "category": "focus"}},
+  {"model": "board.achievement", "pk": 11, "fields": {"key": "focus_streak_7",         "name": "Focus Streak",        "description": "Complete at least 1 pomodoro for 7 consecutive days",  "icon": "fas fa-stopwatch",        "category": "focus"}},
+  {"model": "board.achievement", "pk": 12, "fields": {"key": "grind_1000_minutes",     "name": "The Grind",           "description": "Accumulate 1,000 total focus minutes",                  "icon": "fas fa-hourglass-end",    "category": "focus"}},
+
+  {"model": "board.achievement", "pk": 13, "fields": {"key": "first_todo_done",        "name": "Getting Things Done", "description": "Complete your first task",                              "icon": "fas fa-check-square",     "category": "todos"}},
+  {"model": "board.achievement", "pk": 14, "fields": {"key": "todos_100",              "name": "Century",             "description": "Complete 100 tasks",                                    "icon": "fas fa-trophy",           "category": "todos"}},
+  {"model": "board.achievement", "pk": 15, "fields": {"key": "inbox_zero",             "name": "Inbox Zero",          "description": "Clear all pending tasks in a single day",               "icon": "fas fa-inbox",            "category": "todos"}},
+  {"model": "board.achievement", "pk": 16, "fields": {"key": "overachiever",           "name": "Overachiever",        "description": "Complete 10 tasks in one day",                          "icon": "fas fa-star",             "category": "todos"}},
+
+  {"model": "board.achievement", "pk": 17, "fields": {"key": "first_journal",          "name": "First Words",         "description": "Write your first journal entry",                        "icon": "fas fa-pen",              "category": "journal"}},
+  {"model": "board.achievement", "pk": 18, "fields": {"key": "journal_10",             "name": "Soul Search",         "description": "Write 10 journal entries",                              "icon": "fas fa-book-open",        "category": "journal"}},
+  {"model": "board.achievement", "pk": 19, "fields": {"key": "journal_30",             "name": "Consistent",          "description": "Write journal entries on 30 different days",           "icon": "fas fa-book",             "category": "journal"}},
+
+  {"model": "board.achievement", "pk": 20, "fields": {"key": "sleep_7_streak",         "name": "Well Rested",         "description": "Log 8+ hours of sleep for 7 consecutive days",         "icon": "fas fa-bed",              "category": "sleep"}},
+  {"model": "board.achievement", "pk": 21, "fields": {"key": "sleep_30_days",          "name": "Sleep Tracker",       "description": "Log sleep for 30 different days",                      "icon": "fas fa-cloud-moon",       "category": "sleep"}},
+
+  {"model": "board.achievement", "pk": 22, "fields": {"key": "first_friend",           "name": "Connected",           "description": "Add your first friend",                                 "icon": "fas fa-user-plus",        "category": "social"}},
+  {"model": "board.achievement", "pk": 23, "fields": {"key": "three_partners",         "name": "Team Player",         "description": "Have 3 or more active accountability partners",         "icon": "fas fa-users",            "category": "social"}},
+  {"model": "board.achievement", "pk": 24, "fields": {"key": "accountability_accepted","name": "Accountability Accepted","description": "Accept an accountability partner request",            "icon": "fas fa-handshake",        "category": "social"}},
+
+  {"model": "board.achievement", "pk": 25, "fields": {"key": "daily_streak_7",         "name": "On a Roll",           "description": "Be active for 7 consecutive days",                     "icon": "fas fa-calendar-check",   "category": "streak"}},
+  {"model": "board.achievement", "pk": 26, "fields": {"key": "daily_streak_30",        "name": "Habit of a Lifetime", "description": "Be active for 30 consecutive days",                    "icon": "fas fa-calendar-alt",     "category": "streak"}},
+  {"model": "board.achievement", "pk": 27, "fields": {"key": "daily_streak_100",       "name": "Unbreakable",         "description": "Be active for 100 consecutive days",                   "icon": "fas fa-shield-alt",       "category": "streak"}},
+
+  {"model": "board.achievement", "pk": 28, "fields": {"key": "ten_achievements",       "name": "Completionist",       "description": "Unlock 10 achievements",                                "icon": "fas fa-medal",            "category": "meta"}},
+  {"model": "board.achievement", "pk": 29, "fields": {"key": "veteran",                "name": "Veteran",             "description": "Account older than 1 year",                            "icon": "fas fa-award",            "category": "meta"}}
+]

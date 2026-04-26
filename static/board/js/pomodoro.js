@@ -20,7 +20,6 @@ const Pomodoro = {
 
     async init() {
         await this.loadTodayFocus();
-        this.requestNotificationPermission();
 
         // Restore state from localStorage
         const saved = localStorage.getItem('pomodoro_state');
@@ -52,6 +51,18 @@ const Pomodoro = {
             };
         }
 
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && this.state?.running) {
+                const elapsed = Math.floor((Date.now() - this._timerStart) / 1000);
+                this.state.remaining = Math.max(0, this._initialRemaining - elapsed);
+                this.save();
+                this.render();
+                if (this.state.remaining <= 0) {
+                    this.onTimerEnd();
+                }
+            }
+        });
+
         this.render();
     },
 
@@ -68,21 +79,14 @@ const Pomodoro = {
         if (res.status === 'success') {
             this.todayFocusMinutes = res.data.focus_minutes;
             this.renderFocusTime();
-        }
-    },
-
-    requestNotificationPermission() {
-        if ('Notification' in window && Notification.permission === 'default') {
-            Notification.requestPermission();
+            if (res.gamification) {
+                document.dispatchEvent(new CustomEvent('gamification', {detail: res.gamification}));
+            }
         }
     },
 
     notify(title, body) {
-        // Browser notification
-        if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification(title, { body, icon: '/static/board/img/favicon.ico' });
-        }
-        // In-app toast (always shown)
+        BrowserNotify.send(title, body);
         this.showToast(title, body);
     },
 
@@ -163,8 +167,11 @@ const Pomodoro = {
 
     startInterval() {
         if (this.interval) clearInterval(this.interval);
+        this._timerStart = Date.now();
+        this._initialRemaining = this.state.remaining;
         this.interval = setInterval(() => {
-            this.state.remaining--;
+            const elapsed = Math.floor((Date.now() - this._timerStart) / 1000);
+            this.state.remaining = Math.max(0, this._initialRemaining - elapsed);
             this.state.lastTick = Date.now();
             this.save();
             this.render();
@@ -193,12 +200,12 @@ const Pomodoro = {
                 this.state.remaining = d.longBreakMin * 60;
                 this.state.cycle = 1;
                 this.notify('Focus session complete!', `Great work! Time for a ${d.longBreakMin}-min long break.`);
-                document.title = 'Long Break — Steps';
+                document.title = 'Long Break — Make Your Reps';
             } else {
                 this.state.mode = 'break';
                 this.state.remaining = d.breakMin * 60;
                 this.notify('Focus session complete!', `Nice! Take a ${d.breakMin}-min break.`);
-                document.title = 'Break — Steps';
+                document.title = 'Break — Make Your Reps';
             }
         } else {
             if (prevMode === 'break') {
@@ -207,7 +214,7 @@ const Pomodoro = {
             this.state.mode = 'focus';
             this.state.remaining = d.focusMin * 60;
             this.notify('Break over!', `Ready for another ${d.focusMin}-min focus session?`);
-            document.title = 'Focus — Steps';
+            document.title = 'Focus — Make Your Reps';
         }
 
         this.save();
@@ -234,13 +241,25 @@ const Pomodoro = {
         document.getElementById('pomodoro-time').textContent = timeStr;
 
         const modeLabels = { focus: 'Focus', break: 'Break', long_break: 'Long Break' };
-        document.getElementById('pomodoro-mode').textContent = modeLabels[this.state.mode] || 'Focus';
+        const modeLabel = modeLabels[this.state.mode] || 'Focus';
+        document.getElementById('pomodoro-mode').textContent = modeLabel;
 
         const btn = document.getElementById('pomodoro-start');
-        if (this.state.running) {
-            btn.innerHTML = '<i class="fas fa-pause"></i>';
-        } else {
-            btn.innerHTML = '<i class="fas fa-play"></i>';
+        const runningIcon = this.state.running ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
+        btn.innerHTML = runningIcon;
+
+        // Footer bar: show pomodoro instead of copyright when running on non-home pane
+        const showMini = this.state.running && currentPane !== 'home';
+        const footerCopyright = document.getElementById('footer-copyright');
+        const footerPomodoro = document.getElementById('footer-pomodoro');
+        if (footerCopyright) footerCopyright.style.display = showMini ? 'none' : '';
+        if (footerPomodoro) {
+            footerPomodoro.style.display = showMini ? '' : 'none';
+            if (showMini) {
+                document.getElementById('pomo-mini-time').textContent = timeStr;
+                document.getElementById('pomo-mini-mode').textContent = modeLabel;
+                document.getElementById('pomo-mini-start').innerHTML = runningIcon;
+            }
         }
 
         // Cycle indicators

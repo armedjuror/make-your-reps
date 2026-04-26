@@ -58,20 +58,45 @@ class UserDetail(models.Model):
         default=ClockFormat.TWELVE
     )
 
+    # Gamification
+    total_points = models.IntegerField(default=0)
+    level = models.IntegerField(default=1)
+    current_streak = models.IntegerField(default=0)
+    longest_streak = models.IntegerField(default=0)
+    last_active_date = models.DateField(null=True, blank=True, default=None)
+
+    is_onboarded = models.BooleanField(default=False)
+
     updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
 
 class Friend(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='user')
-    friend = models.ForeignKey(User, on_delete=models.CASCADE, related_name='friend')
-    is_active = models.BooleanField(default=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='friendships')
+    friend = models.ForeignKey(User, on_delete=models.CASCADE, related_name='friend_of')
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['-created_at']
         unique_together = ('user', 'friend')
+
+
+class FriendRequestStatus(models.TextChoices):
+    PENDING = 'pending'
+    ACCEPTED = 'accepted'
+    DECLINED = 'declined'
+
+
+class FriendRequest(models.Model):
+    from_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_friend_requests')
+    to_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_friend_requests')
+    status = models.CharField(max_length=10, choices=FriendRequestStatus.choices, default=FriendRequestStatus.PENDING)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('from_user', 'to_user')
+        ordering = ['-created_at']
 
 
 class TaskGroup(models.Model):
@@ -214,11 +239,17 @@ class HabitLog(models.Model):
         ordering = ['-created_at']
         unique_together = ('habit', 'date')
 
+class AccountabilityPartnerStatus(models.TextChoices):
+    REQUEST_SENT = 'request-sent'
+    ACTIVE = 'active'
+    INACTIVE = 'inactive'
+
 
 class AccountabilityPartner(models.Model):
-    habit = models.ForeignKey(Habit, on_delete=models.CASCADE)
-    partner = models.ForeignKey(User, on_delete=models.CASCADE)
-    is_active = models.BooleanField(default=True)
+    habit = models.ForeignKey(Habit, on_delete=models.CASCADE, related_name='accountability_partners')
+    partner = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='accountability_partnerships')
+    invited_email = models.EmailField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=AccountabilityPartnerStatus.choices, default=AccountabilityPartnerStatus.REQUEST_SENT)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -278,13 +309,16 @@ class TimelineEventType(models.TextChoices):
     JOURNAL = 'journal'
     TEXT = 'text'
     MEETING = 'meeting'
+    FRIEND_REQUEST = 'friend_request'
+    ACCOUNTABILITY_INVITE = 'accountability_invite'
+    ACCOUNTABILITY_HABIT = 'accountability_habit'
 
 
 class TimelineEvent(models.Model):
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='timeline_events')
     timestamp = models.DateTimeField()
-    event_type = models.CharField(max_length=16, choices=TimelineEventType.choices)
+    event_type = models.CharField(max_length=32, choices=TimelineEventType.choices)
     event = models.TextField()  # Human readable description
     reference = models.JSONField(null=True, blank=True)  # {"model": "Habit", "id": 5}
     action = models.JSONField(null=True, blank=True)  # {"mark_done": [true, false]} or {"status": ["pending","done"]}
@@ -316,3 +350,31 @@ class SearchEngine(models.Model):
 
     def __str__(self):
         return self.name
+
+
+# ──────────────────────────────────────
+# Gamification
+# ──────────────────────────────────────
+
+class Achievement(models.Model):
+    key = models.CharField(max_length=64, unique=True)
+    name = models.CharField(max_length=128)
+    description = models.CharField(max_length=255)
+    icon = models.CharField(max_length=64)  # FA icon class
+    category = models.CharField(max_length=32, default='general')
+
+    class Meta:
+        ordering = ['category', 'name']
+
+    def __str__(self):
+        return self.name
+
+
+class UserAchievement(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='achievements')
+    achievement = models.ForeignKey(Achievement, on_delete=models.CASCADE)
+    unlocked_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'achievement')
+        ordering = ['-unlocked_at']

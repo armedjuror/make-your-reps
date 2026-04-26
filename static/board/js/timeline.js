@@ -173,6 +173,9 @@ const Timeline = {
             journal: 'fas fa-pen-fancy',
             text: 'fas fa-comment',
             meeting: 'fas fa-video',
+            friend_request: 'fas fa-user-plus',
+            accountability_invite: 'fas fa-handshake',
+            accountability_habit: 'fas fa-user-check',
         };
         return icons[type] || 'fas fa-circle';
     },
@@ -190,8 +193,30 @@ const Timeline = {
         for (const key of keys) {
             const values = event.action[key];
 
-            if (key === 'join' || (typeof values === 'string' && values.startsWith('http'))) {
-                // Meeting join button
+            if (key === 'accept') {
+                // Friend request or accountability invite — Accept + Decline
+                html += `
+                    <button class="btn btn-paper btn-sm btn-primary timeline-toggle"
+                        onclick="Timeline.respondAccept(${event.id}, true)">
+                        <i class="fas fa-check me-1"></i>Accept
+                    </button>
+                    <button class="btn btn-paper btn-sm ms-1"
+                        onclick="Timeline.respondAccept(${event.id}, false)">
+                        <i class="fas fa-times me-1"></i>Decline
+                    </button>`;
+            } else if (key === 'check') {
+                const apId = event.reference?.id;
+                html += `<button class="btn btn-paper btn-sm btn-primary" id="check-btn-${event.id}"
+                    onclick="Timeline.checkHabit(${event.id}, ${apId})">
+                    <i class="fas fa-eye me-1"></i>Check
+                </button>`;
+            } else if (key === 'remind') {
+                const apId = event.reference?.id;
+                html += `<button class="btn btn-paper btn-sm ms-1" id="remind-btn-${event.id}"
+                    onclick="Timeline.remindHabit(${event.id}, ${apId})">
+                    <i class="fas fa-bell me-1"></i>Remind
+                </button>`;
+            } else if (key === 'join' || (typeof values === 'string' && values.startsWith('http'))) {
                 html += `<a href="${values}" target="_blank" class="btn btn-paper btn-sm btn-primary">
                     <i class="fas fa-external-link-alt me-1"></i>Join
                 </a>`;
@@ -205,13 +230,11 @@ const Timeline = {
                 </button>`;
             } else if (Array.isArray(values) && values.length === 2 &&
                        values.includes(true) && values.includes(false)) {
-                // Toggle button (mark_done: [true, false])
                 html += `<button class="btn btn-paper btn-sm btn-primary timeline-toggle"
                     onclick="Timeline.respondToggle(${event.id}, '${key}', true)">
                     <i class="fas fa-check me-1"></i>Done
                 </button>`;
             } else if (Array.isArray(values) && values.length > 2) {
-                // Select dropdown
                 html += `<select class="form-control form-control-sm timeline-select"
                     onchange="Timeline.respondSelect(${event.id}, '${key}', this.value)">
                     <option value="">Choose...</option>
@@ -266,5 +289,56 @@ const Timeline = {
             this.render();
             General.loadProductivityScore();
         }
-    }
+    },
+
+    async respondAccept(eventId, accept) {
+        const res = await apiClient.put(`board/api/timeline/${eventId}/respond/`, {
+            action_response: { accept }
+        });
+        if (res.status === 'success') {
+            const idx = this.events.findIndex(e => e.id === eventId);
+            if (idx >= 0) this.events[idx] = res.data;
+            this.render();
+            // Refresh misc pane if open
+            if (typeof MiscPane !== 'undefined' && panesLoaded.misc) MiscPane.load();
+        }
+    },
+
+    async checkHabit(eventId, apId) {
+        const btn = document.getElementById(`check-btn-${eventId}`);
+        if (btn) btn.disabled = true;
+        const res = await apiClient.post(`board/api/accountability_partners/${apId}/check/`);
+        if (res.status === 'success') {
+            const { is_done } = res.data;
+            const label = is_done
+                ? '<i class="fas fa-check-circle me-1 text-success"></i>Done'
+                : '<i class="fas fa-circle me-1"></i>Not done';
+            if (btn) {
+                btn.innerHTML = label;
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fas fa-eye me-1"></i>Check';
+                    btn.disabled = false;
+                }, 5000);
+            }
+        } else {
+            if (btn) btn.disabled = false;
+        }
+    },
+
+    async remindHabit(eventId, apId) {
+        const btn = document.getElementById(`remind-btn-${eventId}`);
+        if (btn) btn.disabled = true;
+        const res = await apiClient.post(`board/api/accountability_partners/${apId}/remind/`);
+        if (res.status === 'success') {
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-check me-1"></i>Sent!';
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fas fa-bell me-1"></i>Remind';
+                    btn.disabled = false;
+                }, 3000);
+            }
+        } else {
+            if (btn) btn.disabled = false;
+        }
+    },
 };

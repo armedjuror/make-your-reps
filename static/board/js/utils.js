@@ -215,7 +215,13 @@ function showSuccess(message, title="Woohoo!") {
 
 function showError(message, title="Oops, Something went wrong!") {
     document.getElementById('errorModalLabel').textContent = title;
-    document.getElementById('errorMessage').textContent = message;
+    if (message && typeof message === 'object') {
+        // DRF validation errors: {field: [msg, ...], ...}
+        message = Object.entries(message)
+            .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
+            .join('\n');
+    }
+    document.getElementById('errorMessage').textContent = message || 'An unexpected error occurred.';
     const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
     errorModal.show();
 }

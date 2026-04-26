@@ -7,7 +7,7 @@ from django.contrib.auth import user_logged_out
 from django.dispatch import receiver
 from django.http import JsonResponse
 
-from board.models import Habit, Task, UserDetail, RoutineEntry
+from board.models import Habit, Task, UserDetail, RoutineEntry, DailyData
 from board.tasks import generate_daily_timeline
 from main.models import UserAuthToken, LoginActivity
 from main.utils import get_auth_token, get_client_ip, AccessToken, RefreshToken
@@ -39,34 +39,62 @@ def user_signed_up_handler(sender, request, user, **kwargs):
     )
 
     # Fill dummy data — Habits
+    all_days = [0, 1, 2, 3, 4, 5, 6]
     habits_to_create = [
         Habit(
             user=user,
             habit="Read a page",
-            detail="when I wake up",
-            identity="a wise person"
+            detail="When I wake up, before checking my phone",
+            identity="a well-read, curious person",
+            frequency=all_days,
+            notify_at=time(7, 0),
         ),
         Habit(
             user=user,
-            habit="Put the gym shoe on",
-            detail="at 7.00 AM everyday",
-            identity="a fit person"
-        )
+            habit="Put the gym shoes on",
+            detail="At 7:00 AM, right after brushing my teeth",
+            identity="a fit and energetic person",
+            frequency=[0, 1, 2, 3, 4],  # Weekdays
+            notify_at=time(7, 0),
+        ),
+        Habit(
+            user=user,
+            habit="Write 3 things I'm grateful for",
+            detail="Every evening before dinner",
+            identity="a positive and mindful person",
+            frequency=all_days,
+            notify_at=time(18, 0),
+        ),
     ]
     Habit.objects.bulk_create(habits_to_create)
 
     # Tasks
     tasks_to_create = [
-        Task(user=user, task_name="Check Email"),
-        Task(user=user, task_name="Clean the room"),
-        Task(user=user, task_name="Support Make Your Reps"),
+        Task(user=user, task_name="Check emails and reply to urgent ones"),
+        Task(user=user, task_name="Plan tomorrow's top 3 priorities"),
+        Task(user=user, task_name="Read for 20 minutes"),
+        Task(user=user, task_name="Go for a 10-minute walk"),
     ]
     Task.objects.bulk_create(tasks_to_create)
 
     # UserDetail
     UserDetail.objects.get_or_create(user=user, defaults={
-        'sleep_time': time(22, 0),  # 10:00 PM default
+        'sleep_time': time(22, 0),
     })
+
+    # Today's journal entry
+    today = datetime.now().date()
+    DailyData.objects.get_or_create(
+        user=user,
+        date=today,
+        defaults={
+            'journal': (
+                "Welcome to Make Your Reps! \n\n"
+                "This is your daily journal. Write about your day, thoughts, plans, or anything on your mind.\n\n"
+                "Today is day one. What are you looking forward to building?"
+            )
+        }
+    )
 
     # Routine Entries (proper model instead of text)
     workday_entries = [

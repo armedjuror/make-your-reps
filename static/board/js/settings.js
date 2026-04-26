@@ -82,6 +82,23 @@ const Settings = {
         });
     },
 
+    async saveName() {
+        const first_name = document.getElementById('settingsFirstName').value.trim();
+        const last_name = document.getElementById('settingsLastName').value.trim();
+        const btn = document.getElementById('settings-name-save-btn');
+        btn.disabled = true;
+        const res = await apiClient.put('board/api/user_details/', { first_name, last_name });
+        btn.disabled = false;
+        if (res.status === 'success') {
+            if (AppConfig.userDetail) {
+                AppConfig.userDetail.first_name = first_name;
+                AppConfig.userDetail.last_name = last_name;
+            }
+            btn.textContent = 'Saved!';
+            setTimeout(() => { btn.textContent = 'Save'; }, 2000);
+        }
+    },
+
     saveSoundSettings() {
         const pomSound = document.getElementById('soundPomodoro').checked;
         const notifSound = document.getElementById('soundNotifications').checked;

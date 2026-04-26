@@ -6,7 +6,9 @@ from rest_framework import serializers
 
 from board.models import (
     Habit, Task, TaskGroup, UserDetail, DailyData, HabitLog,
-    RoutineEntry, ReadingListItem, TimelineEvent, SearchEngine
+    RoutineEntry, ReadingListItem, TimelineEvent, SearchEngine,
+    AccountabilityPartner, Friend, FriendRequest,
+    Achievement, UserAchievement,
 )
 
 
@@ -82,50 +84,76 @@ class HabitSerializer(serializers.ModelSerializer):
                   'notify_at', 'status', 'created_at', 'stats', 'remark']
         read_only_fields = ['created_at', 'user']
 
-    def _get_recent_logs(self, obj, days=60):
-        """Get logs for the last N days for accurate message calculation"""
+    def _get_recent_logs(self, obj):
+        """Get logs dict for the last 60 days, using prefetched data when available."""
+        if hasattr(obj, 'recent_logs_prefetched'):
+            return {
+                x.date.strftime('%Y-%m-%d'): {'is_done': x.is_done, 'date': x.date}
+                for x in obj.recent_logs_prefetched
+            }
         now = timezone.now().date()
-        start_date = now - timezone.timedelta(days=days)
-
-        logs = {
+        start_date = now - timezone.timedelta(days=60)
+        return {
             x.date.strftime('%Y-%m-%d'): {'is_done': x.is_done, 'date': x.date}
             for x in HabitLog.objects.filter(
-                habit=obj,
-                date__gte=start_date,
-                date__lte=now
-            ).order_by('-date')
+                habit=obj, date__gte=start_date, date__lte=now
+            ).order_by('date')
         }
-        return logs
 
-    def get_stats(self, obj):
-        total_reps = HabitLog.objects.filter(habit=obj, is_done=True).count()
+    def _get_stats(self, obj):
+        """Compute stats once and cache on the object to avoid double work."""
+        if hasattr(obj, '_cached_stats'):
+            return obj._cached_stats
+
+        # Total reps: use annotation from view queryset if available, else query
+        if hasattr(obj, 'total_reps_count'):
+            total_reps = obj.total_reps_count
+        else:
+            total_reps = HabitLog.objects.filter(habit=obj, is_done=True).count()
+
         now = timezone.now().date()
-        target_year = now.year
-        target_month = now.month
-        streak = obj.current_streak
+        recent_logs = self._get_recent_logs(obj)
 
-        # Get current month logs for display
-        logs = get_habit_log(obj, target_month, target_year)
+        # Build current-month display logs from the prefetched data (no extra query)
+        if hasattr(obj, 'recent_logs_prefetched'):
+            logs = self._build_month_logs(obj.recent_logs_prefetched, now.month, now.year)
+        else:
+            logs = get_habit_log(obj, now.month, now.year)
 
-        # Get recent logs for accurate message calculation (last 60 days)
-        recent_logs = self._get_recent_logs(obj, days=60)
-
-        return {
-            'streak': streak,
+        obj._cached_stats = {
+            'streak': obj.current_streak,
             'max_streak': obj.max_streak,
             'total_reps': total_reps,
             'logs': logs,
-            'recent_logs': recent_logs,  # Add this for message calculation
+            'recent_logs': recent_logs,
         }
+        return obj._cached_stats
+
+    def _build_month_logs(self, prefetched_logs, target_month, target_year):
+        """Build the full-month log dict from already-prefetched logs."""
+        days_in_month = monthrange(target_year, target_month)[1]
+        logs = {}
+        for x in prefetched_logs:
+            if x.date.year == target_year and x.date.month == target_month:
+                logs[x.date.strftime('%Y-%m-%d')] = {'is_done': x.is_done, 'date': x.date.strftime('%d')}
+        for i in range(1, days_in_month + 1):
+            d = date(target_year, target_month, i)
+            key = d.strftime('%Y-%m-%d')
+            if key not in logs:
+                logs[key] = {'is_done': False, 'date': d.strftime('%d')}
+        return dict(sorted(logs.items()))
+
+    def get_stats(self, obj):
+        return self._get_stats(obj)
 
     def get_remark(self, obj):
         """
         Generate motivational coaching messages based on habit performance
         """
-        stats = self.get_stats(obj)
+        stats = self._get_stats(obj)
         total_reps = stats['total_reps']
         streak = stats['streak']
-        recent_logs = stats.get('recent_logs', {})  # Use recent_logs instead of logs
+        recent_logs = stats.get('recent_logs', {})
 
         now = timezone.now().date()
         created_date = obj.created_at.date()
@@ -284,3 +312,76 @@ class SearchEngineSerializer(serializers.ModelSerializer):
     class Meta:
         model = SearchEngine
         fields = '__all__'
+
+
+class AccountabilityPartnerSerializer(serializers.ModelSerializer):
+    partner_name = serializers.SerializerMethodField()
+    habit_name = serializers.CharField(source='habit.habit', read_only=True)
+    owner_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AccountabilityPartner
+        fields = ['id', 'habit', 'habit_name', 'partner', 'partner_name', 'owner_name',
+                  'invited_email', 'status', 'created_at']
+        read_only_fields = ['created_at', 'status']
+
+    def get_partner_name(self, obj):
+        if obj.partner:
+            return obj.partner.get_full_name() or obj.partner.username
+        return obj.invited_email
+
+    def get_owner_name(self, obj):
+        owner = obj.habit.user
+        return owner.get_full_name() or owner.username
+
+
+class FriendSerializer(serializers.ModelSerializer):
+    friend_name = serializers.SerializerMethodField()
+    friend_username = serializers.CharField(source='friend.username', read_only=True)
+    friend_email = serializers.EmailField(source='friend.email', read_only=True)
+
+    class Meta:
+        model = Friend
+        fields = ['id', 'friend', 'friend_name', 'friend_username', 'friend_email', 'created_at']
+        read_only_fields = ['created_at']
+
+    def get_friend_name(self, obj):
+        return obj.friend.get_full_name() or obj.friend.username
+
+
+class FriendRequestSerializer(serializers.ModelSerializer):
+    from_user_name = serializers.SerializerMethodField()
+    to_user_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = FriendRequest
+        fields = ['id', 'from_user', 'from_user_name', 'to_user', 'to_user_name', 'status', 'created_at']
+        read_only_fields = ['created_at', 'status', 'from_user', 'to_user']
+
+    def get_from_user_name(self, obj):
+        return obj.from_user.get_full_name() or obj.from_user.username
+
+    def get_to_user_name(self, obj):
+        return obj.to_user.get_full_name() or obj.to_user.username
+
+
+class AchievementSerializer(serializers.ModelSerializer):
+    unlocked = serializers.SerializerMethodField()
+    unlocked_at = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Achievement
+        fields = ['id', 'key', 'name', 'description', 'icon', 'category', 'unlocked', 'unlocked_at']
+
+    def get_unlocked(self, obj):
+        request_user_id = self.context.get('user_id')
+        if not request_user_id:
+            return False
+        return UserAchievement.objects.filter(user_id=request_user_id, achievement=obj).exists()
+
+    def get_unlocked_at(self, obj):
+        request_user_id = self.context.get('user_id')
+        if not request_user_id:
+            return None
+        ua = UserAchievement.objects.filter(user_id=request_user_id, achievement=obj).first()
+        return ua.unlocked_at.isoformat() if ua else None

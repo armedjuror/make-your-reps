@@ -13,6 +13,38 @@ const ReadingList = {
         }
     },
 
+    async loadAll() {
+        const el = document.getElementById('rl-all-list');
+        if (!el) return;
+        el.innerHTML = '<div class="notebook-spinner"></div>';
+        const res = await apiClient.get('board/api/reading_list/');
+        if (res.status !== 'success') { el.innerHTML = '<p class="text-brown small">Could not load reading list.</p>'; return; }
+        this.renderAll(res.data, el);
+    },
+
+    renderAll(items, el) {
+        this.items = items;
+        if (items.length === 0) {
+            el.innerHTML = '<p class="text-brown small">No bookmarks yet. Add one from the home page.</p>';
+            return;
+        }
+        el.innerHTML = items.map(item => {
+            const iconHtml = item.icon
+                ? `<img src="${item.icon}" alt="" class="rl-icon rl-icon-sm" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'"><div class="rl-icon-fallback rl-icon-sm" style="display:none">${this.generateFallbackIcon(item.name, item.url)}</div>`
+                : `<div class="rl-icon-fallback rl-icon-sm">${this.generateFallbackIcon(item.name, item.url)}</div>`;
+            const featuredBadge = item.is_featured ? '<span class="rl-featured-badge"><i class="fas fa-star"></i></span>' : '';
+            return `
+                <div class="rl-all-item">
+                    ${iconHtml}
+                    <div class="rl-all-info">
+                        <a href="${item.url}" target="_blank" class="rl-all-name">${item.name}${featuredBadge}</a>
+                        <div class="rl-all-url">${item.url}</div>
+                    </div>
+                    <button class="rl-edit-btn ms-auto" onclick="ReadingList.showEditModal(${item.id})" title="Edit"><i class="fas fa-pen"></i></button>
+                </div>`;
+        }).join('');
+    },
+
     renderFeatured() {
         const grid = document.getElementById('reading-list-grid');
         if (!grid) return;
@@ -109,6 +141,7 @@ const ReadingList = {
         if (res.status === 'success') {
             bootstrap.Modal.getInstance(document.getElementById('readingListModal')).hide();
             this.loadFeatured();
+            if (document.getElementById('rl-all-list')) this.loadAll();
         } else {
             showError(res.error);
         }
@@ -118,6 +151,7 @@ const ReadingList = {
         const res = await apiClient.delete(`board/api/reading_list/${id}/`);
         if (res.status === 'success') {
             this.loadFeatured();
+            if (document.getElementById('rl-all-list')) this.loadAll();
         } else {
             showError(res.error);
         }
