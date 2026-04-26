@@ -5,7 +5,6 @@ from datetime import timedelta, datetime
 from functools import wraps
 
 import jwt
-from allauth.idp.oidc.internal.oauthlib.server import generate_token
 from django.conf import settings
 from django.http import JsonResponse
 from django.utils.decorators import method_decorator
