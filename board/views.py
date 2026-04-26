@@ -1117,13 +1117,17 @@ class FriendViewSet(AuthenticatedModelViewSet):
         return Response({'status': 'success', 'data': FriendSerializer(friends, many=True).data})
 
     def destroy(self, request, **kwargs):
-        """Revoke friendship — removes both directions."""
+        """Revoke friendship — removes both directions and cleans up the friend request."""
         user_id = request.session.get('user_id')
         pk = int(kwargs['pk'])
         friendship = self.get_queryset().get(pk=pk, user_id=user_id)
         friend_id = friendship.friend_id
         Friend.objects.filter(user_id=user_id, friend_id=friend_id).delete()
         Friend.objects.filter(user_id=friend_id, friend_id=user_id).delete()
+        FriendRequest.objects.filter(
+            from_user_id__in=[user_id, friend_id],
+            to_user_id__in=[user_id, friend_id],
+        ).delete()
         return Response({'status': 'success', 'message': 'Friendship removed'})
 
     @action(detail=False, methods=['post'], url_path='send_request')

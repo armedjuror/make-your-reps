@@ -32,7 +32,7 @@ class UserDetail(models.Model):
     default_theme = models.CharField(
         max_length=16,
         choices=Theme.choices,
-        default=Theme.LIGHT
+        default=Theme.DARK
     )
     # Search
     default_search_engine = models.CharField(
