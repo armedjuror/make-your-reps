@@ -5,7 +5,7 @@ from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
 
 from main.config_manager import get_config
-from main.models import EmailPreference, ReleaseLog
+from main.models import AnnouncementLog, EmailPreference, ReleaseLog
 from main.utils import handle_exceptions
 
 
@@ -74,6 +74,7 @@ def internal_dashboard(request):
     opted_out_announcements = EmailPreference.objects.filter(announcement_emails=False).count()
     prefs_created = EmailPreference.objects.count()
     latest_release = ReleaseLog.objects.order_by('-released_at', '-id').first()
+    recent_announcements = AnnouncementLog.objects.select_related('release', 'sent_by')[:8]
 
     return render(request, 'internal/dashboard.html', {
         'total_users': total_users,
@@ -81,6 +82,7 @@ def internal_dashboard(request):
         'opted_out_announcements': opted_out_announcements,
         'prefs_created': prefs_created,
         'latest_release': latest_release,
+        'recent_announcements': recent_announcements,
     })
 
 

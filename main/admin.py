@@ -10,6 +10,7 @@ from django.utils import timezone
 from django.conf import settings
 
 from main.models import AnnouncementLog, Config, EmailPreference, ErrorLog, LoginActivity, ReleaseLog
+from main.tasks import send_release_announcement_task
 
 
 # Register your models here.
@@ -64,8 +65,20 @@ class ReleaseAnnouncementForm(forms.Form):
     test_email = forms.EmailField(
         label='Test send (optional)',
         required=False,
-        help_text='If set, sends only to this address and skips the full send. Use to preview before sending to everyone.',
+        help_text='If set, sends only to this address with a [TEST] prefix. Use to preview before sending to everyone.',
     )
+    specific_emails = forms.CharField(
+        label='Send to specific emails (optional)',
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 3, 'cols': 70}),
+        help_text='Comma-separated list of email addresses. If set, sends only to these addresses (no [TEST] prefix). Cannot be combined with Test send.',
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get('test_email') and cleaned.get('specific_emails'):
+            self.add_error('specific_emails', 'Cannot use both Test send and Specific emails at the same time.')
+        return cleaned
 
 
 class TestReengagementForm(forms.Form):
@@ -202,6 +215,21 @@ class EmailPreferenceAdmin(admin.ModelAdmin):
         return render(request, 'admin/test_reengagement.html', context)
 
 
+@register(AnnouncementLog)
+class AnnouncementLogAdmin(admin.ModelAdmin):
+    list_display = ('subject', 'release', 'audience', 'sent_count', 'sent_by', 'sent_at', 'test_recipient')
+    list_filter = ('audience',)
+    search_fields = ('subject', 'release__version')
+    ordering = ('-sent_at',)
+    readonly_fields = ('release', 'subject', 'audience', 'test_recipient', 'sent_count', 'sent_by', 'sent_at')
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
 @register(ReleaseLog)
 class ReleaseLogAdmin(admin.ModelAdmin):
     list_display = ('version', 'title', 'release_type', 'released_at', 'is_public')
@@ -242,6 +270,7 @@ class ReleaseLogAdmin(admin.ModelAdmin):
                 cta_label = form.cleaned_data['cta_label']
                 cta_url = form.cleaned_data['cta_url']
                 test_email = form.cleaned_data.get('test_email')
+                specific_emails_raw = form.cleaned_data.get('specific_emails', '')
                 year = timezone.now().year
 
                 def _send(display_name, email, unsubscribe_url, subject_line=None):
@@ -290,36 +319,54 @@ class ReleaseLogAdmin(admin.ModelAdmin):
                         sent_by=request.user,
                     )
                     self.message_user(request, f'Test email sent to {test_email}.', level=messages.SUCCESS)
-                else:
-                    users = (
-                        User.objects
-                        .filter(is_active=True)
-                        .exclude(email='')
-                        .prefetch_related('email_preference')
-                    )
+                elif specific_emails_raw:
+                    email_list = [e.strip() for e in specific_emails_raw.split(',') if e.strip()]
+                    # Look up users by email to get their first name; fall back to 'there'
+                    user_map = {
+                        u.email: (u.first_name or u.username)
+                        for u in User.objects.filter(email__in=email_list)
+                    }
                     sent = 0
-                    for user in users:
-                        pref, _ = EmailPreference.objects.get_or_create(user=user)
-                        if not pref.announcement_emails:
-                            continue
-                        display_name = user.first_name or user.username
+                    for email_addr in email_list:
+                        display_name = user_map.get(email_addr, 'there')
                         _send(
                             display_name=display_name,
-                            email=user.email,
-                            unsubscribe_url=f'{site_url}/unsubscribe/{pref.token}/',
+                            email=email_addr,
+                            unsubscribe_url=f'{site_url}/unsubscribe/00000000-0000-0000-0000-000000000000/',
                         )
                         sent += 1
-
                     AnnouncementLog.objects.create(
                         release=release,
                         subject=subject,
-                        audience=AnnouncementLog.AUDIENCE_ALL,
+                        audience=AnnouncementLog.AUDIENCE_SPECIFIC,
+                        test_recipient=', '.join(email_list),
                         sent_count=sent,
                         sent_by=request.user,
                     )
                     self.message_user(
                         request,
-                        f"Release announcement for v{release.version} sent to {sent} users.",
+                        f"Announcement sent to {sent} specific address{'es' if sent != 1 else ''}.",
+                        level=messages.SUCCESS,
+                    )
+                else:
+                    log = AnnouncementLog.objects.create(
+                        release=release,
+                        subject=subject,
+                        audience=AnnouncementLog.AUDIENCE_ALL,
+                        sent_count=0,
+                        sent_by=request.user,
+                    )
+                    send_release_announcement_task.delay(
+                        announcement_log_id=log.id,
+                        release_id=release.id,
+                        subject=subject,
+                        custom_message=custom_message,
+                        cta_label=cta_label,
+                        cta_url=cta_url,
+                    )
+                    self.message_user(
+                        request,
+                        f"Announcement for v{release.version} queued — sending in the background.",
                         level=messages.SUCCESS,
                     )
                 return redirect('../../')
@@ -339,16 +386,3 @@ class ReleaseLogAdmin(admin.ModelAdmin):
         return render(request, 'admin/releaselog_send_announcement.html', context)
 
 
-@register(AnnouncementLog)
-class AnnouncementLogAdmin(admin.ModelAdmin):
-    list_display = ('subject', 'release', 'audience', 'sent_count', 'test_recipient', 'sent_by', 'sent_at')
-    list_filter = ('audience',)
-    search_fields = ('subject', 'test_recipient', 'sent_by__username')
-    ordering = ('-sent_at',)
-    readonly_fields = ('release', 'subject', 'audience', 'test_recipient', 'sent_count', 'sent_by', 'sent_at')
-
-    def has_add_permission(self, request):
-        return False
-
-    def has_change_permission(self, request, obj=None):
-        return False

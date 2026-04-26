@@ -390,8 +390,54 @@
       {% endif %}
     </div>
 
+    <!-- Recent announcements -->
+    <p class="section-label" style="margin-top:48px;">Recent Announcements</p>
+    {% if recent_announcements %}
+    <div style="background-color:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:0;">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border);">
+            <th style="padding:12px 20px;text-align:left;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-mute);">Subject</th>
+            <th style="padding:12px 16px;text-align:left;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-mute);">Audience</th>
+            <th style="padding:12px 16px;text-align:right;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-mute);">Sent</th>
+            <th style="padding:12px 16px;text-align:left;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-mute);">By</th>
+            <th style="padding:12px 20px;text-align:left;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-mute);">Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in recent_announcements %}
+          <tr style="border-bottom:1px solid var(--border);{% if forloop.last %}border-bottom:none;{% endif %}">
+            <td style="padding:14px 20px;color:var(--text-mid);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+              {{ log.subject }}
+            </td>
+            <td style="padding:14px 16px;">
+              {% if log.audience == 'test' %}
+                <span style="background:var(--bg-raised);border:1px solid var(--border-mid);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;color:var(--text-mute);letter-spacing:0.06em;">TEST</span>
+              {% else %}
+                <span style="background:rgba(186,130,56,0.12);border:1px solid rgba(186,130,56,0.25);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;color:var(--amber);letter-spacing:0.06em;">ALL</span>
+              {% endif %}
+            </td>
+            <td style="padding:14px 16px;text-align:right;font-weight:700;color:{% if log.sent_count == 0 and log.audience == 'all' %}var(--gold){% else %}var(--text){% endif %};">
+              {% if log.sent_count == 0 and log.audience == 'all' %}
+                &bull;&bull;&bull;
+              {% else %}
+                {{ log.sent_count }}
+              {% endif %}
+            </td>
+            <td style="padding:14px 16px;color:var(--text-mute);">{{ log.sent_by.username|default:"—" }}</td>
+            <td style="padding:14px 20px;color:var(--text-mute);white-space:nowrap;">{{ log.sent_at|date:"M j, Y H:i" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="font-size:14px;color:var(--text-mute);padding:4px 0;">No announcements sent yet.</p>
+    {% endif %}
+
     <!-- Quick admin links -->
     <div class="admin-links">
+      <a href="/admin/main/announcementlog/" class="admin-link">Announcement Logs</a>
       <a href="/admin/main/config/" class="admin-link">Config</a>
       <a href="/admin/main/errorlog/" class="admin-link">Error Logs</a>
       <a href="/admin/main/loginactivity/" class="admin-link">Login Activity</a>
