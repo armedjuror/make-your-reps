@@ -1,4 +1,6 @@
 # Create your models here.
+import uuid
+
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import TextChoices
@@ -80,6 +82,17 @@ class ErrorLog(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
+
+class EmailPreference(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='email_preference')
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    marketing_emails = models.BooleanField(default=True, help_text='Re-engagement / habit reminder emails')
+    announcement_emails = models.BooleanField(default=True, help_text='Product updates and release announcements')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'{self.user} — email prefs'
 
 
 class ReleaseType(TextChoices):

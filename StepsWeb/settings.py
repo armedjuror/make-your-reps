@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from pathlib import Path
 
+from celery.schedules import crontab
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -222,6 +223,14 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+CELERY_BEAT_SCHEDULE = {
+    # Runs every day at 9:00 AM server time
+    'send-reengagement-emails-daily': {
+        'task': 'board.tasks.send_reengagement_emails',
+        'schedule': crontab(hour=9, minute=0),
+    },
+}
 
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^chrome-extension://.*$",

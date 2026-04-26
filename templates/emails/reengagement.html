@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ days_away }} days. Time to come back.</title>
+</head>
+<body style="margin:0;padding:0;background-color:#2a2620;background-image:radial-gradient(circle at center,#534f48 0%,#2a2620 100%);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+
+  <table width="100%" cellpadding="0" cellspacing="0" border="0"
+    style="background-image:radial-gradient(circle at center,#706857 0.8px,transparent 0.8px);background-size:20px 20px;padding:48px 16px;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;">
+
+          <!-- Logo -->
+          <tr>
+            <td align="center" style="padding-bottom:28px;">
+              <span style="font-size:13px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#918c73;">Make Your</span>
+              <span style="font-size:13px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#BA8238;">&nbsp;Reps</span>
+            </td>
+          </tr>
+
+          <!-- Card -->
+          <tr>
+            <td style="background-color:#2e2a20;border:1px solid #3d3830;border-radius:16px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.5);">
+
+              <!-- Top accent bar -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="height:3px;background:linear-gradient(90deg,#BA8238 0%,#d4af37 50%,#8b7355 100%);font-size:0;line-height:0;">&nbsp;</td>
+                </tr>
+              </table>
+
+              <!-- Hero -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" style="padding:52px 44px 40px;">
+
+                    <!-- Days badge -->
+                    <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:28px;">
+                      <tr>
+                        <td style="background-color:#32302a;border:1px solid #534f48;border-radius:100px;padding:6px 18px;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#BA8238;">
+                          Last seen &bull; {{ days_away }} day{{ days_away|pluralize }} ago
+                        </td>
+                      </tr>
+                    </table>
+
+                    <h1 style="margin:0 0 16px;font-size:36px;font-weight:800;line-height:1.15;color:#e8e3d3;letter-spacing:-0.03em;">
+                      {{ days_away }} days without<br/>
+                      <span style="color:#BA8238;">a single rep.</span>
+                    </h1>
+                    <p style="margin:0;font-size:16px;line-height:1.65;color:#918c73;max-width:380px;">
+                      That ends today. Your habits, your board, your goals &mdash; still here. Still yours.
+                    </p>
+
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Divider -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr><td style="height:1px;background:linear-gradient(90deg,transparent,#3d3830,transparent);font-size:0;line-height:0;">&nbsp;</td></tr>
+              </table>
+
+              <!-- Body -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="padding:40px 44px 28px;">
+                    <p style="margin:0 0 20px;font-size:15px;font-weight:600;color:#BA8238;">
+                      Hey {{ first_name }},
+                    </p>
+                    <p style="margin:0 0 20px;font-size:15px;line-height:1.9;color:#c4bfb0;">
+                      Let's be honest &mdash; It's been <strong style="color:#e8e3d3;">{{ days_away }} days without a rep.</strong>
+                      Long enough to feel the gap. Long enough to wonder if restarting is even worth it.
+                    </p>
+                    <p style="margin:0 0 20px;font-size:15px;line-height:1.9;color:#c4bfb0;">
+                      It is. Here's why: </p>
+                      <p style="margin:0 0 20px;font-size:15px;line-height:1.9;color:#c4bfb0;">
+                      The version of you who started your habits, build routines, and
+                      logged reps didn't do that by accident. You decided to be someone who shows up for themselves. That decision is still available today.
+                    </p>
+                    <p style="margin:0 0 0;font-size:15px;line-height:1.9;color:#c4bfb0;">
+                      You don't need to catch up on {{ days_away }} days. You don't need a new plan, a fresh week, or a Monday. You just need to <strong style="color:#e8e3d3;">make a rep now. Right now.</strong>
+                      </p>
+                      <br>
+                    <p style="margin:0 0 0;font-size:15px;line-height:1.9;color:#c4bfb0;">
+                        That's how streaks restart. That's how the version of you who started this comes back.
+                    </p>
+                  </td>
+                </tr>
+
+                <!-- Quote -->
+                <tr>
+                  <td style="padding:4px 44px 36px;">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="background-color:#32302a;border-left:2px solid #d4af37;border-radius:0 8px 8px 0;padding:16px 20px;">
+                          <p style="margin:0 0 8px;font-size:14px;font-style:italic;color:#918c73;line-height:1.7;">
+                            "It's not about being perfect. It's about showing up — especially after you've been gone."
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- Divider -->
+                <tr>
+                  <td style="height:1px;background:linear-gradient(90deg,transparent,#3d3830,transparent);font-size:0;line-height:0;">&nbsp;</td>
+                </tr>
+
+                <!-- CTA -->
+                <tr>
+                  <td align="center" style="padding:40px 44px 44px;">
+                    <a href="{{ login_url }}"
+                      style="display:inline-block;background:linear-gradient(135deg,#BA8238,#d4af37);color:#1a1510;text-decoration:none;font-size:15px;font-weight:800;letter-spacing:0.04em;padding:16px 48px;border-radius:8px;box-shadow:0 8px 24px rgba(186,130,56,0.3);">
+                      Make Today's Rep &nbsp;&rarr;
+                    </a>
+                    <p style="margin:14px 0 0;font-size:12px;color:#534f48;letter-spacing:0.02em;">
+                      One rep. That's all it takes to turn this around.
+                    </p>
+                  </td>
+                </tr>
+
+                <!-- Sign-off -->
+                <tr>
+                  <td style="border-top:1px solid #3d3830;padding:24px 44px 40px;">
+                    <p style="margin:0;font-size:14px;line-height:1.9;color:#706857;">
+                      We haven't given up on you,<br/>
+                      <span style="color:#BA8238;font-weight:600;">The Make Your Reps team</span>
+                    </p>
+                  </td>
+                </tr>
+
+              </table>
+
+              <!-- Bottom accent bar -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="height:3px;background:linear-gradient(90deg,#8b7355 0%,#d4af37 50%,#BA8238 100%);font-size:0;line-height:0;">&nbsp;</td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding-top:28px;">
+              <p style="margin:0;font-size:11px;color:#534f48;line-height:1.8;letter-spacing:0.02em;">
+                You're receiving this because you have an account at
+                <a href="{{ site_url }}" style="color:#534f48;text-decoration:none;">makeyourreps.com</a>
+                &nbsp;&bull;&nbsp; &copy; {{ year }} Make Your Reps
+              </p>
+              <p style="margin:6px 0 0;font-size:11px;">
+                <a href="{{ unsubscribe_url }}" style="color:#706857;text-decoration:underline;">Manage email preferences</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

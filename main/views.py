@@ -1,10 +1,10 @@
 from django.contrib.auth import logout
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
 
 from main.config_manager import get_config
-from main.models import ReleaseLog
+from main.models import EmailPreference, ReleaseLog
 from main.utils import handle_exceptions
 
 
@@ -62,6 +62,26 @@ def delete_account(request):
         user.delete()
         return redirect('/')
     return redirect('/')
+
+
+def unsubscribe(request, token):
+    try:
+        pref = EmailPreference.objects.select_related('user').get(token=token)
+    except EmailPreference.DoesNotExist:
+        raise Http404
+
+    saved = False
+    if request.method == 'POST':
+        pref.marketing_emails = 'marketing_emails' in request.POST
+        pref.announcement_emails = 'announcement_emails' in request.POST
+        pref.save(update_fields=['marketing_emails', 'announcement_emails', 'updated_at'])
+        saved = True
+
+    return render(request, 'emails/unsubscribe.html', {
+        'pref': pref,
+        'saved': saved,
+        'site_url': 'https://makeyourreps.com',
+    })
 
 
 def manifest(request):

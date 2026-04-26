@@ -2,7 +2,10 @@ from datetime import datetime, time, timedelta
 
 from celery import shared_task
 from django.contrib.auth.models import User
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
 from django.utils import timezone
+from django.conf import settings
 
 from board.models import (
     Habit, HabitStatus, Task, RoutineEntry, TimelineEvent,
@@ -367,3 +370,83 @@ def generate_timeline_for_new_item(item_type, item_id):
                 reference={'model': 'RoutineEntry', 'id': entry.id},
                 action=None,
             )
+
+
+@shared_task
+def send_reengagement_emails():
+    """
+    Daily task: send a re-engagement email to every active user who has not
+    logged in during the last 7 days and has not opted out of marketing emails.
+    """
+    from main.models import EmailPreference, LoginActivity  # avoid circular import
+
+    cutoff = timezone.now() - timedelta(days=7)
+    site_url = 'https://makeyourreps.com'
+    login_url = f'{site_url}/login'
+    year = timezone.now().year
+
+    recently_active_ids = (
+        LoginActivity.objects
+        .filter(action='login', status='success', timestamp__gte=cutoff)
+        .values_list('user_id', flat=True)
+        .distinct()
+    )
+
+    inactive_users = (
+        User.objects
+        .filter(is_active=True)
+        .exclude(id__in=recently_active_ids)
+        .exclude(email='')
+    )
+
+    # Fetch last successful login per inactive user in one query
+    from django.db.models import Max
+    last_login_map = dict(
+        LoginActivity.objects
+        .filter(user__in=inactive_users, action='login', status='success')
+        .values('user_id')
+        .annotate(last=Max('timestamp'))
+        .values_list('user_id', 'last')
+    )
+
+    today = timezone.now().date()
+    sent = 0
+    for user in inactive_users:
+        pref, _ = EmailPreference.objects.get_or_create(user=user)
+        if not pref.marketing_emails:
+            continue
+
+        last_login = last_login_map.get(user.id)
+        if last_login:
+            days_away = (today - last_login.date()).days
+        else:
+            days_away = (today - user.date_joined.date()).days
+
+        first_name = user.first_name or user.username
+        unsubscribe_url = f'{site_url}/unsubscribe/{pref.token}/'
+        html_body = render_to_string('emails/reengagement.html', {
+            'first_name': first_name,
+            'days_away': days_away,
+            'login_url': login_url,
+            'site_url': site_url,
+            'unsubscribe_url': unsubscribe_url,
+            'year': year,
+        })
+        send_mail(
+            subject="Your habits are waiting — come back and make your reps",
+            message=(
+                f"Hey {first_name},\n\n"
+                "It's been a while since you last checked in. Your habits and your board "
+                "are still here, waiting for you.\n\n"
+                f"Jump back in: {login_url}\n\n"
+                "— The Make Your Reps team\n\n"
+                f"Manage email preferences: {unsubscribe_url}"
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            html_message=html_body,
+            fail_silently=True,
+        )
+        sent += 1
+
+    return f"Re-engagement emails sent to {sent} inactive users."

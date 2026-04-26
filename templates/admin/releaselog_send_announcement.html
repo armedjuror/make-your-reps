@@ -1,0 +1,50 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<h1>{{ title }}</h1>
+
+<div style="margin:20px 0;padding:16px;background:#f8f8f8;border-left:4px solid #BA8238;border-radius:4px;">
+  <strong>Release:</strong> v{{ release.version }} &mdash; {{ release.title }}<br/>
+  <strong>Type:</strong> {{ release.get_release_type_display }}<br/>
+  <strong>Released:</strong> {{ release.released_at }}
+</div>
+
+<p style="margin-bottom:24px;color:#555;">
+  Fill in the message and CTA below. Leave <em>Test send</em> empty to send to all eligible users,
+  or enter an address to preview the email first.
+</p>
+
+<form method="post" style="max-width:600px;">
+  {% csrf_token %}
+
+  {% for field in form %}
+    {% if field.html_name == 'test_email' %}
+      <hr style="margin:28px 0;border:none;border-top:1px solid #e0e0e0;"/>
+      <p style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#aaa;margin-bottom:16px;">
+        Test Send
+      </p>
+    {% endif %}
+    <div style="margin-bottom:20px;">
+      <label for="{{ field.id_for_label }}" style="display:block;font-weight:600;margin-bottom:6px;">
+        {{ field.label }}
+      </label>
+      {{ field }}
+      {% if field.help_text %}
+        <p style="font-size:12px;color:#888;margin-top:4px;">{{ field.help_text }}</p>
+      {% endif %}
+      {% for error in field.errors %}
+        <p style="color:red;font-size:13px;">{{ error }}</p>
+      {% endfor %}
+    </div>
+  {% endfor %}
+
+  <div style="margin-top:28px;display:flex;align-items:center;gap:16px;">
+    <input type="submit" value="Send"
+      style="background:#BA8238;color:#fff;border:none;padding:10px 32px;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;" />
+    <a href="../../" style="font-size:14px;color:#555;">Cancel</a>
+  </div>
+</form>
+{% endblock %}

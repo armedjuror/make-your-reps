@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Email Preferences &mdash; Make Your Reps</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background-color: #2a2620;
+      background-image: radial-gradient(circle at center, #534f48 0%, #2a2620 100%);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      color: #e8e3d3;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 16px;
+    }
+
+    /* dot grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(circle at center, #706857 0.8px, transparent 0.8px);
+      background-size: 20px 20px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 480px;
+    }
+
+    /* Logo */
+    .logo {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .logo a {
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+    .logo a span { color: #918c73; }
+    .logo a em { color: #BA8238; font-style: normal; }
+
+    /* Card */
+    .card {
+      background-color: #2e2a20;
+      border: 1px solid #3d3830;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+    }
+
+    .accent-bar {
+      height: 3px;
+      background: linear-gradient(90deg, #BA8238 0%, #d4af37 50%, #8b7355 100%);
+    }
+
+    .card-body {
+      padding: 40px 40px 36px;
+    }
+
+    /* Success state */
+    .saved-banner {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background-color: rgba(186, 130, 56, 0.1);
+      border: 1px solid rgba(212, 175, 55, 0.25);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 28px;
+      font-size: 14px;
+      color: #d4af37;
+    }
+    .saved-banner svg { flex-shrink: 0; }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #e8e3d3;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #706857;
+      margin-bottom: 32px;
+      line-height: 1.5;
+    }
+
+    /* Toggle rows */
+    .pref-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .pref-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      background-color: #32302a;
+      border: 1px solid #3d3830;
+      border-radius: 10px;
+      padding: 16px 18px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .pref-row:hover { border-color: #534f48; }
+
+    .pref-info { flex: 1; }
+    .pref-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #e8e3d3;
+      margin-bottom: 3px;
+    }
+    .pref-desc {
+      font-size: 12px;
+      color: #706857;
+      line-height: 1.5;
+    }
+
+    /* Custom toggle */
+    .toggle-wrap { flex-shrink: 0; padding-top: 2px; }
+    .toggle-wrap input[type="checkbox"] { display: none; }
+    .toggle {
+      display: block;
+      width: 40px;
+      height: 22px;
+      background-color: #3d3830;
+      border-radius: 100px;
+      position: relative;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      border: 1px solid #534f48;
+    }
+    .toggle::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #706857;
+      transition: transform 0.2s, background-color 0.2s;
+    }
+    input[type="checkbox"]:checked + .toggle {
+      background-color: rgba(186, 130, 56, 0.25);
+      border-color: #BA8238;
+    }
+    input[type="checkbox"]:checked + .toggle::after {
+      transform: translateX(18px);
+      background: #BA8238;
+    }
+
+    /* Save button */
+    .btn-save {
+      display: block;
+      width: 100%;
+      background: linear-gradient(135deg, #BA8238, #d4af37);
+      color: #1a1510;
+      border: none;
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(186,130,56,0.25);
+      transition: opacity 0.15s;
+    }
+    .btn-save:hover { opacity: 0.9; }
+
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #3d3830, transparent);
+      margin: 24px 0;
+    }
+
+    .back-link {
+      text-align: center;
+      font-size: 13px;
+      color: #534f48;
+    }
+    .back-link a {
+      color: #706857;
+      text-decoration: none;
+    }
+    .back-link a:hover { color: #BA8238; }
+
+    .accent-bar-bottom {
+      height: 3px;
+      background: linear-gradient(90deg, #8b7355 0%, #d4af37 50%, #BA8238 100%);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+
+    <div class="logo">
+      <a href="{{ site_url }}">
+        <span>Make Your </span><em>Reps</em>
+      </a>
+    </div>
+
+    <div class="card">
+      <div class="accent-bar"></div>
+      <div class="card-body">
+
+        {% if saved %}
+        <div class="saved-banner">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="7" stroke="#d4af37" stroke-width="1.5"/>
+            <path d="M5 8l2 2 4-4" stroke="#d4af37" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Preferences saved.
+        </div>
+        {% endif %}
+
+        <h1>Email Preferences</h1>
+        <p class="subtitle">Choose which emails you'd like to receive from us.</p>
+
+        <form method="post">
+          {% csrf_token %}
+          <div class="pref-list">
+
+            <label class="pref-row">
+              <div class="pref-info">
+                <div class="pref-label">Habit Reminders</div>
+                <div class="pref-desc">Re-engagement nudges when you've been away for a while.</div>
+              </div>
+              <div class="toggle-wrap">
+                <input type="checkbox" name="marketing_emails" id="marketing_emails"
+                  {% if pref.marketing_emails %}checked{% endif %}>
+                <span class="toggle"></span>
+              </div>
+            </label>
+
+            <label class="pref-row">
+              <div class="pref-info">
+                <div class="pref-label">Product Announcements</div>
+                <div class="pref-desc">New features, major releases, and product updates.</div>
+              </div>
+              <div class="toggle-wrap">
+                <input type="checkbox" name="announcement_emails" id="announcement_emails"
+                  {% if pref.announcement_emails %}checked{% endif %}>
+                <span class="toggle"></span>
+              </div>
+            </label>
+
+          </div>
+
+          <button type="submit" class="btn-save">Save Preferences</button>
+        </form>
+
+        <div class="divider"></div>
+
+        <p class="back-link">
+          &larr; <a href="{{ site_url }}">Back to Make Your Reps</a>
+        </p>
+
+      </div>
+      <div class="accent-bar-bottom"></div>
+    </div>
+
+  </div>
+</body>
+</html>
