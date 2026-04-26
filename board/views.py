@@ -2,7 +2,7 @@ import os
 from datetime import datetime, time
 
 from django.contrib.auth.models import User
-from django.db.models import Count, Prefetch, Q
+from django.db.models import Count, F, Prefetch, Q
 from django.shortcuts import render, redirect
 from django.utils import timezone
 from rest_framework import status
@@ -377,6 +377,7 @@ class TaskViewSet(AuthenticatedModelViewSet):
         elif done_filter == 'false':
             queryset = queryset.filter(is_done=False)
 
+        queryset = queryset.order_by(F('deadline').asc(nulls_last=True), 'created_at')
         data = self.get_serializer(queryset, many=True).data
         return Response({
             'status': 'success',
