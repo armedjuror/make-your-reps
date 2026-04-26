@@ -9,7 +9,7 @@ from django.urls import path
 from django.utils import timezone
 from django.conf import settings
 
-from main.models import Config, EmailPreference, ErrorLog, LoginActivity, ReleaseLog
+from main.models import AnnouncementLog, Config, EmailPreference, ErrorLog, LoginActivity, ReleaseLog
 
 
 # Register your models here.
@@ -42,6 +42,11 @@ class LoginActivityAdmin(admin.ModelAdmin):
 
 
 class ReleaseAnnouncementForm(forms.Form):
+    subject = forms.CharField(
+        label='Email subject',
+        max_length=255,
+        help_text='The subject line recipients will see in their inbox.',
+    )
     custom_message = forms.CharField(
         label='Message body',
         widget=forms.Textarea(attrs={'rows': 8, 'cols': 70}),
@@ -232,15 +237,16 @@ class ReleaseLogAdmin(admin.ModelAdmin):
         if request.method == 'POST':
             form = ReleaseAnnouncementForm(request.POST)
             if form.is_valid():
+                subject = form.cleaned_data['subject']
                 custom_message = form.cleaned_data['custom_message']
                 cta_label = form.cleaned_data['cta_label']
                 cta_url = form.cleaned_data['cta_url']
                 test_email = form.cleaned_data.get('test_email')
                 year = timezone.now().year
 
-                def _send(display_name, email, unsubscribe_url, subject_prefix=''):
+                def _send(display_name, email, unsubscribe_url, subject_line=None):
                     html_body = render_to_string('emails/release_announcement.html', {
-                        'subject': f"v{release.version}: {release.title}",
+                        'subject': subject,
                         'version': release.version,
                         'release_type': release.get_release_type_display(),
                         'title': release.title,
@@ -254,7 +260,7 @@ class ReleaseLogAdmin(admin.ModelAdmin):
                         'year': year,
                     })
                     send_mail(
-                        subject=f"{subject_prefix}v{release.version} is here — {release.title}",
+                        subject=subject_line or subject,
                         message=(
                             f"Hey {display_name},\n\n"
                             f"{custom_message}\n\n"
@@ -273,7 +279,15 @@ class ReleaseLogAdmin(admin.ModelAdmin):
                         display_name='there',
                         email=test_email,
                         unsubscribe_url=f'{site_url}/unsubscribe/00000000-0000-0000-0000-000000000000/',
-                        subject_prefix='[TEST] ',
+                        subject_line=f'[TEST] {subject}',
+                    )
+                    AnnouncementLog.objects.create(
+                        release=release,
+                        subject=subject,
+                        audience=AnnouncementLog.AUDIENCE_TEST,
+                        test_recipient=test_email,
+                        sent_count=1,
+                        sent_by=request.user,
                     )
                     self.message_user(request, f'Test email sent to {test_email}.', level=messages.SUCCESS)
                 else:
@@ -296,6 +310,13 @@ class ReleaseLogAdmin(admin.ModelAdmin):
                         )
                         sent += 1
 
+                    AnnouncementLog.objects.create(
+                        release=release,
+                        subject=subject,
+                        audience=AnnouncementLog.AUDIENCE_ALL,
+                        sent_count=sent,
+                        sent_by=request.user,
+                    )
                     self.message_user(
                         request,
                         f"Release announcement for v{release.version} sent to {sent} users.",
@@ -303,7 +324,10 @@ class ReleaseLogAdmin(admin.ModelAdmin):
                     )
                 return redirect('../../')
         else:
-            form = ReleaseAnnouncementForm(initial={'cta_url': site_url})
+            form = ReleaseAnnouncementForm(initial={
+                'subject': f"v{release.version} is here — {release.title}",
+                'cta_url': site_url,
+            })
 
         context = {
             **self.admin_site.each_context(request),
@@ -313,3 +337,18 @@ class ReleaseLogAdmin(admin.ModelAdmin):
             'opts': self.model._meta,
         }
         return render(request, 'admin/releaselog_send_announcement.html', context)
+
+
+@register(AnnouncementLog)
+class AnnouncementLogAdmin(admin.ModelAdmin):
+    list_display = ('subject', 'release', 'audience', 'sent_count', 'test_recipient', 'sent_by', 'sent_at')
+    list_filter = ('audience',)
+    search_fields = ('subject', 'test_recipient', 'sent_by__username')
+    ordering = ('-sent_at',)
+    readonly_fields = ('release', 'subject', 'audience', 'test_recipient', 'sent_count', 'sent_by', 'sent_at')
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False

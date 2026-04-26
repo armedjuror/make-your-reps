@@ -118,3 +118,25 @@ class ReleaseLog(models.Model):
     def __str__(self):
         return f'v{self.version} — {self.title}'
 
+
+class AnnouncementLog(models.Model):
+    AUDIENCE_TEST = 'test'
+    AUDIENCE_ALL = 'all'
+    AUDIENCE_CHOICES = [
+        (AUDIENCE_TEST, 'Test'),
+        (AUDIENCE_ALL, 'All Users'),
+    ]
+
+    release = models.ForeignKey(ReleaseLog, on_delete=models.SET_NULL, null=True, blank=True, related_name='announcement_logs')
+    subject = models.CharField(max_length=255)
+    audience = models.CharField(max_length=8, choices=AUDIENCE_CHOICES)
+    test_recipient = models.EmailField(blank=True, help_text='Email address used for test sends')
+    sent_count = models.PositiveIntegerField(default=0)
+    sent_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='announcement_logs')
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-sent_at']
+
+    def __str__(self):
+        return f'{self.subject} — {self.sent_at:%Y-%m-%d %H:%M}'

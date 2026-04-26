@@ -1,5 +1,6 @@
 from django.contrib.auth import logout
-from django.http import Http404, JsonResponse
+from django.contrib.auth.models import User
+from django.http import Http404, HttpResponseForbidden, JsonResponse
 from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
 
@@ -62,6 +63,25 @@ def delete_account(request):
         user.delete()
         return redirect('/')
     return redirect('/')
+
+
+def internal_dashboard(request):
+    if not request.user.is_authenticated or not request.user.is_superuser:
+        return HttpResponseForbidden()
+
+    total_users = User.objects.filter(is_active=True).exclude(email='').count()
+    opted_out_marketing = EmailPreference.objects.filter(marketing_emails=False).count()
+    opted_out_announcements = EmailPreference.objects.filter(announcement_emails=False).count()
+    prefs_created = EmailPreference.objects.count()
+    latest_release = ReleaseLog.objects.order_by('-released_at', '-id').first()
+
+    return render(request, 'internal/dashboard.html', {
+        'total_users': total_users,
+        'opted_out_marketing': opted_out_marketing,
+        'opted_out_announcements': opted_out_announcements,
+        'prefs_created': prefs_created,
+        'latest_release': latest_release,
+    })
 
 
 def unsubscribe(request, token):

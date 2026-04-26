@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Internal Dashboard &mdash; Make Your Reps</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:        #2a2620;
+      --bg-card:   #2e2a20;
+      --bg-raised: #32302a;
+      --border:    #3d3830;
+      --border-mid:#534f48;
+      --gold:      #d4af37;
+      --amber:     #BA8238;
+      --amber-dim: #8b7355;
+      --text:      #e8e3d3;
+      --text-mid:  #c4bfb0;
+      --text-dim:  #918c73;
+      --text-mute: #706857;
+      --dot:       #706857;
+      --green:     #8fb3a3;
+      --red:       #d4a574;
+    }
+
+    html, body {
+      min-height: 100vh;
+      background-color: var(--bg);
+      background-image:
+        radial-gradient(circle at center, #534f48 0%, #2a2620 100%);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(circle at center, var(--dot) 0.8px, transparent 0.8px);
+      background-size: 20px 20px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Layout ── */
+    .page { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 48px 24px 80px; }
+
+    /* ── Top bar ── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 48px;
+    }
+    .topbar-brand { display: flex; align-items: center; gap: 14px; }
+    .topbar-brand .wordmark {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+    .topbar-brand .wordmark em { color: var(--amber); font-style: normal; }
+    .badge-internal {
+      background-color: var(--bg-raised);
+      border: 1px solid var(--border-mid);
+      border-radius: 4px;
+      padding: 3px 10px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+    .topbar-user {
+      font-size: 13px;
+      color: var(--text-mute);
+    }
+    .topbar-user strong { color: var(--text-dim); }
+
+    /* ── Section heading ── */
+    .section-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-mute);
+      margin-bottom: 14px;
+      padding-left: 2px;
+    }
+
+    /* ── Stats row ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 48px;
+    }
+    @media (max-width: 700px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    .stat-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 22px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--amber), var(--gold));
+    }
+    .stat-value {
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-mute);
+      line-height: 1.4;
+    }
+    .stat-card.warn .stat-value { color: var(--red); }
+    .stat-card.ok   .stat-value { color: var(--green); }
+
+    /* ── Actions grid ── */
+    .actions-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 48px;
+    }
+    @media (max-width: 800px) { .actions-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 500px) { .actions-grid { grid-template-columns: 1fr; } }
+
+    .action-card {
+      display: block;
+      text-decoration: none;
+      background-color: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px 22px;
+      transition: border-color 0.15s, transform 0.12s;
+      position: relative;
+      overflow: hidden;
+    }
+    .action-card:hover {
+      border-color: var(--border-mid);
+      transform: translateY(-2px);
+    }
+    .action-card:active { transform: translateY(0); }
+
+    .action-icon {
+      width: 40px;
+      height: 40px;
+      background-color: var(--bg-raised);
+      border: 1px solid var(--border-mid);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      font-size: 18px;
+    }
+    .action-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+      line-height: 1.3;
+    }
+    .action-desc {
+      font-size: 12px;
+      color: var(--text-mute);
+      line-height: 1.6;
+    }
+    .action-arrow {
+      position: absolute;
+      top: 22px;
+      right: 20px;
+      font-size: 16px;
+      color: var(--border-mid);
+      transition: color 0.15s, transform 0.15s;
+    }
+    .action-card:hover .action-arrow {
+      color: var(--amber);
+      transform: translateX(3px);
+    }
+
+    /* Primary action card */
+    .action-card.primary {
+      border-color: rgba(186,130,56,0.35);
+      background: linear-gradient(145deg, #32302a 0%, #2e2a20 100%);
+    }
+    .action-card.primary::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--amber), var(--gold));
+    }
+    .action-card.primary .action-icon {
+      background: rgba(186,130,56,0.15);
+      border-color: rgba(186,130,56,0.3);
+    }
+    .action-card.primary .action-title { color: var(--amber); }
+
+    /* ── Latest release banner ── */
+    .release-banner {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 22px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .release-left { display: flex; align-items: center; gap: 16px; }
+    .release-badge {
+      background-color: var(--bg-raised);
+      border: 1px solid var(--border-mid);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--gold);
+      white-space: nowrap;
+    }
+    .release-info .release-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+    .release-info .release-meta {
+      font-size: 12px;
+      color: var(--text-mute);
+    }
+    .btn-announce {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--amber), var(--gold));
+      color: #1a1510;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      padding: 10px 22px;
+      border-radius: 7px;
+      white-space: nowrap;
+    }
+    .no-release {
+      font-size: 14px;
+      color: var(--text-mute);
+      padding: 8px 0;
+    }
+
+    /* ── Admin links ── */
+    .admin-links {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 32px;
+      padding-top: 28px;
+      border-top: 1px solid var(--border);
+    }
+    .admin-link {
+      display: inline-block;
+      text-decoration: none;
+      background-color: var(--bg-raised);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-dim);
+      letter-spacing: 0.02em;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .admin-link:hover { border-color: var(--border-mid); color: var(--text); }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <!-- Top bar -->
+    <div class="topbar">
+      <div class="topbar-brand">
+        <span class="wordmark">Make Your <em>Reps</em></span>
+        <span class="badge-internal">Internal</span>
+      </div>
+      <span class="topbar-user">Signed in as <strong>{{ request.user.username }}</strong></span>
+    </div>
+
+    <!-- Stats -->
+    <p class="section-label">Overview</p>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value">{{ total_users }}</div>
+        <div class="stat-label">Active users<br/>with email</div>
+      </div>
+      <div class="stat-card {% if opted_out_marketing > 0 %}warn{% endif %}">
+        <div class="stat-value">{{ opted_out_marketing }}</div>
+        <div class="stat-label">Opted out of<br/>habit reminders</div>
+      </div>
+      <div class="stat-card {% if opted_out_announcements > 0 %}warn{% endif %}">
+        <div class="stat-value">{{ opted_out_announcements }}</div>
+        <div class="stat-label">Opted out of<br/>announcements</div>
+      </div>
+      <div class="stat-card ok">
+        <div class="stat-value">{{ prefs_created }}</div>
+        <div class="stat-label">Preference<br/>records created</div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <p class="section-label">Email Actions</p>
+    <div class="actions-grid">
+
+      <a href="/admin/main/emailpreference/test-reengagement/" class="action-card primary">
+        <div class="action-icon">&#x1F4E7;</div>
+        <div class="action-title">Test Reengagement Email</div>
+        <div class="action-desc">Send a preview to any address using a real user or manual values.</div>
+        <span class="action-arrow">&#x2192;</span>
+      </a>
+
+      <a href="/admin/main/releaselog/" class="action-card">
+        <div class="action-icon">&#x1F4E3;</div>
+        <div class="action-title">Send Release Announcement</div>
+        <div class="action-desc">Select a release in the admin, then use the Send Announcement action.</div>
+        <span class="action-arrow">&#x2192;</span>
+      </a>
+
+      <a href="/admin/main/emailpreference/" class="action-card">
+        <div class="action-icon">&#x2699;&#xFE0F;</div>
+        <div class="action-title">Manage Email Preferences</div>
+        <div class="action-desc">View and edit per-user opt-in/opt-out settings for all email types.</div>
+        <span class="action-arrow">&#x2192;</span>
+      </a>
+
+      <a href="/admin/main/releaselog/add/" class="action-card">
+        <div class="action-icon">&#x1F4DD;</div>
+        <div class="action-title">Create Release Log</div>
+        <div class="action-desc">Add a new version entry before sending an announcement.</div>
+        <span class="action-arrow">&#x2192;</span>
+      </a>
+
+      <a href="/admin/django_celery_beat/periodictask/" class="action-card">
+        <div class="action-icon">&#x23F0;</div>
+        <div class="action-title">Celery Beat Schedule</div>
+        <div class="action-desc">View and manage the daily reengagement email schedule.</div>
+        <span class="action-arrow">&#x2192;</span>
+      </a>
+
+      <a href="/admin/" class="action-card">
+        <div class="action-icon">&#x1F3E0;</div>
+        <div class="action-title">Admin Home</div>
+        <div class="action-desc">Return to the main Django admin panel.</div>
+        <span class="action-arrow">&#x2192;</span>
+      </a>
+
+    </div>
+
+    <!-- Latest release -->
+    <p class="section-label">Latest Release</p>
+    <div class="release-banner">
+      {% if latest_release %}
+        <div class="release-left">
+          <span class="release-badge">v{{ latest_release.version }}</span>
+          <div class="release-info">
+            <div class="release-title">{{ latest_release.title }}</div>
+            <div class="release-meta">{{ latest_release.get_release_type_display }} &bull; {{ latest_release.released_at }}</div>
+          </div>
+        </div>
+        <a href="/admin/main/releaselog/?q={{ latest_release.version }}" class="btn-announce">
+          Announce This Release &rarr;
+        </a>
+      {% else %}
+        <p class="no-release">No releases logged yet. <a href="/admin/main/releaselog/add/" style="color:var(--amber);text-decoration:none;">Create one &rarr;</a></p>
+      {% endif %}
+    </div>
+
+    <!-- Quick admin links -->
+    <div class="admin-links">
+      <a href="/admin/main/config/" class="admin-link">Config</a>
+      <a href="/admin/main/errorlog/" class="admin-link">Error Logs</a>
+      <a href="/admin/main/loginactivity/" class="admin-link">Login Activity</a>
+      <a href="/admin/auth/user/" class="admin-link">Users</a>
+      <a href="/admin/board/habit/" class="admin-link">Habits</a>
+      <a href="/admin/board/task/" class="admin-link">Tasks</a>
+    </div>
+
+  </div>
+</body>
+</html>
