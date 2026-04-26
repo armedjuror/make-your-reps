@@ -185,6 +185,12 @@ def user_signed_up_handler(sender, request, user, **kwargs):
     # Link and accept any pending invites sent to this email before signup
     _accept_pending_invites(user)
 
+    # Accept any invite the user clicked before signing up
+    pending_token = request.session.pop('pending_invite_token', None)
+    if pending_token:
+        from board.views import process_invite_token
+        process_invite_token(pending_token, user)
+
 
 @receiver(user_logged_in)
 def handle_user_login(sender, request, user, **kwargs):
@@ -206,3 +212,9 @@ def handle_user_login(sender, request, user, **kwargs):
         )
     else:
         request.session['user_id'] = user.id
+
+    # Accept any invite the user clicked before logging in
+    pending_token = request.session.pop('pending_invite_token', None)
+    if pending_token:
+        from board.views import process_invite_token
+        process_invite_token(pending_token, user)

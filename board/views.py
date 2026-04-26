@@ -117,13 +117,13 @@ def _invite_email_html(title, body_text, accept_url, button_label):
 <p style="line-height:1.6">{body_text}</p>
 <p style="margin-top:32px">
   <a href="{accept_url}"
-     style="background:#4f46e5;color:#fff;text-decoration:none;padding:12px 24px;border-radius:6px;font-weight:bold;display:inline-block">
+     style="background:#98753f;color:#fff;text-decoration:none;padding:12px 24px;border-radius:6px;font-weight:bold;display:inline-block">
     {button_label}
   </a>
 </p>
 <p style="margin-top:32px;font-size:13px;color:#888">
   If the button doesn't work, copy and paste this link:<br>
-  <a href="{accept_url}" style="color:#4f46e5">{accept_url}</a>
+  <a href="{accept_url}" style="color:#98753f">{accept_url}</a>
 </p>
 <p style="margin-top:24px;font-size:13px;color:#888">— The Make Your Reps Team</p>
 </body></html>
@@ -153,7 +153,7 @@ def _send_accountability_email(to_email, owner_name, habit_name, token, site_url
     msg = EmailMultiAlternatives(
         subject=subject,
         body=plain,
-        from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@makeyourreps.com'),
+        from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'Make Your Reps <noreply@makeyourreps.com>'),
         to=[to_email],
     )
     msg.attach_alternative(html, "text/html")
@@ -182,7 +182,7 @@ def _send_friend_request_email(to_email, from_name, token, site_url):
     msg = EmailMultiAlternatives(
         subject=subject,
         body=plain,
-        from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@makeyourreps.com'),
+        from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'Make Your Reps <noreply@makeyourreps.com>'),
         to=[to_email],
     )
     msg.attach_alternative(html, "text/html")
@@ -1549,54 +1549,58 @@ class ProductivityScoreHistoryView(APIView):
         return Response({'status': 'success', 'data': history})
 
 
+def process_invite_token(token_str, user):
+    """
+    Accept a pending invite (FriendRequest or AccountabilityPartner) identified by token_str
+    for the given user. Returns True if an invite was found and accepted, False otherwise.
+    """
+    import uuid as _uuid
+    try:
+        token_uuid = _uuid.UUID(token_str)
+    except (ValueError, AttributeError):
+        return False
+
+    freq = FriendRequest.objects.filter(token=token_uuid, status=FriendRequestStatus.PENDING).first()
+    if freq:
+        if freq.to_user_id and freq.to_user_id != user.id:
+            return False
+        if freq.to_user_id is None:
+            if freq.invited_email and freq.invited_email.lower() != user.email.lower():
+                return False
+            freq.to_user = user
+            freq.save()
+        _accept_friend_request(freq)
+        return True
+
+    ap = AccountabilityPartner.objects.filter(token=token_uuid, status=AccountabilityPartnerStatus.REQUEST_SENT).first()
+    if ap:
+        if ap.partner_id and ap.partner_id != user.id:
+            return False
+        if ap.partner_id is None:
+            if ap.invited_email and ap.invited_email.lower() != user.email.lower():
+                return False
+            ap.partner = user
+            ap.save()
+        _accept_accountability_invite(ap, user.id)
+        return True
+
+    return False
+
+
 def accept_invite_by_token(request, token):
     """
     Token-based invite acceptance link used in emails.
     - If the user is logged in: accept immediately and redirect to the app.
-    - If not: redirect to signup with ?next= pointing back here.
+    - If not: store the token in session and redirect to the main page so the user
+      can log in / sign up via the normal UI. The login signal finishes the acceptance.
     """
     from django.shortcuts import redirect as _redirect
-    import uuid as _uuid
-
-    try:
-        token_uuid = _uuid.UUID(str(token))
-    except ValueError:
-        from django.http import HttpResponseBadRequest
-        return HttpResponseBadRequest("Invalid invite link.")
 
     user_id = request.session.get('user_id') or (request.user.id if request.user.is_authenticated else None)
     if not user_id:
-        from urllib.parse import quote
-        next_url = quote(f"/accept-invite/{token}/")
-        return _redirect(f"/accounts/signup/?next={next_url}")
+        request.session['pending_invite_token'] = str(token)
+        return _redirect('/')
 
-    # Try FriendRequest first
-    freq = FriendRequest.objects.filter(token=token_uuid, status=FriendRequestStatus.PENDING).first()
-    if freq:
-        if freq.to_user_id and freq.to_user_id != user_id:
-            return _redirect('/?invite_error=not_yours')
-        if freq.to_user_id is None:
-            # Bind to this user if email matches
-            user = User.objects.get(pk=user_id)
-            if freq.invited_email and freq.invited_email.lower() != user.email.lower():
-                return _redirect('/?invite_error=email_mismatch')
-            freq.to_user = user
-            freq.save()
-        _accept_friend_request(freq)
-        return _redirect('/?invite_accepted=friend')
-
-    # Try AccountabilityPartner
-    ap = AccountabilityPartner.objects.filter(token=token_uuid, status=AccountabilityPartnerStatus.REQUEST_SENT).first()
-    if ap:
-        if ap.partner_id and ap.partner_id != user_id:
-            return _redirect('/?invite_error=not_yours')
-        if ap.partner_id is None:
-            user = User.objects.get(pk=user_id)
-            if ap.invited_email and ap.invited_email.lower() != user.email.lower():
-                return _redirect('/?invite_error=email_mismatch')
-            ap.partner = user
-            ap.save()
-        _accept_accountability_invite(ap, user_id)
-        return _redirect('/?invite_accepted=partner')
-
-    return _redirect('/?invite_error=not_found')
+    user = User.objects.get(pk=user_id)
+    process_invite_token(str(token), user)
+    return _redirect('/')
