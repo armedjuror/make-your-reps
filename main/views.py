@@ -61,7 +61,7 @@ def delete_account(request):
         logout(request)
         user.delete()
         return redirect('/')
-    return redirect('privacy-policy')
+    return redirect('/')
 
 
 def manifest(request):
