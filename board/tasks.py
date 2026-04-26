@@ -254,6 +254,17 @@ def _generate_accountability_partner_events(user, today):
 
 
 @shared_task
+def cleanup_old_timeline_events():
+    """
+    Delete timeline events older than 30 days.
+    Runs daily via Celery Beat.
+    """
+    cutoff = timezone.now() - timedelta(days=30)
+    deleted, _ = TimelineEvent.objects.filter(timestamp__lt=cutoff).delete()
+    return f"Deleted {deleted} timeline events older than 30 days."
+
+
+@shared_task
 def generate_timeline_for_new_item(item_type, item_id):
     """
     Called when a habit/todo/routine is created mid-day to inject
