@@ -1312,5 +1312,26 @@ Write freely here, like you're writing in your personal journal..." id="journal-
     <script src="{% static 'board/js/settings.js' %}"></script>
     <script src="{% static 'board/js/misc.js' %}"></script>
     <script src="{% static 'board/js/gamification.js' %}"></script>
+    <script>
+        (function () {
+            const params = new URLSearchParams(window.location.search);
+            const toast = document.getElementById('pomodoro-toast');
+            function showPomoToast(title, body) {
+                if (!toast) return;
+                toast.querySelector('.pomo-toast-title').textContent = title;
+                toast.querySelector('.pomo-toast-body').textContent = body;
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 5000);
+            }
+            if (params.get('invite_accepted')) {
+                showPomoToast('Invite accepted!', 'You are now connected.');
+            } else if (params.get('invite_error') === 'wrong_user') {
+                showPomoToast('Wrong account', 'This invite was sent to a different email address.');
+            }
+            if (params.has('invite_accepted') || params.has('invite_error')) {
+                history.replaceState(null, '', window.location.pathname + window.location.hash);
+            }
+        })();
+    </script>
 </body>
 </html>

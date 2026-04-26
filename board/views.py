@@ -1556,39 +1556,40 @@ class ProductivityScoreHistoryView(APIView):
 def process_invite_token(token_str, user):
     """
     Accept a pending invite (FriendRequest or AccountabilityPartner) identified by token_str
-    for the given user. Returns True if an invite was found and accepted, False otherwise.
+    for the given user.
+    Returns 'accepted', 'wrong_user', or 'not_found'.
     """
     import uuid as _uuid
     try:
         token_uuid = _uuid.UUID(token_str)
     except (ValueError, AttributeError):
-        return False
+        return 'not_found'
 
     freq = FriendRequest.objects.filter(token=token_uuid, status=FriendRequestStatus.PENDING).first()
     if freq:
         if freq.to_user_id and freq.to_user_id != user.id:
-            return False
+            return 'wrong_user'
         if freq.to_user_id is None:
             if freq.invited_email and freq.invited_email.lower() != user.email.lower():
-                return False
+                return 'wrong_user'
             freq.to_user = user
             freq.save()
         _accept_friend_request(freq)
-        return True
+        return 'accepted'
 
     ap = AccountabilityPartner.objects.filter(token=token_uuid, status=AccountabilityPartnerStatus.REQUEST_SENT).first()
     if ap:
         if ap.partner_id and ap.partner_id != user.id:
-            return False
+            return 'wrong_user'
         if ap.partner_id is None:
             if ap.invited_email and ap.invited_email.lower() != user.email.lower():
-                return False
+                return 'wrong_user'
             ap.partner = user
             ap.save()
         _accept_accountability_invite(ap, user.id)
-        return True
+        return 'accepted'
 
-    return False
+    return 'not_found'
 
 
 def accept_invite_by_token(request, token):
@@ -1606,5 +1607,9 @@ def accept_invite_by_token(request, token):
         return _redirect('/')
 
     user = User.objects.get(pk=user_id)
-    process_invite_token(str(token), user)
-    return _redirect('/')
+    result = process_invite_token(str(token), user)
+    if result == 'accepted':
+        return _redirect('/board/?invite_accepted=1#friends')
+    if result == 'wrong_user':
+        return _redirect('/board/?invite_error=wrong_user#friends')
+    return _redirect('/board/#friends')
