@@ -1,3 +1,4 @@
+import uuid
 from datetime import date, timedelta
 
 from django.contrib.auth.models import User
