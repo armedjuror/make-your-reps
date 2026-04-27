@@ -24,6 +24,7 @@ urlpatterns = [
     path('accounts/', include('allauth.urls')),
     path('board/', include('board.urls')),
     path('', include('main.urls')),
+    path('login/', include('main.urls')),
 ]
 
 if settings.DEBUG:

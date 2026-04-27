@@ -253,7 +253,7 @@ function saveHabitChanges() {
             '<div class="alert alert-success"><i class="fas fa-check me-2"></i>Habit updated successfully!</div>';
 
         // Here you would typically make an API call to save the changes
-        apiClient.put('/board/api/habits/' + currentHabitData.id + "/",
+        apiClient.put('board/api/habits/' + currentHabitData.id + "/",
             {
                 'habit': habit,
                 'detail': whenWhere,
@@ -317,7 +317,7 @@ function deleteHabit() {
 // Confirm delete
 function confirmDelete() {
     bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal')).hide();
-    apiClient.delete(`/board/api/habits/${currentHabitData.id}/`).then((response) => {
+    apiClient.delete(`board/api/habits/${currentHabitData.id}/`).then((response) => {
         if (response.status === 'success') {
             showSuccess('Habit deleted successfully.');
             loadHabits();
