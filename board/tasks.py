@@ -25,7 +25,7 @@ def generate_daily_timeline(user_id=None):
     else:
         users = User.objects.filter(is_active=True)
 
-    today = timezone.now().date()
+    today = timezone.localdate()
     weekday = today.weekday()  # 0=Monday, 6=Sunday
 
     for user in users:
@@ -273,7 +273,7 @@ def generate_timeline_for_new_item(item_type, item_id):
     Called when a habit/todo/routine is created mid-day to inject
     into today's timeline if applicable.
     """
-    today = timezone.now().date()
+    today = timezone.localdate()
     weekday = today.weekday()
     now = timezone.now()
 
@@ -382,7 +382,7 @@ def send_reengagement_emails():
     from main.models import EmailPreference  # avoid circular import
     from django.db.models import Max, Q
 
-    cutoff = timezone.now().date() - timedelta(days=7)
+    cutoff = timezone.localdate() - timedelta(days=7)
     site_url = 'https://makeyourreps.com'
     login_url = f'{site_url}/login'
     year = timezone.now().year
@@ -422,7 +422,7 @@ def send_reengagement_emails():
     )
 
     # Fetch most recent activity date per inactive user across all three sources
-    today = timezone.now().date()
+    today = timezone.localdate()
 
     habit_last = dict(
         HabitLog.objects

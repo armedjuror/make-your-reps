@@ -158,7 +158,7 @@ class EmailPreferenceAdmin(admin.ModelAdmin):
                 selected_user = form.cleaned_data['user']
                 test_email = form.cleaned_data['test_email']
                 year = timezone.now().year
-                login_url = f'{site_url}/login'
+                login_url = f'{site_url}/'
                 today = timezone.now().date()
 
                 if selected_user:
