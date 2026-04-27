@@ -91,7 +91,7 @@ class HabitSerializer(serializers.ModelSerializer):
                 x.date.strftime('%Y-%m-%d'): {'is_done': x.is_done, 'date': x.date}
                 for x in obj.recent_logs_prefetched
             }
-        now = timezone.now().date()
+        now = timezone.localdate()
         start_date = now - timezone.timedelta(days=60)
         return {
             x.date.strftime('%Y-%m-%d'): {'is_done': x.is_done, 'date': x.date}
@@ -111,7 +111,7 @@ class HabitSerializer(serializers.ModelSerializer):
         else:
             total_reps = HabitLog.objects.filter(habit=obj, is_done=True).count()
 
-        now = timezone.now().date()
+        now = timezone.localdate()
         recent_logs = self._get_recent_logs(obj)
 
         # Build current-month display logs from the prefetched data (no extra query)
@@ -155,7 +155,7 @@ class HabitSerializer(serializers.ModelSerializer):
         streak = stats['streak']
         recent_logs = stats.get('recent_logs', {})
 
-        now = timezone.now().date()
+        now = timezone.localdate()
         created_date = obj.created_at.date()
         days_since_creation = (now - created_date).days
 
@@ -185,7 +185,7 @@ class HabitSerializer(serializers.ModelSerializer):
 
     def _get_consecutive_missed_days(self, logs):
         """Count consecutive days missed from today backwards"""
-        today = timezone.now().date()
+        today = timezone.localdate()
         missed_count = 0
 
         # Sort logs by date in reverse order (most recent first)

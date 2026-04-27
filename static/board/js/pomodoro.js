@@ -67,7 +67,7 @@ const Pomodoro = {
     },
 
     async loadTodayFocus() {
-        const today = new Date().toISOString().slice(0, 10);
+        const today = getDate(new Date());
         const res = await apiClient.get(`board/api/daily_data/${today}/`);
         if (res.status === 'success') {
             this.todayFocusMinutes = res.data.focus_minutes || 0;

@@ -57,7 +57,7 @@ const BrowserNotify = {
     async _pollTimeline() {
         if (!('Notification' in window) || Notification.permission !== 'granted') return;
         try {
-            const today = new Date().toISOString().slice(0, 10);
+            const today = getDate(new Date());
             const res = await apiClient.get(`board/api/timeline/?date=${today}&limit=100`, { silent: true });
             if (res.status !== 'success') return;
 
