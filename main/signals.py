@@ -195,23 +195,22 @@ def user_signed_up_handler(sender, request, user, **kwargs):
 @receiver(user_logged_in)
 def handle_user_login(sender, request, user, **kwargs):
     client_type = request.session.get('client_type')
+    token_obj = None
     if client_type == 'api':
         token_string, token_obj = RefreshToken.generate_token(user, request)
         access_token = AccessToken.generate(user)
         request.session['refresh_token'] = token_string
         request.session['access_token'] = access_token
-        request.session['user_id'] = user.id
 
-        LoginActivity.objects.create(
-            user=user,
-            auth_token=token_obj,
-            action='login',
-            status='success',
-            ip_address=get_client_ip(request),
-            user_agent=request.META.get('HTTP_USER_AGENT', '')
-        )
-    else:
-        request.session['user_id'] = user.id
+    request.session['user_id'] = user.id
+    LoginActivity.objects.create(
+        user=user,
+        auth_token=token_obj,
+        action='login',
+        status='success',
+        ip_address=get_client_ip(request),
+        user_agent=request.META.get('HTTP_USER_AGENT', '')
+    )
 
     # Accept any invite the user clicked before logging in
     pending_token = request.session.pop('pending_invite_token', None)

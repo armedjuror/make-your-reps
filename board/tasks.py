@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.conf import settings
 
 from board.models import (
-    Habit, HabitStatus, Task, RoutineEntry, TimelineEvent,
+    Habit, HabitLog, HabitStatus, Task, DailyData, RoutineEntry, TimelineEvent,
     TimelineEventType, UserDetail,
     AccountabilityPartner, AccountabilityPartnerStatus,
 )
@@ -376,21 +376,43 @@ def generate_timeline_for_new_item(item_type, item_id):
 def send_reengagement_emails():
     """
     Daily task: send a re-engagement email to every active user who has not
-    logged in during the last 7 days and has not opted out of marketing emails.
+    performed any meaningful action (habit log, journal, sleep entry, todo
+    completion) in the last 7 days and has not opted out of marketing emails.
     """
-    from main.models import EmailPreference, LoginActivity  # avoid circular import
+    from main.models import EmailPreference  # avoid circular import
+    from django.db.models import Max, Q
 
-    cutoff = timezone.now() - timedelta(days=7)
+    cutoff = timezone.now().date() - timedelta(days=7)
     site_url = 'https://makeyourreps.com'
     login_url = f'{site_url}/login'
     year = timezone.now().year
 
-    recently_active_ids = (
-        LoginActivity.objects
-        .filter(action='login', status='success', timestamp__gte=cutoff)
+    # Users active via a completed habit log
+    habit_active_ids = set(
+        HabitLog.objects
+        .filter(is_done=True, date__gte=cutoff)
+        .values_list('habit__user_id', flat=True)
+        .distinct()
+    )
+
+    # Users active via a sleep or journal entry
+    daily_active_ids = set(
+        DailyData.objects
+        .filter(date__gte=cutoff)
+        .filter(Q(sleep_hours__isnull=False) | Q(journal__gt=''))
         .values_list('user_id', flat=True)
         .distinct()
     )
+
+    # Users active via a completed todo
+    task_active_ids = set(
+        Task.objects
+        .filter(is_done=True, updated_at__date__gte=cutoff)
+        .values_list('user_id', flat=True)
+        .distinct()
+    )
+
+    recently_active_ids = habit_active_ids | daily_active_ids | task_active_ids
 
     inactive_users = (
         User.objects
@@ -399,26 +421,49 @@ def send_reengagement_emails():
         .exclude(email='')
     )
 
-    # Fetch last successful login per inactive user in one query
-    from django.db.models import Max
-    last_login_map = dict(
-        LoginActivity.objects
-        .filter(user__in=inactive_users, action='login', status='success')
+    # Fetch most recent activity date per inactive user across all three sources
+    today = timezone.now().date()
+
+    habit_last = dict(
+        HabitLog.objects
+        .filter(habit__user__in=inactive_users, is_done=True)
+        .values('habit__user_id')
+        .annotate(last=Max('date'))
+        .values_list('habit__user_id', 'last')
+    )
+
+    daily_last = dict(
+        DailyData.objects
+        .filter(user__in=inactive_users)
+        .filter(Q(sleep_hours__isnull=False) | Q(journal__gt=''))
         .values('user_id')
-        .annotate(last=Max('timestamp'))
+        .annotate(last=Max('date'))
         .values_list('user_id', 'last')
     )
 
-    today = timezone.now().date()
+    task_last = dict(
+        Task.objects
+        .filter(user__in=inactive_users, is_done=True)
+        .values('user_id')
+        .annotate(last=Max('updated_at'))
+        .values_list('user_id', 'last')
+    )
+
     sent = 0
     for user in inactive_users:
         pref, _ = EmailPreference.objects.get_or_create(user=user)
         if not pref.marketing_emails:
             continue
 
-        last_login = last_login_map.get(user.id)
-        if last_login:
-            days_away = (today - last_login.date()).days
+        candidates = []
+        if user.id in habit_last:
+            candidates.append(habit_last[user.id])
+        if user.id in daily_last:
+            candidates.append(daily_last[user.id])
+        if user.id in task_last:
+            candidates.append(task_last[user.id].date())
+        if candidates:
+            days_away = (today - max(candidates)).days
         else:
             days_away = (today - user.date_joined.date()).days
 

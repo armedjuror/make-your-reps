@@ -170,7 +170,7 @@ const Gamification = {
     // Called after any action that returns gamification data
     handleResult(result) {
         if (!result) return;
-        if (result.points_awarded !== 0) {
+        if (result.points_awarded) {
             this.showFloatingPoints(result.points_awarded);
         }
         if (result.new_achievements && result.new_achievements.length > 0) {
