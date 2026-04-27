@@ -96,7 +96,7 @@ def _accept_accountability_invite(ap, user_id):
         reference__id=ap.id,
     ).update(action=None)
     # Create today's monitoring entry
-    _create_partner_habit_entry(ap, timezone.now().date())
+    _create_partner_habit_entry(ap, timezone.localdate())
     # Notify habit owner
     partner_name = ap.partner.get_full_name() or ap.partner.username
     TimelineEvent.objects.create(
@@ -571,7 +571,7 @@ class DailyDataViewSet(NoDestroyViewSet):
         except (ValueError, TypeError):
             return Response({'status': 'failed', 'error': 'Invalid minutes'}, status=400)
 
-        today = timezone.now().date()
+        today = timezone.localdate()
         obj, _ = DailyData.objects.get_or_create(user_id=user_id, date=today)
         DailyData.objects.filter(pk=obj.pk).update(focus_minutes=F('focus_minutes') + minutes)
         obj.refresh_from_db()
@@ -595,7 +595,7 @@ class HabitViewSet(AuthenticatedModelViewSet):
     def list(self, request, **kwargs):
         user_id = request.session.get('user_id')
         habit_status = request.GET.get('status', 'active')
-        now = timezone.now().date()
+        now = timezone.localdate()
         start_date = now - timezone.timedelta(days=60)
         queryset = self.get_queryset().filter(
             user_id=user_id, status=habit_status
@@ -727,7 +727,7 @@ class HabitViewSet(AuthenticatedModelViewSet):
             habit=habit, status=AccountabilityPartnerStatus.ACTIVE,
         ).select_related('partner', 'habit__user')
         owner_name = habit.user.get_full_name() or habit.user.username
-        today = timezone.now().date()
+        today = timezone.localdate()
         for ap in active_partners:
             if not ap.partner:
                 continue
@@ -1031,7 +1031,7 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
         try:
             if event.event_type == TimelineEventType.HABIT and model_name == 'Habit':
                 mark_done = action_response.get('mark_done', False)
-                today = timezone.now().date()
+                today = timezone.localdate()
                 habit_log, _ = HabitLog.objects.get_or_create(
                     habit_id=model_id, date=today
                 )
@@ -1317,7 +1317,7 @@ class AccountabilityPartnerViewSet(AuthenticatedModelViewSet):
                     reference={'model': 'AccountabilityPartner', 'id': ap.id, 'type': 'accepted'},
                     action=None,
                 )
-                _create_partner_habit_entry(ap, timezone.now().date())
+                _create_partner_habit_entry(ap, timezone.localdate())
             else:
                 TimelineEvent.objects.create(
                     user=partner_user,
@@ -1382,7 +1382,7 @@ class AccountabilityPartnerViewSet(AuthenticatedModelViewSet):
         """Return today's habit status for this partnership (partner-only, no side effects)."""
         user_id = request.session.get('user_id')
         ap = self.get_queryset().get(pk=int(kwargs['pk']), partner_id=user_id, status=AccountabilityPartnerStatus.ACTIVE)
-        today = timezone.now().date()
+        today = timezone.localdate()
         log = HabitLog.objects.filter(habit=ap.habit, date=today).first()
         return Response({
             'status': 'success',
@@ -1460,7 +1460,7 @@ def _compute_productivity_score(user_id, target_date, now=None):
     """Compute productivity score for a given date. Returns a dict."""
     from datetime import date as date_type
     weekday = target_date.weekday()
-    is_today = target_date == timezone.now().date()
+    is_today = target_date == timezone.localdate()
 
     active_habits = Habit.objects.filter(user_id=user_id, status=HabitStatus.ACTIVE.value)
     habits_due = 0
@@ -1469,7 +1469,7 @@ def _compute_productivity_score(user_id, target_date, now=None):
         if habit.frequency and weekday not in habit.frequency:
             continue
         # For today: respect notify_at; for past days: count all scheduled habits
-        if is_today and now and habit.notify_at and habit.notify_at > now.time():
+        if is_today and now and habit.notify_at and habit.notify_at > timezone.localtime(now).time():
             pass
         else:
             habits_due += 1
@@ -1526,7 +1526,7 @@ class ProductivityScoreView(APIView):
             except ValueError:
                 return Response({'status': 'failed', 'error': 'Invalid date'}, status=400)
         else:
-            target_date = now.date()
+            target_date = timezone.localdate()
 
         data = _compute_productivity_score(user_id, target_date, now=now)
         return Response({'status': 'success', 'data': data})
@@ -1543,7 +1543,7 @@ class ProductivityScoreHistoryView(APIView):
         from datetime import timedelta
         days = min(int(request.GET.get('days', 7)), 30)
         now = timezone.now()
-        today = now.date()
+        today = timezone.localdate()
 
         history = []
         for i in range(days - 1, -1, -1):

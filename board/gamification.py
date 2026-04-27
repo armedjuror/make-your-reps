@@ -93,7 +93,7 @@ def update_daily_streak(user_id):
     Call on any meaningful action.
     """
     from board.models import UserDetail
-    today = timezone.now().date()
+    today = timezone.localdate()
     user_detail, _ = UserDetail.objects.get_or_create(user_id=user_id)
 
     last = user_detail.last_active_date
@@ -145,7 +145,7 @@ def check_and_award_achievements(user_id):
     )
 
     new = []
-    today = timezone.now().date()
+    today = timezone.localdate()
 
     try:
         user = User.objects.get(pk=user_id)
