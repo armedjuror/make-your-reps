@@ -695,7 +695,7 @@ class HabitViewSet(AuthenticatedModelViewSet):
 
         try:
             parsed_date = datetime.strptime(toggle_date, '%Y-%m-%d').date()
-            if parsed_date > datetime.now().date():
+            if parsed_date > timezone.localdate():
                 return Response({'status': 'failed', 'error': 'This date is in future'},
                                 status=status.HTTP_400_BAD_REQUEST)
             if parsed_date < habit.created_at.replace(tzinfo=None).date():
@@ -715,7 +715,7 @@ class HabitViewSet(AuthenticatedModelViewSet):
         # Gamification
         user_id = request.session.get('user_id')
         gamification_result = {}
-        if parsed_date == datetime.now().date():
+        if parsed_date == timezone.localdate():
             if not was_done and habit_log.is_done:
                 update_daily_streak(user_id)
                 gamification_result = award_points(user_id, 'habit')
