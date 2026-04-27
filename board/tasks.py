@@ -449,10 +449,14 @@ def send_reengagement_emails():
         .values_list('user_id', 'last')
     )
 
+    reengagement_cutoff = today - timedelta(days=7)
+
     sent = 0
     for user in inactive_users:
         pref, _ = EmailPreference.objects.get_or_create(user=user)
         if not pref.marketing_emails:
+            continue
+        if pref.last_reengagement_sent and pref.last_reengagement_sent >= reengagement_cutoff:
             continue
 
         candidates = []
@@ -492,6 +496,8 @@ def send_reengagement_emails():
             html_message=html_body,
             fail_silently=True,
         )
+        pref.last_reengagement_sent = today
+        pref.save(update_fields=['last_reengagement_sent'])
         sent += 1
 
     return f"Re-engagement emails sent to {sent} inactive users."

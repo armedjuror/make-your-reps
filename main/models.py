@@ -89,6 +89,7 @@ class EmailPreference(models.Model):
     token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     marketing_emails = models.BooleanField(default=True, help_text='Re-engagement / habit reminder emails')
     announcement_emails = models.BooleanField(default=True, help_text='Product updates and release announcements')
+    last_reengagement_sent = models.DateField(null=True, blank=True, default=None)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
