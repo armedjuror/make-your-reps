@@ -1422,10 +1422,18 @@
     gap: 4px;
 }
 
-.todo-filter.active {
+.todo-filter.active,
+.todo-deadline-filter.active {
     background: var(--ink-brown);
     color: var(--paper-bg);
     border-color: var(--ink-brown);
+}
+
+.todos-filter-sep {
+    width: 1px;
+    background: var(--ink-brown);
+    opacity: 0.2;
+    margin: 2px 2px;
 }
 
 .todos-add-bar {

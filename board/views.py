@@ -839,6 +839,14 @@ class RoutineEntryViewSet(AuthenticatedModelViewSet):
             user_id=user_id, routine_type=routine_type
         ).delete()
 
+        # Delete today's routine timeline events so the re-created entries
+        # don't duplicate them (new entry IDs would bypass the exists check)
+        TimelineEvent.objects.filter(
+            user_id=user_id,
+            event_type=TimelineEventType.ROUTINE,
+            timestamp__date=timezone.localdate(),
+        ).delete()
+
         created = []
         for entry_data in entries:
             entry_data['routine_type'] = routine_type

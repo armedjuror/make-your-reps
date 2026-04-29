@@ -161,7 +161,9 @@ function bindEvents() {
     // Todos pane
     document.querySelector('.todos-filters').addEventListener('click', e => {
         const btn = e.target.closest('.todo-filter[data-filter]');
-        if (btn) TodosPane.setFilter(btn.dataset.filter);
+        if (btn) { TodosPane.setFilter(btn.dataset.filter); return; }
+        const dlBtn = e.target.closest('.todo-deadline-filter[data-deadline-filter]');
+        if (dlBtn) TodosPane.setDeadlineFilter(dlBtn.dataset.deadlineFilter);
     });
     document.getElementById('todos-add-task-btn').addEventListener('click', () => TodosPane.addTask());
 
