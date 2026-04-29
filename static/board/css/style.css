@@ -1261,7 +1261,7 @@ body::after {
 
     .copyright {
         bottom: auto;
-        top: 5%;
+        top: 65px;
         left: 50%;
         margin: 0 auto;
         width: 300px;
