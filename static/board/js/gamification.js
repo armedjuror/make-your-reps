@@ -35,25 +35,40 @@ const Gamification = {
             el.innerHTML = '<p class="small" style="color:var(--ink-gray);opacity:0.6;">No hallmarked habits yet. Keep building!</p>';
             return;
         }
-        el.innerHTML = `<div class="hallmark-grid">${habits.map(h => `
-            <div class="hallmark-item">
-                <div class="hallmark-icon"><i class="fas fa-award"></i></div>
-                <div class="hallmark-body">
-                    <div class="hallmark-name">${h.habit}</div>
-                    <div class="hallmark-meta">
-                        <span>${h.stats.total_reps} reps</span>
-                        <span class="mx-1">·</span>
-                        <span>Best streak: ${h.stats.max_streak}</span>
-                    </div>
+        el.innerHTML = `<div class="hallmark-chips">${habits.map(h => `
+            <div class="hallmark-chip">
+                <i class="fas fa-award hallmark-chip-icon"></i>
+                <div class="hallmark-chip-body">
+                    <div class="hallmark-chip-name">Your habit to <h6>${h.habit}</h6> inorder to become <h6>${h.identity}</h6> if formed!</div>
+                    <div class="hallmark-chip-meta">${h.stats.total_reps} reps · Best streak: ${h.stats.max_streak}</div>
                 </div>
             </div>`).join('')}
         </div>`;
     },
 
     async loadProductivityHistory() {
-        const res = await apiClient.get('board/api/productivity_score_history/?days=7');
+        const wrap = document.querySelector('.ach-score-chart-wrap');
+        const cached = localStorage.getItem('prod_history_cache');
+
+        // Render from cache immediately if wrap is visible
+        if (wrap) {
+            if (cached) {
+                wrap.innerHTML = '<canvas id="productivityScoreChart"></canvas>';
+                this.renderProductivityChart(JSON.parse(cached));
+            } else {
+                wrap.innerHTML = '<div class="notebook-spinner"></div>';
+            }
+        }
+
+        // Always fetch fresh and update cache + chart
+        const res = await apiClient.get('board/api/productivity_score_history/?days=30');
         if (res.status !== 'success') return;
-        this.renderProductivityChart(res.data);
+        localStorage.setItem('prod_history_cache', JSON.stringify(res.data));
+
+        if (wrap) {
+            wrap.innerHTML = '<canvas id="productivityScoreChart"></canvas>';
+            this.renderProductivityChart(res.data);
+        }
     },
 
     renderProductivityChart(history) {
@@ -62,36 +77,41 @@ const Gamification = {
 
         const labels = history.map(d => {
             const dt = new Date(d.date + 'T00:00:00');
-            return dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+            return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         });
         const scores = history.map(d => d.score);
 
-        // Resolve CSS variable colour
-        const inkBrown = getComputedStyle(document.body).getPropertyValue('--ink-brown').trim() || 'rgba(152,117,63,1)';
+        const inkBrown = getComputedStyle(document.body).getPropertyValue('--ink-brown').trim() || '#9875a0';
         const inkBrownLight = getComputedStyle(document.body).getPropertyValue('--ink-brown-light').trim() || 'rgba(184,156,125,0.3)';
 
         if (this._scoreChart) {
             this._scoreChart.destroy();
+            this._scoreChart = null;
         }
 
         this._scoreChart = new Chart(canvas, {
-            type: 'line',
+            type: 'bar',
             data: {
                 labels,
                 datasets: [{
                     data: scores,
                     backgroundColor: scores.map(s => s >= 7 ? inkBrown : inkBrownLight),
-                    borderColor: inkBrown,
-                    borderWidth: 1,
+                    borderColor: 'transparent',
                     borderRadius: 4,
+                    borderSkipped: false,
                 }]
             },
             options: {
                 responsive: true,
+                animation: { duration: 400 },
+                maintainAspectRatio: false,
                 plugins: {
                     legend: { display: false },
                     tooltip: {
+                        xAlign: 'center',
+                        yAlign: 'bottom',
                         callbacks: {
+                            title: ctx => ctx[0]?.label || '',
                             label: ctx => `Score: ${ctx.parsed.y} / 10`
                         }
                     }
@@ -99,16 +119,12 @@ const Gamification = {
                 scales: {
                     y: {
                         min: 0, max: 10,
-                        ticks: {
-                            stepSize: 2,
-                            color: inkBrown,
-                            font: { size: 11 },
-                        },
-                        grid: { color: inkBrownLight.replace('1)', '0.15)') },
+                        ticks: { stepSize: 2, color: inkBrown, font: { size: 9 } },
+                        grid: { color: inkBrownLight },
                         border: { display: false },
                     },
                     x: {
-                        ticks: { color: inkBrown, font: { size: 11 } },
+                        ticks: { display: false },
                         grid: { display: false },
                         border: { display: false },
                     }
@@ -163,7 +179,8 @@ const Gamification = {
             <div class="${cls}" title="${a.description}">
                 <div class="ach-badge-icon"><i class="${a.icon}"></i></div>
                 <div class="ach-badge-name">${a.name}</div>
-                ${a.unlocked ? `<div class="ach-badge-date">${dateStr}</div>` : `<div class="ach-badge-desc">${a.description}</div>`}
+                <div class="ach-badge-desc">${a.description}</div>
+                ${a.unlocked ? `<div class="ach-badge-date">Achieved on <br>${dateStr}</div>` : ``}
             </div>`;
     },
 

@@ -362,6 +362,8 @@ class FriendRequestSerializer(serializers.ModelSerializer):
         return obj.from_user.get_full_name() or obj.from_user.username
 
     def get_to_user_name(self, obj):
+        if obj.to_user is None:
+            return obj.invited_email or 'Invited user'
         return obj.to_user.get_full_name() or obj.to_user.username
 
 

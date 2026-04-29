@@ -346,6 +346,11 @@ body::before {
     color: var(--paper-bg);
 }
 
+.btn-paper.btn-sm {
+    padding: 3px 8px;
+    font-size: 12px;
+}
+
 .btn-paper.btn-success {
     border-color: var(--ink-brown);
     color: var(--ink-brown);
@@ -380,7 +385,11 @@ body::before {
 .sleep-graph {
     height: 150px;
     margin-top: 15px;
-    text-align: center;
+}
+
+.sleep-graph canvas {
+    width: 100% !important;
+    height: 150px !important;
 }
 
 /* Full-width blur strip at the bottom of the page */
@@ -746,6 +755,11 @@ body::after {
     background: var(--ink-brown);
     color: var(--paper-bg);
     transform: translateY(-1px);
+}
+
+.btn-paper.btn-sm {
+    padding: 3px 8px;
+    font-size: 12px;
 }
 
 .btn-paper.btn-success {

@@ -15,7 +15,7 @@ from board.models import (
     RoutineEntry, ReadingListItem, TimelineEvent, TimelineEventType, SearchEngine,
     AccountabilityPartner, AccountabilityPartnerStatus,
     Friend, FriendRequest, FriendRequestStatus,
-    Achievement, UserAchievement,
+    Achievement, UserAchievement, Feedback,
 )
 from board.serializers import (
     TaskSerializer, TaskGroupSerializer, DailyDataSerializer, UserDetailSerializer, HabitSerializer,
@@ -1256,6 +1256,19 @@ class FriendRequestViewSet(AuthenticatedModelViewSet):
         ).update(action=None)
         return Response({'status': 'success', 'message': 'Friend request declined'})
 
+    @action(detail=True, methods=['delete'])
+    def withdraw(self, request, **kwargs):
+        user_id = request.session.get('user_id')
+        freq = self.get_queryset().get(pk=int(kwargs['pk']), from_user_id=user_id)
+        freq_id = freq.id
+        TimelineEvent.objects.filter(
+            event_type=TimelineEventType.FRIEND_REQUEST,
+            reference__model='FriendRequest',
+            reference__id=freq_id,
+        ).delete()
+        freq.delete()
+        return Response({'status': 'success', 'message': 'Friend request withdrawn'})
+
 
 class AccountabilityPartnerViewSet(AuthenticatedModelViewSet):
     serializer_class = AccountabilityPartnerSerializer
@@ -1434,7 +1447,7 @@ class GamificationView(APIView):
         xp_needed = next_threshold - threshold
         xp_pct = round((xp_in_level / xp_needed) * 100, 1) if xp_needed > 0 else 100.0
 
-        achievements = Achievement.objects.all()
+        achievements = Achievement.objects.all().order_by('id')
         serializer = AchievementSerializer(achievements, many=True, context={'user_id': user_id})
 
         return Response({
@@ -1461,6 +1474,19 @@ class OnboardingCompleteView(APIView):
         if not user_id:
             return Response({'status': 'failed', 'error': 'Not authenticated'}, status=401)
         UserDetail.objects.filter(user_id=user_id).update(is_onboarded=True)
+        return Response({'status': 'success'})
+
+
+class FeedbackView(APIView):
+    def post(self, request):
+        user_id = request.session.get('user_id')
+        fb_type = request.data.get('type', 'general')
+        subject = request.data.get('subject', '').strip()
+        message = request.data.get('message', '').strip()
+        if not subject or not message:
+            return Response({'status': 'error', 'error': 'Subject and message are required.'})
+        user = User.objects.filter(id=user_id).first() if user_id else None
+        Feedback.objects.create(user=user, type=fb_type, subject=subject, message=message)
         return Response({'status': 'success'})
 
 

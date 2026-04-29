@@ -88,14 +88,14 @@ const TodosPane = {
             title.textContent = g ? g.name : 'Tasks';
         }
         this.renderGroups();
-        this.loadTodos();
+        this.renderTodos();
     },
 
     setFilter(filter) {
         this.filter = filter;
         document.querySelectorAll('.todo-filter').forEach(b => b.classList.remove('active'));
         document.querySelector(`.todo-filter[data-filter="${filter}"]`).classList.add('active');
-        this.loadTodos();
+        this.renderTodos();
     },
 
     setDeadlineFilter(filter) {
@@ -104,7 +104,14 @@ const TodosPane = {
         if (this.deadlineFilter) {
             document.querySelector(`.todo-deadline-filter[data-deadline-filter="${this.deadlineFilter}"]`).classList.add('active');
         }
-        this.loadTodos();
+        document.getElementById('todos-date-filter').value = '';
+        this.renderTodos();
+    },
+
+    setDateFilter(dateStr) {
+        this.deadlineFilter = dateStr || null;
+        document.querySelectorAll('.todo-deadline-filter').forEach(b => b.classList.remove('active'));
+        this.renderTodos();
     },
 
     showAddGroupModal() {
@@ -157,12 +164,7 @@ const TodosPane = {
 
     // ── Tasks ──
     async loadTodos() {
-        let url = 'board/api/tasks/?';
-        if (this.selectedGroup !== 'all') url += `group=${this.selectedGroup}&`;
-        if (this.filter === 'pending') url += 'done=false';
-        else if (this.filter === 'done') url += 'done=true';
-
-        const res = await apiClient.get(url);
+        const res = await apiClient.get('board/api/tasks/');
         if (res.status === 'success') {
             this.todos = res.data;
             this.renderTodos();
@@ -174,18 +176,43 @@ const TodosPane = {
         if (!list) return;
 
         let todos = this.todos;
+
+        // Group filter
+        if (this.selectedGroup !== 'all') {
+            todos = todos.filter(t => t.group == this.selectedGroup);
+        }
+
+        // Status filter
+        if (this.filter === 'pending') todos = todos.filter(t => !t.is_done);
+        else if (this.filter === 'done') todos = todos.filter(t => t.is_done);
+
+        // Deadline filter
         if (this.deadlineFilter) {
             const now = new Date();
             const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             const todayEnd = new Date(todayStart.getTime() + 86_400_000);
             if (this.deadlineFilter === 'today') {
-                todos = todos.filter(t => t.deadline && new Date(t.deadline) < todayEnd
-                );
+                todos = todos.filter(t => t.deadline && new Date(t.deadline) < todayEnd);
             } else if (this.deadlineFilter === 'this-week') {
+                const rangeStart = new Date(todayStart.getTime() - 3 * 86_400_000);
                 const rangeEnd = new Date(todayStart.getTime() + 4 * 86_400_000);
                 todos = todos.filter(t => t.deadline && new Date(t.deadline) < rangeEnd);
+            } else {
+                // Custom date string (YYYY-MM-DD)
+                const [y, m, d] = this.deadlineFilter.split('-').map(Number);
+                const dateStart = new Date(y, m - 1, d);
+                const dateEnd = new Date(dateStart.getTime() + 86_400_000);
+                todos = todos.filter(t => t.deadline && new Date(t.deadline) < dateEnd);
             }
         }
+
+        // Sort: deadline asc (nulls last), then by created_at
+        todos = [...todos].sort((a, b) => {
+            if (!a.deadline && !b.deadline) return 0;
+            if (!a.deadline) return 1;
+            if (!b.deadline) return -1;
+            return new Date(a.deadline) - new Date(b.deadline);
+        });
 
         if (todos.length === 0) {
             const msg = this.deadlineFilter

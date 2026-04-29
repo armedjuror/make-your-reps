@@ -129,20 +129,57 @@ function editRoutine() {
 function initSleepChart() {
     const canvas = document.getElementById('sleepChart');
     if (!canvas) return;
+
+    const inkBrown = getComputedStyle(document.body).getPropertyValue('--ink-brown').trim() || 'rgb(142,110,58)';
+    const inkBrownLight = getComputedStyle(document.body).getPropertyValue('--ink-brown-light').trim() || 'rgba(184,156,125,0.25)';
+
     sleepChart = new Chart(canvas, {
         type: 'line',
         data: {
             datasets: [{
-                label: 'Hours of sleep',
-                borderColor: 'rgb(142, 110, 58)',
                 data: sleepData,
-                borderWidth: 1
+                borderColor: inkBrown,
+                backgroundColor: inkBrownLight,
+                borderWidth: 2,
+                pointRadius: 5,
+                pointHoverRadius: 10,
+                pointBackgroundColor: inkBrown,
+                pointBorderColor: 'transparent',
             }]
         },
         options: {
-            scales: {
-                y: { beginAtZero: true }
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: {duration:400},
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    xAlign: 'center',
+                    yAlign: 'bottom',
+                    callbacks: {
+                        title: ctx => {
+                            const raw = ctx[0]?.label || '';
+                            const dt = new Date(raw + 'T00:00:00');
+                            return dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                        },
+                        label: ctx => `Sleep: ${ctx.parsed.y} hrs`
+                    }
+                }
             },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 12,
+                    ticks: { stepSize: 2, color: inkBrown, font: { size: 9 } },
+                    grid: { color: inkBrownLight },
+                    border: { display: false },
+                },
+                x: {
+                    ticks: { display: false },
+                    grid: { display: false },
+                    border: { display: false },
+                }
+            }
         }
     });
 }

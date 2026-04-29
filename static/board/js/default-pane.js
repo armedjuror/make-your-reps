@@ -79,5 +79,6 @@ function initHomePane() {
     Timeline.init();
     ReadingList.loadFeatured();
     Pomodoro.init();
-    Habits.init()
+    Habits.init();
+    Gamification.loadProductivityHistory(); // prefetch + cache for achievements pane
 }

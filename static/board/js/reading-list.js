@@ -16,7 +16,6 @@ const ReadingList = {
     async loadAll() {
         const el = document.getElementById('rl-all-list');
         if (!el) return;
-        el.innerHTML = '<div class="notebook-spinner"></div>';
         const res = await apiClient.get('board/api/reading_list/');
         if (res.status !== 'success') { el.innerHTML = '<p class="text-brown small">Could not load reading list.</p>'; return; }
         this.renderAll(res.data, el);

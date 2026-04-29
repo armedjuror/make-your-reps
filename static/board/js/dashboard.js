@@ -4,21 +4,12 @@
  */
 
 let currentPane = 'home';
-let panesLoaded = { home: false, todos: false, trackers: false, journals: false, others: false };
+let panesLoaded = { home: false, todos: false, trackers: false, journals: false, achievements: false, 'reading-list': false, friends: false, settings: false, help: false };
 let currentTheme = 'light';
 
-// Sub-tab hashes that map to the others pane
-const OTHERS_TABS = ['friends', 'achievements', 'reading-list'];
-
 // ── Pane Switching ──
-function switchPane(pane, subTab = null) {
-    // #friends and #achievements deep-link into the others pane
-    if (OTHERS_TABS.includes(pane)) {
-        subTab = pane;
-        pane = 'others';
-    }
-
-    if (pane === currentPane && !subTab) return;
+function switchPane(pane) {
+    if (pane === currentPane) return;
 
     // Hide all panes
     document.querySelectorAll('.pane').forEach(p => p.style.display = 'none');
@@ -41,10 +32,8 @@ function switchPane(pane, subTab = null) {
     // Refresh footer bar pomodoro visibility on pane switch
     if (typeof Pomodoro !== 'undefined' && Pomodoro.state) Pomodoro.render();
 
-    // Sync URL hash (sub-tabs inside others update it themselves via misc.js)
-    if (pane !== 'others') {
-        history.replaceState(null, '', pane === 'home' ? window.location.pathname : `#${pane}`);
-    }
+    // Sync URL hash
+    history.replaceState(null, '', pane === 'home' ? window.location.pathname : `#${pane}`);
 
     // Lazy load pane data on first visit
     if (!panesLoaded[pane]) {
@@ -53,9 +42,15 @@ function switchPane(pane, subTab = null) {
         else if (pane === 'trackers') initTrackersPane();
         else if (pane === 'journals') initJournalsPane();
         else if (pane === 'todos') initTodosPane();
-        else if (pane === 'others') MiscPane.init(subTab);
-    } else if (pane === 'others' && subTab) {
-        MiscPane.switchTab(subTab);
+        else if (pane === 'achievements') MiscPane.loadAchievements();
+        else if (pane === 'reading-list') ReadingList.loadAll();
+        else if (pane === 'friends') MiscPane.initFriends();
+        else if (pane === 'settings') Settings.loadSearchEngines();
+    } else {
+        // Refresh data-driven panes on every visit
+        if (pane === 'achievements') MiscPane.loadAchievements();
+        else if (pane === 'reading-list') ReadingList.loadAll();
+        else if (pane === 'friends') MiscPane.load();
     }
 }
 
@@ -86,10 +81,7 @@ function applyFont(fontFamily) {
 
 // ── Settings ──
 function showSettings() {
-    // Load search engines into settings dropdown
-    Settings.loadSearchEngines();
-    const modal = new bootstrap.Modal(document.getElementById('settingsModal'));
-    modal.show();
+    switchPane('settings');
 }
 
 // ── Keyboard Shortcuts ──
@@ -122,7 +114,7 @@ function bindEvents() {
         item.addEventListener('click', () => switchPane(item.dataset.pane));
     });
     document.getElementById('tab-theme-btn').addEventListener('click', toggleTheme);
-    document.getElementById('tab-settings-btn').addEventListener('click', showSettings);
+    // Settings is now triggered from the Others pane sub-tab
 
     // Navigation — mobile menu
     document.getElementById('hamburger-btn').addEventListener('click', toggleMobileMenu);
@@ -132,7 +124,7 @@ function bindEvents() {
         item.addEventListener('click', () => { switchPane(item.dataset.pane); closeMobileMenu(); });
     });
     document.getElementById('mobile-theme-btn').addEventListener('click', () => { toggleTheme(); closeMobileMenu(); });
-    document.getElementById('mobile-settings-btn').addEventListener('click', () => { showSettings(); closeMobileMenu(); });
+    // Settings is now triggered from the Others pane sub-tab
 
     // Pomodoro
     document.getElementById('pomodoro-start').addEventListener('click', () => Pomodoro.toggle());
@@ -164,6 +156,9 @@ function bindEvents() {
         if (btn) { TodosPane.setFilter(btn.dataset.filter); return; }
         const dlBtn = e.target.closest('.todo-deadline-filter[data-deadline-filter]');
         if (dlBtn) TodosPane.setDeadlineFilter(dlBtn.dataset.deadlineFilter);
+    });
+    document.getElementById('todos-date-filter').addEventListener('change', e => {
+        TodosPane.setDateFilter(e.target.value);
     });
     document.getElementById('todos-add-task-btn').addEventListener('click', () => TodosPane.addTask());
 
@@ -356,7 +351,7 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('year').innerText = new Date().getFullYear();
 
     const hash = window.location.hash.replace('#', '') || 'home';
-    const validPanes = ['home', 'todos', 'trackers', 'journals', 'others', 'friends', 'achievements', 'reading-list'];
+    const validPanes = ['home', 'todos', 'trackers', 'journals', 'achievements', 'reading-list', 'friends', 'settings', 'help'];
     const initialPane = validPanes.includes(hash) ? hash : 'home';
 
     AppConfig.load().then(() => {
@@ -382,7 +377,7 @@ document.addEventListener('DOMContentLoaded', function () {
 // Listen for hash changes
 window.addEventListener('hashchange', function () {
     const hash = window.location.hash.replace('#', '') || 'home';
-    const validPanes = ['home', 'todos', 'trackers', 'journals', 'others', 'friends', 'achievements', 'reading-list'];
+    const validPanes = ['home', 'todos', 'trackers', 'journals', 'achievements', 'reading-list', 'friends', 'settings', 'help'];
     if (validPanes.includes(hash)) {
         switchPane(hash);
     }
