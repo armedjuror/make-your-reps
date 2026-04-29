@@ -7,6 +7,7 @@ const TodosPane = {
     todos: [],
     selectedGroup: 'all',
     filter: 'pending', // 'pending' | 'done' | 'all'
+    deadlineFilter: null, // null | 'today' | 'this-week'
 
     async init() {
         await this.loadGroups();
@@ -97,6 +98,15 @@ const TodosPane = {
         this.loadTodos();
     },
 
+    setDeadlineFilter(filter) {
+        this.deadlineFilter = this.deadlineFilter === filter ? null : filter;
+        document.querySelectorAll('.todo-deadline-filter').forEach(b => b.classList.remove('active'));
+        if (this.deadlineFilter) {
+            document.querySelector(`.todo-deadline-filter[data-deadline-filter="${this.deadlineFilter}"]`).classList.add('active');
+        }
+        this.renderTodos();
+    },
+
     showAddGroupModal() {
         document.getElementById('groupNameInput').value = '';
         document.getElementById('groupEditId').value = '';
@@ -163,15 +173,31 @@ const TodosPane = {
         const list = document.getElementById('todos-pane-list');
         if (!list) return;
 
-        if (this.todos.length === 0) {
-            const msg = this.filter === 'done' ? 'No completed tasks yet.' : 'All clear! No pending tasks.';
+        let todos = this.todos;
+        if (this.deadlineFilter) {
+            const now = new Date();
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const todayEnd = new Date(todayStart.getTime() + 86_400_000);
+            if (this.deadlineFilter === 'today') {
+                todos = todos.filter(t => t.deadline && new Date(t.deadline) >= todayStart && new Date(t.deadline) < todayEnd);
+            } else if (this.deadlineFilter === 'this-week') {
+                const day = now.getDay(); // 0=Sun … 6=Sat
+                const weekEnd = new Date(todayStart.getTime() + (7 - day) * 86_400_000);
+                todos = todos.filter(t => t.deadline && new Date(t.deadline) >= todayStart && new Date(t.deadline) < weekEnd);
+            }
+        }
+
+        if (todos.length === 0) {
+            const msg = this.deadlineFilter
+                ? 'No tasks due ' + (this.deadlineFilter === 'today' ? 'today.' : 'this week.')
+                : this.filter === 'done' ? 'No completed tasks yet.' : 'All clear! No pending tasks.';
             list.innerHTML = `<h6 class="text-center mt-4 todo-empty-msg">${msg}</h6>`;
             return;
         }
 
         const clockFormat = document.body.getAttribute('data-clock') || '12h';
 
-        list.innerHTML = this.todos.map(todo => {
+        list.innerHTML = todos.map(todo => {
             let deadlineHtml = '';
             if (todo.deadline) {
                 const d = new Date(todo.deadline);
