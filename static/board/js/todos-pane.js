@@ -104,7 +104,7 @@ const TodosPane = {
         if (this.deadlineFilter) {
             document.querySelector(`.todo-deadline-filter[data-deadline-filter="${this.deadlineFilter}"]`).classList.add('active');
         }
-        this.renderTodos();
+        this.loadTodos();
     },
 
     showAddGroupModal() {
@@ -159,8 +159,10 @@ const TodosPane = {
     async loadTodos() {
         let url = 'board/api/tasks/?';
         if (this.selectedGroup !== 'all') url += `group=${this.selectedGroup}&`;
-        if (this.filter === 'pending') url += 'done=false';
-        else if (this.filter === 'done') url += 'done=true';
+        if (!this.deadlineFilter) {
+            if (this.filter === 'pending') url += 'done=false';
+            else if (this.filter === 'done') url += 'done=true';
+        }
 
         const res = await apiClient.get(url);
         if (res.status === 'success') {
@@ -182,8 +184,9 @@ const TodosPane = {
                 todos = todos.filter(t => t.deadline && new Date(t.deadline) >= todayStart && new Date(t.deadline) < todayEnd);
             } else if (this.deadlineFilter === 'this-week') {
                 const day = now.getDay(); // 0=Sun … 6=Sat
-                const weekEnd = new Date(todayStart.getTime() + (7 - day) * 86_400_000);
-                todos = todos.filter(t => t.deadline && new Date(t.deadline) >= todayStart && new Date(t.deadline) < weekEnd);
+                const weekStart = new Date(todayStart.getTime() - day * 86_400_000);
+                const weekEnd = new Date(weekStart.getTime() + 7 * 86_400_000);
+                todos = todos.filter(t => t.deadline && new Date(t.deadline) >= weekStart && new Date(t.deadline) < weekEnd);
             }
         }
 
