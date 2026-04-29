@@ -13,7 +13,7 @@
     align-items: center;
     justify-content: center;
     gap: 0;
-    z-index: 100;
+    z-index: 999;
     padding: 4px 0;
 }
 
@@ -92,7 +92,7 @@
     width: 260px;
     height: 100%;
     background: var(--paper-bg-end);
-    z-index: 201;
+    z-index: 1000;
     transition: right 0.28s ease;
     box-shadow: -4px 0 20px rgba(0, 0, 0, 0.12);
     display: flex;
@@ -1200,10 +1200,16 @@
     left: 0;
     right: 0;
     height: 56px;
-    background: var(--paper-bg);
-    border-top: 1px solid var(--grid-dots);
+    border-top: 1px solid var(--ink-brown);
+    background: var(--paper-bg-end);
+    color: var(--ink-black);
     z-index: 1000;
     align-items: stretch;
+}
+
+[data-theme="dark"].mobile-bottom-nav {
+    background: var(--paper-bg-end);
+    color: var(--ink-gray);
 }
 
 .mobile-bottom-nav-item {
@@ -1253,13 +1259,18 @@
         display: flex;
     }
 
-    .copyright {
-        display: none;
+    /* Lock body scroll; let each pane scroll internally */
+    body {
+        overflow: hidden;
+        height: 100vh;
     }
 
-    /* Pad pane content so it clears the bottom nav */
     .pane {
-        padding-bottom: 56px;
+        overflow-y: auto;
+        min-height: unset;
+        max-height: calc(100vh - 56px);
+        padding-bottom: 16px;
+        margin-top: 10px;
     }
 
     .tab-bar {
@@ -1273,6 +1284,7 @@
         align-items: center;
         gap: 8px;
         margin-left: 0;
+        justify-content: space-between;
     }
 
     .tab-meta-group .home-meta {
@@ -1282,7 +1294,7 @@
     .tab-meta-group .home-datetime {
         order: 2;
         flex-direction: column;
-        align-items: flex-start;
+        align-items: flex-end;
         padding: 0;
         margin: 0;
     }

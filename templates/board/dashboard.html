@@ -89,9 +89,9 @@
             <div class="tab-item home-datetime" id="home-datetime"></div>
         </div>
         <!-- Mobile: hamburger -->
-        <button class="hamburger-btn" id="hamburger-btn">
-            <i class="fas fa-bars"></i>
-        </button>
+{#        <button class="hamburger-btn" id="hamburger-btn">#}
+{#            <i class="fas fa-bars"></i>#}
+{#        </button>#}
     </nav>
 
     <!-- Mobile slide-out menu -->
@@ -1367,6 +1367,10 @@ Write freely here, like you're writing in your personal journal..." id="journal-
             <i class="fas fa-book"></i>
             <span>Journals</span>
         </a>
+        <a class="mobile-bottom-nav-item" data-pane="achievements">
+            <i class="fas fa-trophy"></i>
+            <span>Achievements</span>
+        </a>
         <a class="mobile-bottom-nav-item" id="mobile-bottom-more-btn">
             <i class="fas fa-ellipsis-h"></i>
             <span>More</span>
@@ -1375,7 +1379,9 @@ Write freely here, like you're writing in your personal journal..." id="journal-
 
     <!-- Copyright / Pomodoro footer bar -->
     <div class="copyright" id="footer-bar">
-        <span id="footer-copyright">&copy; <span id="year"></span> <span id="copyright-text"></span></span>
+        <span id="footer-copyright">
+{#            &copy; <span id="year"></span> #}
+            <span id="copyright-text"></span></span>
         <span id="footer-pomodoro" style="display:none;">
             <span id="pomo-mini-mode">Focus</span>
             <span id="pomo-mini-time">25:00</span>

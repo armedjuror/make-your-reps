@@ -122,7 +122,7 @@ function bindEvents() {
     // Settings is now triggered from the Others pane sub-tab
 
     // Navigation — mobile menu
-    document.getElementById('hamburger-btn').addEventListener('click', toggleMobileMenu);
+    // document.getElementById('hamburger-btn').addEventListener('click', toggleMobileMenu);
     document.getElementById('mobile-menu-overlay').addEventListener('click', closeMobileMenu);
     document.getElementById('mobile-menu-close-btn').addEventListener('click', closeMobileMenu);
     document.querySelectorAll('.mobile-menu-item[data-pane]').forEach(item => {
@@ -359,7 +359,7 @@ document.addEventListener('DOMContentLoaded', function () {
     bindEvents();
 
     // Set year
-    document.getElementById('year').innerText = new Date().getFullYear();
+    // document.getElementById('year').innerText = new Date().getFullYear();
 
     const hash = window.location.hash.replace('#', '') || 'home';
     const validPanes = ['home', 'todos', 'trackers', 'journals', 'achievements', 'reading-list', 'friends', 'settings', 'help'];
