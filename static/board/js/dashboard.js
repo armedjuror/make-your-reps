@@ -27,6 +27,11 @@ function switchPane(pane) {
     const activeMobileItem = document.querySelector(`.mobile-menu-item[data-pane="${pane}"]`);
     if (activeMobileItem) activeMobileItem.classList.add('active');
 
+    // Update mobile bottom nav
+    document.querySelectorAll('.mobile-bottom-nav-item[data-pane]').forEach(t => t.classList.remove('active'));
+    const activeBottomItem = document.querySelector(`.mobile-bottom-nav-item[data-pane="${pane}"]`);
+    if (activeBottomItem) activeBottomItem.classList.add('active');
+
     currentPane = pane;
 
     // Refresh footer bar pomodoro visibility on pane switch
@@ -123,6 +128,12 @@ function bindEvents() {
     document.querySelectorAll('.mobile-menu-item[data-pane]').forEach(item => {
         item.addEventListener('click', () => { switchPane(item.dataset.pane); closeMobileMenu(); });
     });
+
+    // Mobile bottom nav
+    document.querySelectorAll('.mobile-bottom-nav-item[data-pane]').forEach(item => {
+        item.addEventListener('click', () => switchPane(item.dataset.pane));
+    });
+    document.getElementById('mobile-bottom-more-btn').addEventListener('click', toggleMobileMenu);
     document.getElementById('mobile-theme-btn').addEventListener('click', () => { toggleTheme(); closeMobileMenu(); });
     // Settings is now triggered from the Others pane sub-tab
 

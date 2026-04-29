@@ -1192,6 +1192,45 @@
     border-color: var(--ink-brown);
 }
 
+/* ── Mobile Bottom Nav ── */
+.mobile-bottom-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    background: var(--paper-bg);
+    border-top: 1px solid var(--grid-dots);
+    z-index: 1000;
+    align-items: stretch;
+}
+
+.mobile-bottom-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    color: var(--ink-brown-light);
+    text-decoration: none;
+    font-size: 0.6rem;
+    cursor: pointer;
+    transition: color 0.15s;
+    border: none;
+    background: none;
+}
+
+.mobile-bottom-nav-item i {
+    font-size: 1.1rem;
+}
+
+.mobile-bottom-nav-item.active,
+.mobile-bottom-nav-item:hover {
+    color: var(--ink-brown);
+}
+
 /* ── Responsive ── */
 @media (max-width: 1200px) {
     /* Hide search bar — redundant on mobile (browser has its own) */
@@ -1207,6 +1246,20 @@
     .hamburger-btn {
         display: flex;
         align-items: center;
+    }
+
+    /* Show bottom nav, hide copyright pill */
+    .mobile-bottom-nav {
+        display: flex;
+    }
+
+    .copyright {
+        display: none;
+    }
+
+    /* Pad pane content so it clears the bottom nav */
+    .pane {
+        padding-bottom: 56px;
     }
 
     .tab-bar {
