@@ -159,10 +159,8 @@ const TodosPane = {
     async loadTodos() {
         let url = 'board/api/tasks/?';
         if (this.selectedGroup !== 'all') url += `group=${this.selectedGroup}&`;
-        if (!this.deadlineFilter) {
-            if (this.filter === 'pending') url += 'done=false';
-            else if (this.filter === 'done') url += 'done=true';
-        }
+        if (this.filter === 'pending') url += 'done=false';
+        else if (this.filter === 'done') url += 'done=true';
 
         const res = await apiClient.get(url);
         if (res.status === 'success') {
@@ -183,10 +181,9 @@ const TodosPane = {
             if (this.deadlineFilter === 'today') {
                 todos = todos.filter(t => t.deadline && new Date(t.deadline) >= todayStart && new Date(t.deadline) < todayEnd);
             } else if (this.deadlineFilter === 'this-week') {
-                const day = now.getDay(); // 0=Sun … 6=Sat
-                const weekStart = new Date(todayStart.getTime() - day * 86_400_000);
-                const weekEnd = new Date(weekStart.getTime() + 7 * 86_400_000);
-                todos = todos.filter(t => t.deadline && new Date(t.deadline) >= weekStart && new Date(t.deadline) < weekEnd);
+                const rangeStart = new Date(todayStart.getTime() - 3 * 86_400_000);
+                const rangeEnd = new Date(todayStart.getTime() + 4 * 86_400_000);
+                todos = todos.filter(t => t.deadline && new Date(t.deadline) >= rangeStart && new Date(t.deadline) < rangeEnd);
             }
         }
 
