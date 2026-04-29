@@ -35,11 +35,19 @@ const BrowserNotify = {
     send(title, body, options = {}) {
         if (!('Notification' in window) || Notification.permission !== 'granted') return;
         try {
-            new Notification(title, {
+            const { pane, subTab, ...notifOptions } = options;
+            const n = new Notification(title, {
                 body,
                 icon: '/static/images/logo.png',
-                ...options,
+                ...notifOptions,
             });
+            n.onclick = () => {
+                window.focus();
+                n.close();
+                if (pane && typeof switchPane === 'function') {
+                    switchPane(pane, subTab || null);
+                }
+            };
         } catch (e) {
             console.error('[BrowserNotify] Failed:', e);
         }
@@ -68,13 +76,27 @@ const BrowserNotify = {
                 if (this._notifiedIds.has(event.id)) continue;
                 const diff = new Date(event.timestamp).getTime() - now;
                 if (diff >= -WINDOW_MS && diff <= WINDOW_MS) {
-                    this.send(this._titleForType(event.event_type), event.event);
+                    const { pane, subTab } = this._paneForType(event.event_type);
+                    this.send(this._titleForType(event.event_type), event.event, { pane, subTab });
                     this._notifiedIds.add(event.id);
                 }
             }
         } catch (e) {
             console.error('[BrowserNotify] Poll error:', e);
         }
+    },
+
+    _paneForType(type) {
+        const map = {
+            habit:                  { pane: 'trackers' },
+            sleep_tracker:          { pane: 'trackers' },
+            accountability_habit:   { pane: 'trackers' },
+            todo:                   { pane: 'todos' },
+            journal:                { pane: 'journals' },
+            friend_request:         { pane: 'others', subTab: 'friends' },
+            accountability_invite:  { pane: 'others', subTab: 'friends' },
+        };
+        return map[type] || { pane: 'home' };
     },
 
     _titleForType(type) {

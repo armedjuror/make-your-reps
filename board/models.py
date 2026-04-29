@@ -112,7 +112,6 @@ class TaskGroup(models.Model):
 
     class Meta:
         ordering = ['name']
-        unique_together = ('user', 'name')
 
     def __str__(self):
         return f'{self.user} - {self.name}'
