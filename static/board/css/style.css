@@ -422,6 +422,9 @@ body::after {
     /*border: 1px solid var(--grid-dots);*/
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     z-index: 999;
 }
 
@@ -1240,7 +1243,7 @@ body::after {
         top: 0;
         left: 0;
         right: 0;
-        height: 100px;
+        height: 150px;
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
         mask-image: linear-gradient(to top, transparent, black 60%);
@@ -1266,6 +1269,7 @@ body::after {
         margin: 0 auto;
         width: 300px;
         background: rgba(42, 38, 32, 0.5);
+        align-content: center;
     }
 
     .chart-container canvas {
