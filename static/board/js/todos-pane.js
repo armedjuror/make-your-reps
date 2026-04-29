@@ -179,11 +179,11 @@ const TodosPane = {
             const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             const todayEnd = new Date(todayStart.getTime() + 86_400_000);
             if (this.deadlineFilter === 'today') {
-                todos = todos.filter(t => t.deadline && new Date(t.deadline) >= todayStart && new Date(t.deadline) < todayEnd);
+                todos = todos.filter(t => t.deadline && new Date(t.deadline) < todayEnd
+                );
             } else if (this.deadlineFilter === 'this-week') {
-                const rangeStart = new Date(todayStart.getTime() - 3 * 86_400_000);
                 const rangeEnd = new Date(todayStart.getTime() + 4 * 86_400_000);
-                todos = todos.filter(t => t.deadline && new Date(t.deadline) >= rangeStart && new Date(t.deadline) < rangeEnd);
+                todos = todos.filter(t => t.deadline && new Date(t.deadline) < rangeEnd);
             }
         }
 
