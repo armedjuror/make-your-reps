@@ -171,7 +171,7 @@ function bindEvents() {
     document.getElementById('todos-date-filter').addEventListener('change', e => {
         TodosPane.setDateFilter(e.target.value);
     });
-    document.getElementById('todos-add-task-btn').addEventListener('click', () => TodosPane.addTask());
+    document.getElementById('todos-add-task-btn').addEventListener('click', () => Todo.showTodoModal());
 
     // Modal — Todo
     document.getElementById('todoSaveBtn').addEventListener('click', () => Todo.saveTodo());
