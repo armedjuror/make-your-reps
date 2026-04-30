@@ -152,7 +152,7 @@
 
 /* ── Pane container ── */
 .pane {
-    padding: 70px 0; /* Space for tab bar */
+    padding: 100px 0 0 10px; /* Space for tab bar */
     min-height: 90vh;
 }
 
@@ -1269,8 +1269,8 @@
         overflow-y: auto;
         min-height: unset;
         max-height: calc(100vh - 56px);
-        padding-bottom: 16px;
-        margin-top: 10px;
+        padding-bottom: 80px;
+        padding-top: 110px;
     }
 
     .tab-bar {
@@ -1328,7 +1328,7 @@
     }
 
     .default-pane-content {
-        padding: 16px 12px 40px;
+        padding: 0 12px 40px;
     }
 
     .greeting-main h1 {
