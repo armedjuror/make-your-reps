@@ -53,6 +53,13 @@ const DefaultPane = {
         const query = document.getElementById('search-input').value.trim();
         if (!query) return;
 
+        if (query.toLowerCase().startsWith('/ai ')) {
+            const prompt = query.slice(4).trim();
+            document.getElementById('search-input').value = '';
+            AIAssistant.open(prompt);
+            return;
+        }
+
         const engine = this.searchEngines.find(e => e.key === this.currentEngine);
         if (engine) {
             document.getElementById('search-input').value = ''
