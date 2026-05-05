@@ -12,6 +12,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Fredericka+the+Great&family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'board/css/style.css' %}">
     <link rel="stylesheet" href="{% static 'board/css/dashboard.css' %}">
+    <!-- PWA -->
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <meta name="theme-color" content="#98753f">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Make Your Reps">
+    <link rel="apple-touch-icon" href="{% static 'images/logo.png' %}">
 </head>
 <body data-theme="dark" data-font="Jetbrains Mono" data-clock="12h">
 
@@ -1348,6 +1356,22 @@ Write freely here, like you're writing in your personal journal..." id="journal-
         </div>
     </div>
 
+    <!-- PWA Install Banner (mobile only) -->
+    <div id="pwa-banner" class="pwa-banner" style="display:none;" role="banner">
+        <img src="{% static 'images/logo.png' %}" class="pwa-banner-icon" alt="">
+        <div class="pwa-banner-text">
+            <strong>Make Your Reps</strong>
+            <span id="pwa-banner-sub">Add to Home Screen for the best experience</span>
+        </div>
+        <button class="pwa-install-btn" id="pwa-install-btn">Install</button>
+        <button class="pwa-dismiss-btn" id="pwa-dismiss-btn" aria-label="Dismiss"><i class="fas fa-times"></i></button>
+    </div>
+
+    <!-- Pull-to-refresh indicator (mobile only) -->
+    <div id="ptr-indicator" aria-hidden="true">
+        <i class="fas fa-arrow-down"></i>
+    </div>
+
     <!-- Mobile bottom nav bar -->
     <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
         <a class="mobile-bottom-nav-item active" data-pane="home">
@@ -1442,6 +1466,81 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                 history.replaceState(null, '', window.location.pathname + window.location.hash);
             }
         })();
+    </script>
+
+    <!-- PWA: Service Worker + Install Prompt -->
+    <script>
+    (function () {
+        // ── Register Service Worker ──
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js', { scope: '/board/' }).catch(() => {});
+            });
+        }
+
+        // ── Install prompt ──
+        const DISMISS_KEY = 'pwa_banner_dismissed';
+        const DISMISS_DAYS = 14;
+
+        function isDismissed() {
+            const ts = localStorage.getItem(DISMISS_KEY);
+            if (!ts) return false;
+            return Date.now() - parseInt(ts) < DISMISS_DAYS * 86400000;
+        }
+
+        function showBanner(mode) {
+            if (isDismissed()) return;
+            const banner = document.getElementById('pwa-banner');
+            const sub = document.getElementById('pwa-banner-sub');
+            const installBtn = document.getElementById('pwa-install-btn');
+            if (!banner) return;
+
+            if (mode === 'ios') {
+                sub.textContent = 'Tap  \u{1F4E4}  Share → "Add to Home Screen"';
+                installBtn.style.display = 'none';
+            }
+            banner.style.display = 'flex';
+            // Animate in
+            requestAnimationFrame(() => banner.classList.add('pwa-banner--visible'));
+        }
+
+        function hideBanner(persist) {
+            const banner = document.getElementById('pwa-banner');
+            if (!banner) return;
+            banner.classList.remove('pwa-banner--visible');
+            setTimeout(() => { banner.style.display = 'none'; }, 300);
+            if (persist) localStorage.setItem(DISMISS_KEY, Date.now());
+        }
+
+        // Android / Chrome: capture beforeinstallprompt
+        let deferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', e => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // Only show on mobile viewports
+            if (window.innerWidth <= 1200) showBanner('android');
+        });
+
+        document.getElementById('pwa-install-btn')?.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            hideBanner(false);
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            deferredPrompt = null;
+            if (outcome === 'dismissed') localStorage.setItem(DISMISS_KEY, Date.now());
+        });
+
+        document.getElementById('pwa-dismiss-btn')?.addEventListener('click', () => hideBanner(true));
+
+        // iOS: no beforeinstallprompt — detect and show manual instructions
+        const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                             || navigator.standalone;
+        if (isIos && !isStandalone && window.innerWidth <= 1200) {
+            // Delay slightly so the page has rendered
+            setTimeout(() => showBanner('ios'), 3000);
+        }
+    })();
     </script>
 </body>
 </html>

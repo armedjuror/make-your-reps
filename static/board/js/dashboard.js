@@ -417,3 +417,117 @@ document.addEventListener('hide.bs.modal', function () {
         document.activeElement.blur();
     }
 });
+
+// ── Pull-to-Refresh (mobile only) ──
+const PullToRefresh = {
+    startY: 0,
+    lastY: 0,
+    pulling: false,
+    refreshing: false,
+    threshold: 75,
+    indicator: null,
+
+    init() {
+        if (window.innerWidth > 1200) return;
+        this.indicator = document.getElementById('ptr-indicator');
+        document.querySelectorAll('.pane').forEach(pane => {
+            pane.addEventListener('touchstart', e => this._onStart(e, pane), { passive: true });
+            pane.addEventListener('touchmove', e => this._onMove(e, pane), { passive: false });
+            pane.addEventListener('touchend', () => this._onEnd(), { passive: true });
+        });
+    },
+
+    _onStart(e, pane) {
+        if (this.refreshing) return;
+        if (pane.scrollTop === 0) {
+            this.startY = e.touches[0].clientY;
+            this.lastY = this.startY;
+            this.pulling = true;
+        } else {
+            this.pulling = false;
+        }
+    },
+
+    _onMove(e, pane) {
+        if (!this.pulling || this.refreshing) return;
+        this.lastY = e.touches[0].clientY;
+        const delta = this.lastY - this.startY;
+        if (delta <= 0 || pane.scrollTop > 0) { this.pulling = false; this._hide(); return; }
+        e.preventDefault();
+        const progress = Math.min(delta / this.threshold, 1);
+        const translateY = Math.min(delta * 0.45, this.threshold * 0.6);
+        const ind = this.indicator;
+        if (!ind) return;
+        ind.style.display = 'flex';
+        ind.style.transition = 'none';
+        ind.style.opacity = progress;
+        ind.style.transform = `translateX(-50%) translateY(${translateY - 60}px)`;
+        ind.querySelector('i').style.transform = `rotate(${progress * 180}deg)`;
+    },
+
+    _onEnd() {
+        if (!this.pulling || this.refreshing) return;
+        this.pulling = false;
+        const delta = this.lastY - this.startY;
+        if (delta >= this.threshold) {
+            this._startRefresh();
+        } else {
+            this._hide();
+        }
+    },
+
+    _startRefresh() {
+        this.refreshing = true;
+        const ind = this.indicator;
+        if (ind) {
+            const icon = ind.querySelector('i');
+            icon.style.transform = '';
+            icon.className = 'fas fa-circle-notch fa-spin';
+            ind.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
+            ind.style.opacity = '1';
+            ind.style.transform = 'translateX(-50%) translateY(0px)';
+        }
+        Promise.resolve(this._reload()).finally(() => {
+            setTimeout(() => { this._hide(); this.refreshing = false; }, 500);
+        });
+    },
+
+    _hide() {
+        const ind = this.indicator;
+        if (!ind || ind.style.display === 'none') return;
+        ind.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
+        ind.style.opacity = '0';
+        ind.style.transform = 'translateX(-50%) translateY(-60px)';
+        setTimeout(() => {
+            ind.style.display = 'none';
+            const icon = ind.querySelector('i');
+            icon.className = 'fas fa-arrow-down';
+            icon.style.transform = '';
+        }, 260);
+    },
+
+    _reload() {
+        switch (currentPane) {
+            case 'home':
+                General.loadProductivityScore();
+                return Timeline.init();
+            case 'todos':
+                return Promise.all([TodosPane.loadTodos(), TodosPane.loadGroups()]);
+            case 'trackers':
+                loadHabits(); loadRoutines(); loadSleepAndJournalData();
+                break;
+            case 'journals':
+                JournalPane.renderCalendar();
+                break;
+            case 'achievements':
+                return MiscPane.loadAchievements();
+            case 'reading-list':
+                return ReadingList.loadAll();
+            case 'friends':
+                MiscPane.initFriends();
+                break;
+        }
+    },
+};
+
+document.addEventListener('DOMContentLoaded', () => PullToRefresh.init());

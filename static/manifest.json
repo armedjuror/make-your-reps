@@ -1,0 +1,25 @@
+{
+  "name": "Make Your Reps",
+  "short_name": "MakeYourReps",
+  "description": "Your personal productivity companion — habits, todos, journals, and more.",
+  "start_url": "/board/",
+  "scope": "/board/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#faf7f2",
+  "theme_color": "#98753f",
+  "icons": [
+    {
+      "src": "/static/images/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/images/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
