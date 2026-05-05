@@ -34,10 +34,10 @@ const Todo = {
         const task = document.getElementById('todoTask').value.trim();
         const deadline = document.getElementById('todoDeadline').value;
         const group = document.getElementById('todoGroup').value;
-        if (group) data.group = parseInt(group);
         if (!task) return;
 
         const data = {task_name: task};
+        if (group) data.group = parseInt(group);
         if (deadline) data.deadline = new Date(deadline).toISOString();
 
         apiClient.post('board/api/tasks/', data).then(res => {

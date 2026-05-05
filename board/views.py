@@ -854,7 +854,7 @@ class RoutineEntryViewSet(AuthenticatedModelViewSet):
             if serializer.is_valid():
                 obj = serializer.save(user_id=user_id)
                 created.append(serializer.data)
-                generate_timeline_for_new_item.delay('routine', serializer.data['id'])
+                generate_timeline_for_new_item('routine', serializer.data['id'])
 
         return Response({
             'status': 'success',
