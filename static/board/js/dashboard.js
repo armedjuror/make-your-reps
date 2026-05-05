@@ -439,13 +439,20 @@ const PullToRefresh = {
 
     _onStart(e, pane) {
         if (this.refreshing) return;
-        if (pane.scrollTop === 0) {
-            this.startY = e.touches[0].clientY;
-            this.lastY = this.startY;
-            this.pulling = true;
-        } else {
-            this.pulling = false;
+        this.pulling = false;
+        if (pane.scrollTop > 0) return;
+
+        // Don't activate if the touch started inside a scrollable child element
+        let el = e.target;
+        while (el && el !== pane) {
+            const ov = window.getComputedStyle(el).overflowY;
+            if ((ov === 'auto' || ov === 'scroll') && el.scrollHeight > el.clientHeight) return;
+            el = el.parentElement;
         }
+
+        this.startY = e.touches[0].clientY;
+        this.lastY = this.startY;
+        this.pulling = true;
     },
 
     _onMove(e, pane) {
