@@ -1,5 +1,7 @@
 import os
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
+
+import anthropic as anthropic_sdk
 
 from django.contrib.auth.models import User
 from django.db.models import Count, F, Prefetch, Q
@@ -1574,7 +1576,6 @@ class ProductivityScoreHistoryView(APIView):
         if not user_id:
             return Response({'status': 'failed', 'error': 'Not authenticated'}, status=401)
 
-        from datetime import timedelta
         days = min(int(request.GET.get('days', 7)), 30)
         now = timezone.now()
         today = timezone.localdate()
@@ -1625,6 +1626,919 @@ def process_invite_token(token_str, user):
         return 'accepted'
 
     return 'not_found'
+
+
+class AIAssistantView(APIView):
+    def post(self, request):
+        user_id = request.session.get('user_id')
+        if not user_id:
+            return Response({'status': 'failed', 'error': 'Not authenticated'}, status=401)
+
+        message = request.data.get('message', '').strip()
+        history = request.data.get('history', [])
+        if not message:
+            return Response({'status': 'failed', 'error': 'Empty message'})
+
+        api_key = os.environ.get('ANTHROPIC_API_KEY')
+        if not api_key:
+            return Response({'status': 'failed', 'error': 'AI not configured'})
+
+        today = timezone.localdate()
+        yesterday = today - timedelta(days=1)
+        weekday = today.weekday()
+
+        today_tasks = list(Task.objects.filter(
+            user_id=user_id, is_deleted=False, is_done=False,
+            deadline__date=today
+        ).values('id', 'task_name', 'deadline'))
+        overdue_tasks = list(Task.objects.filter(
+            user_id=user_id, is_deleted=False, is_done=False,
+            deadline__date__lt=today
+        ).values('id', 'task_name', 'deadline'))
+        upcoming_tasks = list(Task.objects.filter(
+            user_id=user_id, is_deleted=False, is_done=False,
+            deadline__date__gt=today
+        ).values('id', 'task_name', 'deadline'))
+        no_deadline_tasks = list(Task.objects.filter(
+            user_id=user_id, is_deleted=False, is_done=False, deadline__isnull=True
+        ).values('id', 'task_name'))
+
+        active_habits = list(Habit.objects.filter(user_id=user_id, status=HabitStatus.ACTIVE.value))
+        habit_list = [{'id': h.id, 'name': h.habit, 'frequency': h.frequency} for h in active_habits]
+
+        today_logs = set(HabitLog.objects.filter(
+            habit__user_id=user_id, date=today, is_done=True
+        ).values_list('habit_id', flat=True))
+        yesterday_logs = set(HabitLog.objects.filter(
+            habit__user_id=user_id, date=yesterday, is_done=True
+        ).values_list('habit_id', flat=True))
+
+        habits_pending_today = [h for h in active_habits if (not h.frequency or weekday in h.frequency) and h.id not in today_logs]
+        habits_missed_yesterday = [h for h in active_habits if (not h.frequency or (yesterday.weekday() in h.frequency)) and h.id not in yesterday_logs]
+
+        score_data = _compute_productivity_score(user_id, today, now=timezone.now())
+
+        sleep_records = list(DailyData.objects.filter(
+            user_id=user_id,
+            date__gte=today - timedelta(days=7),
+            sleep_hours__isnull=False
+        ).values('date', 'sleep_hours').order_by('date'))
+
+        groups = list(TaskGroup.objects.filter(user_id=user_id).values('id', 'name'))
+
+        context_block = f"""
+Today's date: {today.isoformat()} ({today.strftime('%A')})
+
+OVERDUE TASKS (deadline passed):
+{overdue_tasks or 'None'}
+
+PENDING TASKS WITH DEADLINE TODAY:
+{today_tasks or 'None'}
+
+UPCOMING TASKS (future deadline):
+{upcoming_tasks or 'None'}
+
+PENDING TASKS (no deadline):
+{no_deadline_tasks or 'None'}
+
+ACTIVE HABITS:
+{habit_list}
+
+HABITS PENDING TODAY (not yet logged):
+{[h.habit for h in habits_pending_today] or 'All done!'}
+
+HABITS MISSED YESTERDAY:
+{[h.habit for h in habits_missed_yesterday] or 'None missed'}
+
+TODAY'S PRODUCTIVITY SCORE: {score_data['total']}/10
+  Breakdown:
+  - Habits: {score_data['habit']}/5  ({score_data['breakdown']['habits_done']}/{score_data['breakdown']['habits_due']} done)
+  - Tasks:  {score_data['todo']}/2   ({score_data['breakdown']['todos_done']}/{score_data['breakdown']['todos_due']} done)
+  - Journal: {score_data['journal']}/2  ({'written' if score_data['breakdown']['journaled'] else 'not written'})
+  - Sleep:  {score_data['sleep']}/1   ({'logged' if score_data['breakdown']['sleep_logged'] else 'not logged'})
+
+SLEEP LAST 7 DAYS:
+{[{'date': str(s['date']), 'hours': float(s['sleep_hours'])} for s in sleep_records] or 'No records'}
+
+TASK GROUPS AVAILABLE:
+{groups}
+"""
+
+        system_prompt = f"""You are a personal productivity assistant embedded in a productivity app called Steps.
+You have access to the user's real-time data shown below. Use it to answer questions naturally and helpfully.
+
+When the user asks to CREATE, LOG, or RECORD something, use the appropriate tool — do not just describe it.
+When the user asks a QUESTION about their data, answer directly from the context below without calling tools.
+Keep answers concise. Use bullet points for lists. Don't repeat the user's question back.
+
+USER DATA:
+{context_block}"""
+
+        tools = [
+            # ── Tasks ──
+            {
+                "name": "create_task",
+                "description": "Create a new task. Defaults to General group if no group specified.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "task_name": {"type": "string"},
+                        "group_id": {"type": "integer", "description": "Task group ID from the groups list"},
+                        "deadline": {"type": "string", "description": "ISO datetime e.g. 2025-05-02T18:00:00"},
+                    },
+                    "required": ["task_name"]
+                }
+            },
+            {
+                "name": "modify_task",
+                "description": "Modify an existing task's name, group, or deadline.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "task_id": {"type": "integer"},
+                        "task_name": {"type": "string", "description": "New name (omit to keep current)"},
+                        "group_id": {"type": "integer", "description": "New group ID"},
+                        "deadline": {"type": "string", "description": "New ISO datetime, or empty string to clear"},
+                    },
+                    "required": ["task_id"]
+                }
+            },
+            {
+                "name": "list_tasks",
+                "description": "List tasks with optional filters. Useful for done tasks or group-filtered views.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "filter": {"type": "string", "enum": ["all", "pending", "done", "overdue"]},
+                        "group_id": {"type": "integer", "description": "Filter by group ID"},
+                    }
+                }
+            },
+            {
+                "name": "get_task",
+                "description": "Get full details of a specific task by ID.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "task_id": {"type": "integer"},
+                    },
+                    "required": ["task_id"]
+                }
+            },
+            {
+                "name": "delete_task",
+                "description": "Delete a task. IMPORTANT: Only call after the user has explicitly confirmed deletion.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "task_id": {"type": "integer"},
+                    },
+                    "required": ["task_id"]
+                }
+            },
+            {
+                "name": "toggle_task",
+                "description": "Mark a task as done or revert it to pending.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "task_id": {"type": "integer"},
+                        "is_done": {"type": "boolean", "description": "True to mark done, False to mark pending"},
+                    },
+                    "required": ["task_id", "is_done"]
+                }
+            },
+            # ── Task Groups ──
+            {
+                "name": "create_task_group",
+                "description": "Create a new task group.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                    },
+                    "required": ["name"]
+                }
+            },
+            {
+                "name": "modify_task_group",
+                "description": "Rename a task group.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "group_id": {"type": "integer"},
+                        "name": {"type": "string"},
+                    },
+                    "required": ["group_id", "name"]
+                }
+            },
+            {
+                "name": "delete_task_group",
+                "description": "Delete a task group. IMPORTANT: Only call after user explicitly confirms. Tasks in this group will lose their group assignment.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "group_id": {"type": "integer"},
+                    },
+                    "required": ["group_id"]
+                }
+            },
+            # ── Habits ──
+            {
+                "name": "create_habit",
+                "description": "Create a new habit.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "habit": {"type": "string", "description": "Habit name e.g. 'read a page'"},
+                        "detail": {"type": "string", "description": "When/where context e.g. 'when I wake up'"},
+                        "identity": {"type": "string", "description": "Identity statement e.g. 'a reader'"},
+                        "frequency": {"type": "array", "items": {"type": "integer"}, "description": "Days 0=Mon…6=Sun. Empty list = every day."},
+                    },
+                    "required": ["habit", "detail", "identity"]
+                }
+            },
+            {
+                "name": "modify_habit",
+                "description": "Adjust an existing habit's name, detail, or identity.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "habit_id": {"type": "integer"},
+                        "habit": {"type": "string"},
+                        "detail": {"type": "string"},
+                        "identity": {"type": "string"},
+                    },
+                    "required": ["habit_id"]
+                }
+            },
+            {
+                "name": "delete_habit",
+                "description": "Delete a habit. IMPORTANT: Only call after user explicitly confirms.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "habit_id": {"type": "integer"},
+                    },
+                    "required": ["habit_id"]
+                }
+            },
+            {
+                "name": "log_habit",
+                "description": "Log a habit as done for a specific date.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "habit_id": {"type": "integer"},
+                        "date": {"type": "string", "description": "YYYY-MM-DD"},
+                    },
+                    "required": ["habit_id", "date"]
+                }
+            },
+            {
+                "name": "assign_accountability_partner",
+                "description": "Assign an accountability partner to a habit by their email address.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "habit_id": {"type": "integer"},
+                        "email": {"type": "string"},
+                    },
+                    "required": ["habit_id", "email"]
+                }
+            },
+            # ── Journal ──
+            {
+                "name": "add_journal_entry",
+                "description": "Write or update a journal entry for a specific date.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "date": {"type": "string", "description": "YYYY-MM-DD"},
+                        "content": {"type": "string"},
+                    },
+                    "required": ["date", "content"]
+                }
+            },
+            # ── Sleep ──
+            {
+                "name": "record_sleep",
+                "description": "Record sleep hours for a specific date.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "hours": {"type": "number"},
+                        "date": {"type": "string", "description": "YYYY-MM-DD"},
+                    },
+                    "required": ["hours", "date"]
+                }
+            },
+            # ── Friends ──
+            {
+                "name": "send_friend_request",
+                "description": "Send a friend request to a user by their email address.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "email": {"type": "string"},
+                    },
+                    "required": ["email"]
+                }
+            },
+            {
+                "name": "list_friend_requests",
+                "description": "List pending sent and received friend requests.",
+                "input_schema": {"type": "object", "properties": {}}
+            },
+            {
+                "name": "accept_friend_request",
+                "description": "Accept a received friend request by its ID.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "request_id": {"type": "integer"},
+                    },
+                    "required": ["request_id"]
+                }
+            },
+            {
+                "name": "withdraw_friend_request",
+                "description": "Withdraw a sent friend request by its ID.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "request_id": {"type": "integer"},
+                    },
+                    "required": ["request_id"]
+                }
+            },
+            {
+                "name": "remove_friend",
+                "description": "Remove a friend. IMPORTANT: Only call after user confirms.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "friendship_id": {"type": "integer", "description": "ID of the Friend record"},
+                    },
+                    "required": ["friendship_id"]
+                }
+            },
+            # ── Bookmarks ──
+            {
+                "name": "add_bookmark",
+                "description": "Add a bookmark to the reading list.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "url": {"type": "string"},
+                        "is_featured": {"type": "boolean", "description": "Show on home page (default true)"},
+                    },
+                    "required": ["name", "url"]
+                }
+            },
+            {
+                "name": "modify_bookmark",
+                "description": "Modify an existing bookmark's name, URL, or featured status.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "bookmark_id": {"type": "integer"},
+                        "name": {"type": "string"},
+                        "url": {"type": "string"},
+                        "is_featured": {"type": "boolean"},
+                    },
+                    "required": ["bookmark_id"]
+                }
+            },
+            {
+                "name": "delete_bookmark",
+                "description": "Delete a bookmark.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "bookmark_id": {"type": "integer"},
+                    },
+                    "required": ["bookmark_id"]
+                }
+            },
+            # ── Routines ──
+            {
+                "name": "add_routine_entry",
+                "description": "Add an entry to the workday or holiday routine.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "routine_type": {"type": "string", "enum": ["workday", "holiday"]},
+                        "title": {"type": "string"},
+                        "time": {"type": "string", "description": "HH:MM format e.g. 07:30"},
+                    },
+                    "required": ["routine_type", "title", "time"]
+                }
+            },
+            {
+                "name": "delete_routine_entry",
+                "description": "Delete a routine entry by ID.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "entry_id": {"type": "integer"},
+                    },
+                    "required": ["entry_id"]
+                }
+            },
+            # ── Settings ──
+            {
+                "name": "update_settings",
+                "description": "Update user preferences. Provide only the fields to change.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "font_family": {"type": "string", "enum": ["Montserrat", "Lato", "JetBrains Mono"]},
+                        "default_theme": {"type": "string", "enum": ["light", "dark"]},
+                        "clock_format": {"type": "string", "enum": ["12h", "24h"]},
+                        "sleep_time": {"type": "string", "description": "HH:MM e.g. 22:30"},
+                    }
+                }
+            },
+            # ── Analytics ──
+            {
+                "name": "analyse_habits",
+                "description": "Fetch detailed habit analytics: per-habit completion rates over the last 30 days.",
+                "input_schema": {"type": "object", "properties": {}}
+            },
+            {
+                "name": "analyse_sleep",
+                "description": "Fetch sleep analytics: average, min, max over the last 30 days.",
+                "input_schema": {"type": "object", "properties": {}}
+            },
+            {
+                "name": "get_productivity_score",
+                "description": "Get detailed productivity scores and breakdowns for the last 7 days.",
+                "input_schema": {"type": "object", "properties": {}}
+            },
+            {
+                "name": "list_achievements",
+                "description": "List all achievements and which ones the user has unlocked.",
+                "input_schema": {"type": "object", "properties": {}}
+            },
+            {
+                "name": "get_gamification",
+                "description": "Get current points, level, XP progress, and streak information.",
+                "input_schema": {"type": "object", "properties": {}}
+            },
+        ]
+
+        client = anthropic_sdk.Anthropic(api_key=api_key)
+        messages = list(history) + [{"role": "user", "content": message}]
+
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=1024,
+            system=system_prompt,
+            tools=tools,
+            messages=messages,
+        )
+
+        actions_taken = []
+
+        while response.stop_reason == "tool_use":
+            tool_results = []
+            for block in response.content:
+                if block.type != "tool_use":
+                    continue
+                tool_name = block.name
+                tool_input = block.input
+                result_text = ""
+
+                # ── Tasks ──
+                if tool_name == "create_task":
+                    data = {'task_name': tool_input['task_name'], 'user_id': user_id}
+                    group_id = tool_input.get('group_id')
+                    if not group_id:
+                        general = TaskGroup.objects.filter(user_id=user_id, name='General').first()
+                        if general:
+                            group_id = general.id
+                    if group_id:
+                        data['group_id'] = group_id
+                    if tool_input.get('deadline'):
+                        data['deadline'] = tool_input['deadline']
+                    task = Task.objects.create(**data)
+                    result_text = f"Task '{task.task_name}' created with ID {task.id}."
+                    actions_taken.append({'type': 'task_created', 'label': f'Task created: {task.task_name}'})
+
+                elif tool_name == "modify_task":
+                    try:
+                        task = Task.objects.get(id=tool_input['task_id'], user_id=user_id, is_deleted=False)
+                        if tool_input.get('task_name'):
+                            task.task_name = tool_input['task_name']
+                        if 'group_id' in tool_input:
+                            task.group_id = tool_input['group_id'] or None
+                        if 'deadline' in tool_input:
+                            task.deadline = tool_input['deadline'] if tool_input['deadline'] else None
+                        task.save()
+                        result_text = f"Task '{task.task_name}' updated."
+                        actions_taken.append({'type': 'task_modified', 'label': f'Task updated: {task.task_name}'})
+                    except Task.DoesNotExist:
+                        result_text = "Task not found."
+
+                elif tool_name == "list_tasks":
+                    f = tool_input.get('filter', 'pending')
+                    qs = Task.objects.filter(user_id=user_id, is_deleted=False)
+                    if tool_input.get('group_id'):
+                        qs = qs.filter(group_id=tool_input['group_id'])
+                    if f == 'pending':
+                        qs = qs.filter(is_done=False)
+                    elif f == 'done':
+                        qs = qs.filter(is_done=True)
+                    elif f == 'overdue':
+                        qs = qs.filter(is_done=False, deadline__date__lt=today)
+                    result_text = str(list(qs.values('id', 'task_name', 'deadline', 'is_done', 'group__name')[:50]))
+
+                elif tool_name == "get_task":
+                    try:
+                        task = Task.objects.get(id=tool_input['task_id'], user_id=user_id, is_deleted=False)
+                        result_text = (
+                            f"ID: {task.id}, Name: {task.task_name}, Done: {task.is_done}, "
+                            f"Deadline: {task.deadline}, Group: {task.group.name if task.group else None}"
+                        )
+                    except Task.DoesNotExist:
+                        result_text = "Task not found."
+
+                elif tool_name == "delete_task":
+                    try:
+                        task = Task.objects.get(id=tool_input['task_id'], user_id=user_id, is_deleted=False)
+                        task.is_deleted = True
+                        task.save()
+                        result_text = f"Task '{task.task_name}' deleted."
+                        actions_taken.append({'type': 'task_deleted', 'label': f'Task deleted: {task.task_name}'})
+                    except Task.DoesNotExist:
+                        result_text = "Task not found."
+
+                elif tool_name == "toggle_task":
+                    try:
+                        task = Task.objects.get(id=tool_input['task_id'], user_id=user_id, is_deleted=False)
+                        task.is_done = tool_input['is_done']
+                        task.save()
+                        status_str = "done" if task.is_done else "pending"
+                        result_text = f"Task '{task.task_name}' marked as {status_str}."
+                        actions_taken.append({'type': 'task_toggled', 'label': f'Task marked {status_str}: {task.task_name}'})
+                    except Task.DoesNotExist:
+                        result_text = "Task not found."
+
+                # ── Task Groups ──
+                elif tool_name == "create_task_group":
+                    group = TaskGroup.objects.create(user_id=user_id, name=tool_input['name'])
+                    result_text = f"Group '{group.name}' created with ID {group.id}."
+                    actions_taken.append({'type': 'group_created', 'label': f'Group created: {group.name}'})
+
+                elif tool_name == "modify_task_group":
+                    try:
+                        group = TaskGroup.objects.get(id=tool_input['group_id'], user_id=user_id)
+                        group.name = tool_input['name']
+                        group.save()
+                        result_text = f"Group renamed to '{group.name}'."
+                        actions_taken.append({'type': 'group_modified', 'label': f'Group renamed: {group.name}'})
+                    except TaskGroup.DoesNotExist:
+                        result_text = "Group not found."
+
+                elif tool_name == "delete_task_group":
+                    try:
+                        group = TaskGroup.objects.get(id=tool_input['group_id'], user_id=user_id)
+                        name = group.name
+                        group.delete()
+                        result_text = f"Group '{name}' deleted."
+                        actions_taken.append({'type': 'group_deleted', 'label': f'Group deleted: {name}'})
+                    except TaskGroup.DoesNotExist:
+                        result_text = "Group not found."
+
+                # ── Habits ──
+                elif tool_name == "create_habit":
+                    habit = Habit.objects.create(
+                        user_id=user_id,
+                        habit=tool_input['habit'],
+                        detail=tool_input.get('detail', ''),
+                        identity=tool_input.get('identity', ''),
+                        frequency=tool_input.get('frequency', []),
+                        status=HabitStatus.ACTIVE.value,
+                    )
+                    result_text = f"Habit '{habit.habit}' created with ID {habit.id}."
+                    actions_taken.append({'type': 'habit_created', 'label': f'Habit created: {habit.habit}'})
+
+                elif tool_name == "modify_habit":
+                    try:
+                        habit = Habit.objects.get(id=tool_input['habit_id'], user_id=user_id)
+                        if tool_input.get('habit'):
+                            habit.habit = tool_input['habit']
+                        if tool_input.get('detail') is not None:
+                            habit.detail = tool_input['detail']
+                        if tool_input.get('identity') is not None:
+                            habit.identity = tool_input['identity']
+                        habit.save()
+                        result_text = f"Habit '{habit.habit}' updated."
+                        actions_taken.append({'type': 'habit_modified', 'label': f'Habit updated: {habit.habit}'})
+                    except Habit.DoesNotExist:
+                        result_text = "Habit not found."
+
+                elif tool_name == "delete_habit":
+                    try:
+                        habit = Habit.objects.get(id=tool_input['habit_id'], user_id=user_id)
+                        name = habit.habit
+                        habit.status = HabitStatus.DELETED.value
+                        habit.save()
+                        result_text = f"Habit '{name}' deleted."
+                        actions_taken.append({'type': 'habit_deleted', 'label': f'Habit deleted: {name}'})
+                    except Habit.DoesNotExist:
+                        result_text = "Habit not found."
+
+                elif tool_name == "log_habit":
+                    try:
+                        habit = Habit.objects.get(id=tool_input['habit_id'], user_id=user_id)
+                        log_date = datetime.strptime(tool_input['date'], '%Y-%m-%d').date()
+                        HabitLog.objects.update_or_create(
+                            habit=habit, date=log_date,
+                            defaults={'is_done': True}
+                        )
+                        result_text = f"Logged '{habit.habit}' as done on {log_date}."
+                        actions_taken.append({'type': 'habit_logged', 'label': f'Logged: {habit.habit} on {log_date}'})
+                    except Habit.DoesNotExist:
+                        result_text = "Habit not found."
+
+                elif tool_name == "assign_accountability_partner":
+                    try:
+                        habit = Habit.objects.get(id=tool_input['habit_id'], user_id=user_id, status=HabitStatus.ACTIVE.value)
+                        email = tool_input['email'].strip()
+                        try:
+                            partner_user = User.objects.get(email=email)
+                        except User.DoesNotExist:
+                            partner_user = None
+                        if partner_user and partner_user.id == user_id:
+                            result_text = "Cannot add yourself as accountability partner."
+                        elif partner_user and AccountabilityPartner.objects.filter(habit=habit, partner=partner_user).exists():
+                            result_text = "Already an accountability partner for this habit."
+                        else:
+                            is_friend = partner_user and Friend.objects.filter(user_id=user_id, friend=partner_user).exists()
+                            ap_status = AccountabilityPartnerStatus.ACTIVE if is_friend else AccountabilityPartnerStatus.REQUEST_SENT
+                            AccountabilityPartner.objects.create(
+                                habit=habit, partner=partner_user, invited_email=email, status=ap_status,
+                            )
+                            result_text = f"Accountability partner {email} assigned to '{habit.habit}'."
+                            actions_taken.append({'type': 'partner_assigned', 'label': f'Accountability partner assigned: {email}'})
+                    except Habit.DoesNotExist:
+                        result_text = "Habit not found."
+
+                # ── Journal ──
+                elif tool_name == "add_journal_entry":
+                    journal_date = datetime.strptime(tool_input['date'], '%Y-%m-%d').date()
+                    DailyData.objects.update_or_create(
+                        user_id=user_id, date=journal_date,
+                        defaults={'journal': tool_input['content']}
+                    )
+                    result_text = f"Journal entry saved for {journal_date}."
+                    actions_taken.append({'type': 'journal_added', 'label': f'Journal saved for {journal_date}'})
+
+                # ── Sleep ──
+                elif tool_name == "record_sleep":
+                    sleep_date = datetime.strptime(tool_input['date'], '%Y-%m-%d').date()
+                    DailyData.objects.update_or_create(
+                        user_id=user_id, date=sleep_date,
+                        defaults={'sleep_hours': tool_input['hours']}
+                    )
+                    result_text = f"Recorded {tool_input['hours']} hours of sleep on {sleep_date}."
+                    actions_taken.append({'type': 'sleep_recorded', 'label': f"Sleep: {tool_input['hours']}h on {sleep_date}"})
+
+                # ── Friends ──
+                elif tool_name == "send_friend_request":
+                    email = tool_input['email'].strip()
+                    try:
+                        to_user = User.objects.get(email=email)
+                    except User.DoesNotExist:
+                        to_user = None
+                    from_user = User.objects.get(pk=user_id)
+                    if to_user and to_user.id == user_id:
+                        result_text = "Cannot send friend request to yourself."
+                    elif to_user and Friend.objects.filter(user_id=user_id, friend=to_user).exists():
+                        result_text = "Already friends."
+                    elif FriendRequest.objects.filter(from_user=from_user, to_user=to_user, invited_email=email if not to_user else None, status=FriendRequestStatus.PENDING).exists():
+                        result_text = "Friend request already sent."
+                    else:
+                        FriendRequest.objects.create(
+                            from_user=from_user,
+                            to_user=to_user,
+                            invited_email=email if not to_user else None,
+                            status=FriendRequestStatus.PENDING,
+                        )
+                        result_text = f"Friend request sent to {email}."
+                        actions_taken.append({'type': 'friend_request_sent', 'label': f'Friend request sent to {email}'})
+
+                elif tool_name == "list_friend_requests":
+                    received = list(FriendRequest.objects.filter(
+                        to_user_id=user_id, status=FriendRequestStatus.PENDING
+                    ).values('id', 'from_user__email', 'from_user__first_name', 'created_at'))
+                    sent = list(FriendRequest.objects.filter(
+                        from_user_id=user_id, status=FriendRequestStatus.PENDING
+                    ).values('id', 'to_user__email', 'invited_email', 'created_at'))
+                    result_text = f"Received requests: {received}\nSent requests: {sent}"
+
+                elif tool_name == "accept_friend_request":
+                    try:
+                        freq = FriendRequest.objects.get(id=tool_input['request_id'], to_user_id=user_id, status=FriendRequestStatus.PENDING)
+                        _accept_friend_request(freq)
+                        result_text = f"Friend request from {freq.from_user.email} accepted."
+                        actions_taken.append({'type': 'friend_request_accepted', 'label': 'Friend request accepted'})
+                    except FriendRequest.DoesNotExist:
+                        result_text = "Friend request not found."
+
+                elif tool_name == "withdraw_friend_request":
+                    try:
+                        freq = FriendRequest.objects.get(id=tool_input['request_id'], from_user_id=user_id, status=FriendRequestStatus.PENDING)
+                        freq.delete()
+                        result_text = "Friend request withdrawn."
+                        actions_taken.append({'type': 'friend_request_withdrawn', 'label': 'Friend request withdrawn'})
+                    except FriendRequest.DoesNotExist:
+                        result_text = "Friend request not found."
+
+                elif tool_name == "remove_friend":
+                    try:
+                        friendship = Friend.objects.get(id=tool_input['friendship_id'], user_id=user_id)
+                        friend_id = friendship.friend_id
+                        Friend.objects.filter(user_id=user_id, friend_id=friend_id).delete()
+                        Friend.objects.filter(user_id=friend_id, friend_id=user_id).delete()
+                        FriendRequest.objects.filter(
+                            from_user_id__in=[user_id, friend_id],
+                            to_user_id__in=[user_id, friend_id],
+                        ).delete()
+                        result_text = "Friend removed."
+                        actions_taken.append({'type': 'friend_removed', 'label': 'Friend removed'})
+                    except Friend.DoesNotExist:
+                        result_text = "Friendship not found."
+
+                # ── Bookmarks ──
+                elif tool_name == "add_bookmark":
+                    item = ReadingListItem.objects.create(
+                        user_id=user_id,
+                        name=tool_input['name'],
+                        url=tool_input['url'],
+                        is_featured=tool_input.get('is_featured', True),
+                    )
+                    result_text = f"Bookmark '{item.name}' added."
+                    actions_taken.append({'type': 'bookmark_added', 'label': f'Bookmark added: {item.name}'})
+
+                elif tool_name == "modify_bookmark":
+                    try:
+                        item = ReadingListItem.objects.get(id=tool_input['bookmark_id'], user_id=user_id, is_active=True)
+                        if tool_input.get('name'):
+                            item.name = tool_input['name']
+                        if tool_input.get('url'):
+                            item.url = tool_input['url']
+                        if 'is_featured' in tool_input:
+                            item.is_featured = tool_input['is_featured']
+                        item.save()
+                        result_text = f"Bookmark '{item.name}' updated."
+                        actions_taken.append({'type': 'bookmark_modified', 'label': f'Bookmark updated: {item.name}'})
+                    except ReadingListItem.DoesNotExist:
+                        result_text = "Bookmark not found."
+
+                elif tool_name == "delete_bookmark":
+                    try:
+                        item = ReadingListItem.objects.get(id=tool_input['bookmark_id'], user_id=user_id)
+                        name = item.name
+                        item.is_active = False
+                        item.save()
+                        result_text = f"Bookmark '{name}' deleted."
+                        actions_taken.append({'type': 'bookmark_deleted', 'label': f'Bookmark deleted: {name}'})
+                    except ReadingListItem.DoesNotExist:
+                        result_text = "Bookmark not found."
+
+                # ── Routines ──
+                elif tool_name == "add_routine_entry":
+                    try:
+                        entry = RoutineEntry.objects.create(
+                            user_id=user_id,
+                            routine_type=tool_input['routine_type'],
+                            title=tool_input['title'],
+                            time=tool_input['time'],
+                        )
+                        result_text = f"Routine entry '{entry.title}' at {entry.time} added to {entry.routine_type} routine."
+                        actions_taken.append({'type': 'routine_entry_added', 'label': f'Routine entry added: {entry.title}'})
+                    except Exception as e:
+                        result_text = f"Failed to add routine entry: {str(e)}"
+
+                elif tool_name == "delete_routine_entry":
+                    try:
+                        entry = RoutineEntry.objects.get(id=tool_input['entry_id'], user_id=user_id)
+                        title = entry.title
+                        entry.delete()
+                        result_text = f"Routine entry '{title}' deleted."
+                        actions_taken.append({'type': 'routine_entry_deleted', 'label': f'Routine entry deleted: {title}'})
+                    except RoutineEntry.DoesNotExist:
+                        result_text = "Routine entry not found."
+
+                # ── Settings ──
+                elif tool_name == "update_settings":
+                    ud, _ = UserDetail.objects.get_or_create(user_id=user_id)
+                    changes = []
+                    if tool_input.get('font_family'):
+                        ud.font_family = tool_input['font_family']
+                        changes.append(f"font: {tool_input['font_family']}")
+                    if tool_input.get('default_theme'):
+                        ud.default_theme = tool_input['default_theme']
+                        changes.append(f"theme: {tool_input['default_theme']}")
+                    if tool_input.get('clock_format'):
+                        ud.clock_format = tool_input['clock_format']
+                        changes.append(f"clock: {tool_input['clock_format']}")
+                    if tool_input.get('sleep_time'):
+                        ud.sleep_time = tool_input['sleep_time']
+                        changes.append(f"sleep time: {tool_input['sleep_time']}")
+                    if changes:
+                        ud.save()
+                        result_text = f"Settings updated: {', '.join(changes)}."
+                        actions_taken.append({'type': 'settings_updated', 'label': f"Settings updated: {', '.join(changes)}"})
+                    else:
+                        result_text = "No valid settings fields provided."
+
+                # ── Analytics ──
+                elif tool_name == "analyse_habits":
+                    analysis_start = today - timedelta(days=30)
+                    all_habits = list(Habit.objects.filter(user_id=user_id, status=HabitStatus.ACTIVE.value))
+                    lines = []
+                    for h in all_habits:
+                        logs = HabitLog.objects.filter(habit=h, date__gte=analysis_start, is_done=True).count()
+                        scheduled = sum(
+                            1 for i in range(30)
+                            if not h.frequency or ((today - timedelta(days=i)).weekday() in h.frequency)
+                        )
+                        rate = round(logs / scheduled * 100, 1) if scheduled > 0 else 0
+                        lines.append(f"- {h.habit}: {logs}/{scheduled} days ({rate}% completion)")
+                    result_text = "Habit analysis (last 30 days):\n" + ("\n".join(lines) if lines else "No active habits.")
+
+                elif tool_name == "analyse_sleep":
+                    sleep_data = list(DailyData.objects.filter(
+                        user_id=user_id,
+                        date__gte=today - timedelta(days=30),
+                        sleep_hours__isnull=False
+                    ).values('date', 'sleep_hours').order_by('date'))
+                    if sleep_data:
+                        hours_list = [float(s['sleep_hours']) for s in sleep_data]
+                        avg = round(sum(hours_list) / len(hours_list), 1)
+                        result_text = (
+                            f"Sleep analysis (last 30 days, {len(hours_list)} records): "
+                            f"Average: {avg}h, Min: {min(hours_list)}h, Max: {max(hours_list)}h. "
+                            f"Records: {[{'date': str(s['date']), 'hours': float(s['sleep_hours'])} for s in sleep_data]}"
+                        )
+                    else:
+                        result_text = "No sleep records in the last 30 days."
+
+                elif tool_name == "get_productivity_score":
+                    scores = []
+                    for i in range(6, -1, -1):
+                        d = today - timedelta(days=i)
+                        s = _compute_productivity_score(user_id, d, now=(timezone.now() if i == 0 else None))
+                        scores.append({'date': str(d), 'score': s['total'], 'breakdown': s['breakdown']})
+                    result_text = f"Productivity scores (last 7 days): {scores}"
+
+                elif tool_name == "list_achievements":
+                    unlocked_ids = set(UserAchievement.objects.filter(user_id=user_id).values_list('achievement_id', flat=True))
+                    achievements = list(Achievement.objects.all().values('id', 'name', 'description', 'points'))
+                    for a in achievements:
+                        a['unlocked'] = a['id'] in unlocked_ids
+                    result_text = f"Achievements: {achievements}"
+
+                elif tool_name == "get_gamification":
+                    from board.gamification import get_level_info
+                    ud, _ = UserDetail.objects.get_or_create(user_id=user_id)
+                    level_num, level_name, threshold, next_threshold = get_level_info(ud.total_points)
+                    result_text = (
+                        f"Points: {ud.total_points}, Level: {level_num} ({level_name}), "
+                        f"Current streak: {ud.current_streak} days, Longest streak: {ud.longest_streak} days, "
+                        f"XP to next level: {next_threshold - ud.total_points}"
+                    )
+
+                tool_results.append({
+                    "type": "tool_result",
+                    "tool_use_id": block.id,
+                    "content": result_text,
+                })
+
+            messages = messages + [
+                {"role": "assistant", "content": response.content},
+                {"role": "user", "content": tool_results},
+            ]
+            response = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=1024,
+                system=system_prompt,
+                tools=tools,
+                messages=messages,
+            )
+
+        reply = next((block.text for block in response.content if hasattr(block, 'text')), '')
+
+        return Response({
+            'status': 'success',
+            'reply': reply,
+            'actions': actions_taken,
+        })
 
 
 def accept_invite_by_token(request, token):

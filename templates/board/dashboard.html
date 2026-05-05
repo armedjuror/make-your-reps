@@ -1348,6 +1348,32 @@ Write freely here, like you're writing in your personal journal..." id="journal-
         </div>
     </div>
 
+    <!-- AI Assistant Modal -->
+    <div class="modal fade" id="aiModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content ai-modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-robot me-2"></i>AI Assistant
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="ai-chat-messages" id="ai-chat-messages"></div>
+                </div>
+                <div class="modal-footer ai-chat-footer">
+                    <div class="ai-input-row w-100">
+                        <input type="text" class="form-control" id="ai-chat-input"
+                               placeholder="Ask anything about your tasks, habits, sleep…" autocomplete="off">
+                        <button class="btn btn-paper btn-primary" id="ai-send-btn" onclick="AIAssistant.send()">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Mobile bottom nav bar -->
     <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
         <a class="mobile-bottom-nav-item active" data-pane="home">
@@ -1422,6 +1448,7 @@ Write freely here, like you're writing in your personal journal..." id="journal-
     <script src="{% static 'board/js/settings.js' %}"></script>
     <script src="{% static 'board/js/misc.js' %}"></script>
     <script src="{% static 'board/js/gamification.js' %}"></script>
+    <script src="{% static 'board/js/ai-assistant.js' %}"></script>
     <script>
         (function () {
             const params = new URLSearchParams(window.location.search);

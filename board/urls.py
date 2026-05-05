@@ -7,7 +7,7 @@ from board.views import (
     RoutineEntryViewSet, ReadingListItemViewSet, TimelineEventViewSet,
     SearchEngineViewSet, ProductivityScoreView, ProductivityScoreHistoryView,
     DashboardConfigView, FriendViewSet, FriendRequestViewSet, AccountabilityPartnerViewSet,
-    GamificationView, OnboardingCompleteView, FeedbackView,
+    GamificationView, OnboardingCompleteView, FeedbackView, AIAssistantView,
 )
 
 api_router = DefaultRouter()
@@ -33,5 +33,6 @@ urlpatterns = [
     path('api/gamification/', GamificationView.as_view(), name='gamification'),
     path('api/onboarding_complete/', OnboardingCompleteView.as_view(), name='onboarding-complete'),
     path('api/feedback/', FeedbackView.as_view(), name='feedback'),
+    path('api/ai/', AIAssistantView.as_view(), name='ai-assistant'),
     path('api/', include(api_router.urls)),
 ]

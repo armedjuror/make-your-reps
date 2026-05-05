@@ -1,3 +1,4 @@
+anthropic
 amqp==5.3.1
 asgiref==3.9.1
 async-timeout==5.0.1
