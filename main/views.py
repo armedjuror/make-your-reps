@@ -138,3 +138,17 @@ def manifest(request):
     }
 
     return JsonResponse(manifest_data, content_type='application/manifest+json')
+
+
+def assetlinks(request):
+    data = [{
+        "relation": ["delegate_permission/common.handle_all_urls"],
+        "target": {
+            "namespace": "android_app",
+            "package_name": "com.makeyourreps.app",
+            "sha256_cert_fingerprints": [
+                "C2:B3:9C:22:47:DF:C9:32:C6:EF:EA:93:29:C1:4C:46:CB:67:FD:0F:D9:4B:FC:25:F3:24:51:9A:B0:AC:62:53"
+            ]
+        }
+    }]
+    return JsonResponse(data, safe=False)

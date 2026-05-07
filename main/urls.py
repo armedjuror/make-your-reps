@@ -1,7 +1,8 @@
 from django.urls import path
 
 from board.views import accept_invite_by_token
-from main.views import index, logout_view, refresh, privacy_policy, manifest, release_log, delete_account, unsubscribe, internal_dashboard
+from main.views import index, logout_view, refresh, privacy_policy, manifest, release_log, delete_account, unsubscribe, \
+    internal_dashboard, assetlinks
 
 urlpatterns = [
     path('', index, name='index'),
@@ -14,4 +15,5 @@ urlpatterns = [
     path('accept-invite/<uuid:token>/', accept_invite_by_token, name='accept-invite'),
     path('unsubscribe/<uuid:token>/', unsubscribe, name='unsubscribe'),
     path('internal/', internal_dashboard, name='internal-dashboard'),
+    path('.well-known/assetlinks.json', assetlinks),
 ]
