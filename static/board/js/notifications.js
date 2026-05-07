@@ -197,6 +197,12 @@ const BrowserNotify = {
         const btn = document.getElementById('test-push-notif-btn');
         btn.disabled = true;
 
+        // Force SW update so push handlers are definitely active
+        if ('serviceWorker' in navigator) {
+            const reg = await navigator.serviceWorker.getRegistration();
+            if (reg) await reg.update();
+        }
+
         setStatus('Registering push subscription…');
         const sub = await BrowserNotify.subscribePush({ force: true });
         if (!sub.ok) {

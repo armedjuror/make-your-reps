@@ -4,7 +4,7 @@
  * (server-rendered Django app — HTML must always be fresh from network)
  */
 
-const CACHE = 'myr-static-v1.2';
+const CACHE = 'myr-static-v1.4';
 
 // Cache only immutable static assets on install
 self.addEventListener('install', e => {
@@ -55,17 +55,29 @@ self.addEventListener('fetch', e => {
 // ── Push Notifications ──────────────────────────────────────────────────────
 
 self.addEventListener('push', e => {
-    if (!e.data) return;
-    let data = {};
-    try { data = e.data.json(); } catch { data = { title: 'Steps', body: e.data.text() }; }
+    // Always show a notification — mobile browsers require it for every push event
+    let data = { title: 'Make Your Reps', body: 'You have a new notification.', url: '/board/' };
+    if (e.data) {
+        try { data = { ...data, ...e.data.json() }; } catch { data.body = e.data.text() || data.body; }
+    }
+
+    // Notify any open clients that push was received (for debugging)
+    self.clients.matchAll({ includeUncontrolled: true }).then(clientList => {
+        clientList.forEach(c => c.postMessage({ type: 'PUSH_RECEIVED', data }));
+    });
 
     e.waitUntil(
-        self.registration.showNotification(data.title || 'Steps', {
-            body: data.body || '',
+        self.registration.showNotification(data.title, {
+            body: data.body,
             icon: '/static/images/logo.png',
             badge: '/static/images/logo.png',
-            data: { url: data.url || '/board/' },
+            data: { url: data.url },
             vibrate: [150, 50, 150],
+        }).catch(err => {
+            // Log showNotification errors back to clients
+            self.clients.matchAll({ includeUncontrolled: true }).then(list =>
+                list.forEach(c => c.postMessage({ type: 'PUSH_ERROR', error: String(err) }))
+            );
         })
     );
 });
