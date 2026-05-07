@@ -1533,16 +1533,20 @@ class AccountabilityPartnerViewSet(AuthenticatedModelViewSet):
 
     @action(detail=True, methods=['post'])
     def check(self, request, **kwargs):
-        """Return today's habit status for this partnership (partner-only, no side effects)."""
+        """Return the habit status for this partnership on the given date (partner-only, no side effects)."""
         user_id = request.session.get('user_id')
         ap = self.get_queryset().get(pk=int(kwargs['pk']), partner_id=user_id, status=AccountabilityPartnerStatus.ACTIVE)
-        today = timezone.localdate()
-        log = HabitLog.objects.filter(habit=ap.habit, date=today).first()
+        date_str = request.data.get('date')
+        try:
+            check_date = datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else timezone.localdate()
+        except ValueError:
+            check_date = timezone.localdate()
+        log = HabitLog.objects.filter(habit=ap.habit, date=check_date).first()
         return Response({
             'status': 'success',
             'data': {
                 'habit': ap.habit.habit,
-                'date': today.isoformat(),
+                'date': check_date.isoformat(),
                 'is_done': log.is_done if log else False,
             }
         })

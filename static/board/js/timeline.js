@@ -358,7 +358,7 @@ const Timeline = {
     async checkHabit(eventId, apId) {
         const btn = document.getElementById(`check-btn-${eventId}`);
         if (btn) btn.disabled = true;
-        const res = await apiClient.post(`board/api/accountability_partners/${apId}/check/`);
+        const res = await apiClient.post(`board/api/accountability_partners/${apId}/check/`, { date: this.currentDate });
         if (res.status === 'success') {
             const { is_done } = res.data;
             const label = is_done
