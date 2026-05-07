@@ -19,23 +19,36 @@ const BrowserNotify = {
     },
 
     async subscribePush() {
-        if (!('PushManager' in window) || !('serviceWorker' in navigator)) return;
+        if (!('PushManager' in window) || !('serviceWorker' in navigator)) {
+            return { ok: false, reason: 'Push not supported on this browser/device.' };
+        }
+        if (Notification.permission !== 'granted') {
+            return { ok: false, reason: 'Notification permission not granted.' };
+        }
         try {
             const reg = await navigator.serviceWorker.ready;
+
+            // Unsubscribe stale subscription so we always get a fresh one
             const existing = await reg.pushManager.getSubscription();
             if (existing) {
                 await this._sendSubscriptionToServer(existing);
-                return;
+                return { ok: true };
             }
+
             const keyRes = await apiClient.get('board/api/push/vapid-key/');
-            if (!keyRes.public_key) return;
+            if (!keyRes.public_key) {
+                return { ok: false, reason: 'VAPID public key not configured on server.' };
+            }
+
             const subscription = await reg.pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey: this._urlBase64ToUint8Array(keyRes.public_key),
             });
             await this._sendSubscriptionToServer(subscription);
+            return { ok: true };
         } catch (e) {
-            console.warn('[Push] Subscribe failed:', e);
+            console.error('[Push] Subscribe failed:', e);
+            return { ok: false, reason: e.message || String(e) };
         }
     },
 
@@ -182,12 +195,22 @@ const BrowserNotify = {
     document.getElementById('test-push-notif-btn')?.addEventListener('click', async () => {
         const btn = document.getElementById('test-push-notif-btn');
         btn.disabled = true;
+
+        setStatus('Registering push subscription…');
+        const sub = await BrowserNotify.subscribePush();
+        if (!sub.ok) {
+            btn.disabled = false;
+            setStatus('Subscription failed: ' + sub.reason, false);
+            return;
+        }
+
+        setStatus('Sending test push…');
         const res = await apiClient.post('board/api/push/test/');
         btn.disabled = false;
         if (res.status === 'success') {
-            setStatus('Push notification sent — check your device.');
+            setStatus('Push sent — you should receive a notification shortly.');
         } else {
-            setStatus(res.message || 'Push failed. Make sure push is subscribed and VAPID keys are set.', false);
+            setStatus(res.message || 'Push failed. Check VAPID keys are configured.', false);
         }
     });
 }());
