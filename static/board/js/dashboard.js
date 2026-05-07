@@ -375,6 +375,10 @@ const Onboarding = {
         document.dispatchEvent(new Event('appConfigLoaded'));
         BrowserNotify.updatePermissionUI();
         BrowserNotify.startTimelinePoller();
+        // Register push subscription if permission was already granted
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+            BrowserNotify.subscribePush();
+        }
 
         if (!AppConfig.userDetail?.is_onboarded) {
             Onboarding.show();
