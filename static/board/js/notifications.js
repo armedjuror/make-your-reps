@@ -175,7 +175,7 @@ const BrowserNotify = {
             setStatus('Enable browser notifications first.', false);
             return;
         }
-        BrowserNotify.send('Steps — Test', 'Browser notifications are working!', { pane: 'home' });
+        BrowserNotify.send('Make Your Reps', 'Browser notifications are working!', { pane: 'home' });
         setStatus('Browser notification sent.');
     });
 

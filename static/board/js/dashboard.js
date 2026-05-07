@@ -380,6 +380,15 @@ const Onboarding = {
             BrowserNotify.subscribePush();
         }
 
+        // Handle pane-switch messages from service worker (notification tap)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.addEventListener('message', e => {
+                if (e.data?.type === 'SWITCH_PANE' && e.data.pane) {
+                    switchPane(e.data.pane);
+                }
+            });
+        }
+
         if (!AppConfig.userDetail?.is_onboarded) {
             Onboarding.show();
         }
