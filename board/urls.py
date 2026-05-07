@@ -8,7 +8,7 @@ from board.views import (
     SearchEngineViewSet, ProductivityScoreView, ProductivityScoreHistoryView,
     DashboardConfigView, FriendViewSet, FriendRequestViewSet, AccountabilityPartnerViewSet,
     GamificationView, OnboardingCompleteView, FeedbackView,
-    PushVapidKeyView, PushSubscribeView,
+    PushVapidKeyView, PushSubscribeView, PushTestView,
 )
 from board.calendar_views import (
     CalendarAuthView, CalendarCallbackView, CalendarListView,
@@ -50,5 +50,6 @@ urlpatterns = [
     # Push notifications
     path('api/push/vapid-key/', PushVapidKeyView.as_view(), name='push-vapid-key'),
     path('api/push/subscribe/', PushSubscribeView.as_view(), name='push-subscribe'),
+    path('api/push/test/', PushTestView.as_view(), name='push-test'),
     path('api/', include(api_router.urls)),
 ]

@@ -1663,6 +1663,24 @@ class PushSubscribeView(APIView):
         return Response({'status': 'success'})
 
 
+class PushTestView(APIView):
+    """Send an immediate test push notification to the requesting user."""
+
+    def post(self, request):
+        from board.push import send_push_to_user
+        user_id = request.session.get('user_id')
+        if not user_id:
+            return Response({'status': 'error', 'message': 'Not authenticated'}, status=401)
+        if not PushSubscription.objects.filter(user_id=user_id).exists():
+            return Response({'status': 'error', 'message': 'No push subscription found. Enable notifications first.'})
+        try:
+            user = User.objects.get(id=user_id)
+            send_push_to_user(user, 'Steps — Test', 'Push notifications are working on this device!')
+            return Response({'status': 'success'})
+        except Exception as e:
+            return Response({'status': 'error', 'message': str(e)})
+
+
 def _compute_productivity_score(user_id, target_date, now=None):
     """Compute productivity score for a given date. Returns a dict."""
     from datetime import date as date_type

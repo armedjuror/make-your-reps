@@ -149,3 +149,37 @@ const BrowserNotify = {
         return map[type] || 'Steps';
     },
 };
+
+(function initNotificationTestButtons() {
+    const statusEl = () => document.getElementById('test-notif-status');
+
+    const setStatus = (msg, ok = true) => {
+        const el = statusEl();
+        if (!el) return;
+        el.textContent = msg;
+        el.style.color = ok ? 'var(--ink-brown)' : 'var(--danger, #c0392b)';
+        setTimeout(() => { if (el) el.textContent = ''; }, 4000);
+    };
+
+    document.getElementById('test-browser-notif-btn')?.addEventListener('click', () => {
+        if (Notification.permission !== 'granted') {
+            setStatus('Enable browser notifications first.', false);
+            return;
+        }
+        BrowserNotify.send('Steps — Test', 'Browser notifications are working!', { pane: 'home' });
+        setStatus('Browser notification sent.');
+    });
+
+    document.getElementById('test-push-notif-btn')?.addEventListener('click', async () => {
+        const btn = document.getElementById('test-push-notif-btn');
+        btn.disabled = true;
+        const res = await apiClient.post('board/api/push/test/');
+        btn.disabled = false;
+        if (res.status === 'success') {
+            setStatus('Push notification sent — check your device.');
+        } else {
+            setStatus(res.message || 'Push failed. Make sure push is subscribed and VAPID keys are set.', false);
+        }
+    });
+}());
+
