@@ -4,7 +4,7 @@
  * (server-rendered Django app — HTML must always be fresh from network)
  */
 
-const CACHE = 'myr-static-v4';
+const CACHE = 'myr-static-v1.1';
 
 // Cache only immutable static assets on install
 self.addEventListener('install', e => {
