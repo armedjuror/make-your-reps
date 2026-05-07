@@ -4,7 +4,7 @@
  * (server-rendered Django app — HTML must always be fresh from network)
  */
 
-const CACHE = 'myr-static-v2';
+const CACHE = 'myr-static-v3';
 
 // Cache only immutable static assets on install
 self.addEventListener('install', e => {
@@ -50,4 +50,37 @@ self.addEventListener('fetch', e => {
 
     // Network-first for everything else (API calls etc.)
     e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+});
+
+// ── Push Notifications ──────────────────────────────────────────────────────
+
+self.addEventListener('push', e => {
+    if (!e.data) return;
+    let data = {};
+    try { data = e.data.json(); } catch { data = { title: 'Steps', body: e.data.text() }; }
+
+    e.waitUntil(
+        self.registration.showNotification(data.title || 'Steps', {
+            body: data.body || '',
+            icon: '/static/images/logo.png',
+            badge: '/static/images/logo.png',
+            data: { url: data.url || '/board/' },
+            vibrate: [150, 50, 150],
+        })
+    );
+});
+
+self.addEventListener('notificationclick', e => {
+    e.notification.close();
+    const url = e.notification.data?.url || '/board/';
+    e.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+            for (const client of list) {
+                if (client.url.includes('/board/') && 'focus' in client) {
+                    return client.focus();
+                }
+            }
+            return clients.openWindow(url);
+        })
+    );
 });

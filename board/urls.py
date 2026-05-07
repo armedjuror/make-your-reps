@@ -8,6 +8,7 @@ from board.views import (
     SearchEngineViewSet, ProductivityScoreView, ProductivityScoreHistoryView,
     DashboardConfigView, FriendViewSet, FriendRequestViewSet, AccountabilityPartnerViewSet,
     GamificationView, OnboardingCompleteView, FeedbackView,
+    PushVapidKeyView, PushSubscribeView,
 )
 from board.calendar_views import (
     CalendarAuthView, CalendarCallbackView, CalendarListView,
@@ -46,5 +47,8 @@ urlpatterns = [
     path('api/calendar/accounts/<int:token_id>/disconnect/', CalendarDisconnectView.as_view(), name='calendar-disconnect'),
     path('api/calendar/calendars/<int:cal_id>/', CalendarUpdateView.as_view(), name='calendar-update'),
     path('api/calendar/webhook/<int:cal_id>/', calendar_webhook, name='calendar-webhook'),
+    # Push notifications
+    path('api/push/vapid-key/', PushVapidKeyView.as_view(), name='push-vapid-key'),
+    path('api/push/subscribe/', PushSubscribeView.as_view(), name='push-subscribe'),
     path('api/', include(api_router.urls)),
 ]

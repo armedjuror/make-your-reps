@@ -13,6 +13,45 @@ const BrowserNotify = {
             await Notification.requestPermission();
         }
         this.updatePermissionUI();
+        if (Notification.permission === 'granted') {
+            await this.subscribePush();
+        }
+    },
+
+    async subscribePush() {
+        if (!('PushManager' in window) || !('serviceWorker' in navigator)) return;
+        try {
+            const reg = await navigator.serviceWorker.ready;
+            const existing = await reg.pushManager.getSubscription();
+            if (existing) {
+                await this._sendSubscriptionToServer(existing);
+                return;
+            }
+            const keyRes = await apiClient.get('board/api/push/vapid-key/');
+            if (!keyRes.public_key) return;
+            const subscription = await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: this._urlBase64ToUint8Array(keyRes.public_key),
+            });
+            await this._sendSubscriptionToServer(subscription);
+        } catch (e) {
+            console.warn('[Push] Subscribe failed:', e);
+        }
+    },
+
+    async _sendSubscriptionToServer(subscription) {
+        const sub = subscription.toJSON();
+        await apiClient.post('board/api/push/subscribe/', {
+            endpoint: sub.endpoint,
+            keys: sub.keys,
+        });
+    },
+
+    _urlBase64ToUint8Array(base64String) {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+        const raw = atob(base64);
+        return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
     },
 
     updatePermissionUI() {

@@ -170,6 +170,52 @@ def _generate_accountability_partner_events(user, today):
 
 
 @shared_task
+def send_timeline_push_notifications():
+    """
+    Runs every 5 minutes. Finds timeline events due in the next 5 minutes
+    that haven't been push-notified yet and sends a push to each user's
+    subscribed devices.
+    """
+    from board.push import send_push_to_user
+
+    now = timezone.now()
+    window_end = now + timedelta(minutes=5)
+
+    events = (
+        TimelineEvent.objects
+        .filter(timestamp__gte=now, timestamp__lt=window_end, push_notified=False)
+        .select_related('user')
+    )
+
+    type_titles = {
+        'habit': 'Habit Reminder',
+        'todo': 'Task Due',
+        'routine': 'Routine',
+        'sleep_tracker': 'Sleep Tracker',
+        'journal': 'Journal Time',
+        'text': 'Reminder',
+        'meeting': 'Meeting',
+        'friend_request': 'Friend Request',
+        'accountability_invite': 'Accountability Invite',
+        'accountability_habit': 'Accountability Check',
+    }
+
+    ids_to_mark = []
+    for event in events:
+        title = type_titles.get(event.event_type, 'Steps')
+        try:
+            send_push_to_user(event.user, title, event.event)
+        except Exception:
+            pass
+        ids_to_mark.append(event.pk)
+
+    if ids_to_mark:
+        TimelineEvent.objects.filter(pk__in=ids_to_mark).update(push_notified=True)
+
+    return f'Push notifications sent for {len(ids_to_mark)} events.'
+
+
+@shared_task
 def cleanup_old_timeline_events():
     """
     Delete timeline events older than 30 days.

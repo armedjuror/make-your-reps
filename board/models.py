@@ -326,6 +326,7 @@ class TimelineEvent(models.Model):
     reference = models.JSONField(null=True, blank=True)  # {"model": "Habit", "id": 5}
     action = models.JSONField(null=True, blank=True)  # {"mark_done": [true, false]} or {"status": ["pending","done"]}
     action_response = models.JSONField(null=True, blank=True)  # {"mark_done": true}
+    push_notified = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -338,6 +339,17 @@ class TimelineEvent(models.Model):
 
     def __str__(self):
         return f'{self.user} - {self.event_type} - {self.event[:50]}'
+
+
+class PushSubscription(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='push_subscriptions')
+    endpoint = models.TextField(unique=True)
+    p256dh = models.TextField()
+    auth = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'{self.user} - {self.endpoint[:60]}'
 
 
 class SearchEngine(models.Model):
