@@ -4,7 +4,7 @@
  * (server-rendered Django app — HTML must always be fresh from network)
  */
 
-const CACHE = 'myr-static-v1.4';
+const CACHE = 'myr-static-v1.5';
 
 // Cache only immutable static assets on install
 self.addEventListener('install', e => {
@@ -52,52 +52,3 @@ self.addEventListener('fetch', e => {
     e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
 });
 
-// ── Push Notifications ──────────────────────────────────────────────────────
-
-self.addEventListener('push', e => {
-    // Always show a notification — mobile browsers require it for every push event
-    let data = { title: 'Make Your Reps', body: 'You have a new notification.', url: '/board/' };
-    if (e.data) {
-        try { data = { ...data, ...e.data.json() }; } catch { data.body = e.data.text() || data.body; }
-    }
-
-    // Notify any open clients that push was received (for debugging)
-    self.clients.matchAll({ includeUncontrolled: true }).then(clientList => {
-        clientList.forEach(c => c.postMessage({ type: 'PUSH_RECEIVED', data }));
-    });
-
-    e.waitUntil(
-        self.registration.showNotification(data.title, {
-            body: data.body,
-            icon: '/static/images/logo.png',
-            badge: '/static/images/logo.png',
-            data: { url: data.url },
-            vibrate: [150, 50, 150],
-        }).catch(err => {
-            // Log showNotification errors back to clients
-            self.clients.matchAll({ includeUncontrolled: true }).then(list =>
-                list.forEach(c => c.postMessage({ type: 'PUSH_ERROR', error: String(err) }))
-            );
-        })
-    );
-});
-
-self.addEventListener('notificationclick', e => {
-    e.notification.close();
-    const data = e.notification.data || {};
-    const url = data.url || '/board/';
-    e.waitUntil(
-        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-            for (const client of list) {
-                if (client.url.includes('/board/') && 'focus' in client) {
-                    // Tell the open tab to switch pane if we have one
-                    if (data.pane) {
-                        client.postMessage({ type: 'SWITCH_PANE', pane: data.pane, subTab: data.subTab || null });
-                    }
-                    return client.focus();
-                }
-            }
-            return clients.openWindow(url);
-        })
-    );
-});

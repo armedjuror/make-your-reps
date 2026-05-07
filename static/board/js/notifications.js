@@ -13,59 +13,6 @@ const BrowserNotify = {
             await Notification.requestPermission();
         }
         this.updatePermissionUI();
-        if (Notification.permission === 'granted') {
-            await this.subscribePush();
-        }
-    },
-
-    async subscribePush({ force = false } = {}) {
-        if (!('PushManager' in window) || !('serviceWorker' in navigator)) {
-            return { ok: false, reason: 'Push not supported on this browser/device.' };
-        }
-        if (Notification.permission !== 'granted') {
-            return { ok: false, reason: 'Notification permission not granted.' };
-        }
-        try {
-            const reg = await navigator.serviceWorker.ready;
-            const keyRes = await apiClient.get('board/api/push/vapid-key/');
-            if (!keyRes.public_key) {
-                return { ok: false, reason: 'VAPID public key not configured on server.' };
-            }
-            const appKey = this._urlBase64ToUint8Array(keyRes.public_key);
-
-            const existing = await reg.pushManager.getSubscription();
-            if (existing && !force) {
-                await this._sendSubscriptionToServer(existing);
-                return { ok: true };
-            }
-            // Force-unsubscribe so we get a fresh subscription with the current VAPID key
-            if (existing) await existing.unsubscribe();
-
-            const subscription = await reg.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: appKey,
-            });
-            await this._sendSubscriptionToServer(subscription);
-            return { ok: true };
-        } catch (e) {
-            console.error('[Push] Subscribe failed:', e);
-            return { ok: false, reason: e.message || String(e) };
-        }
-    },
-
-    async _sendSubscriptionToServer(subscription) {
-        const sub = subscription.toJSON();
-        await apiClient.post('board/api/push/subscribe/', {
-            endpoint: sub.endpoint,
-            keys: sub.keys,
-        });
-    },
-
-    _urlBase64ToUint8Array(base64String) {
-        const padding = '='.repeat((4 - base64String.length % 4) % 4);
-        const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-        const raw = atob(base64);
-        return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
     },
 
     updatePermissionUI() {
@@ -88,23 +35,8 @@ const BrowserNotify = {
     send(title, body, options = {}) {
         if (!('Notification' in window) || Notification.permission !== 'granted') return;
         const { pane, subTab, ...notifOptions } = options;
-        const swOptions = {
-            body,
-            icon: '/static/images/logo.png',
-            data: { pane, subTab },
-            ...notifOptions,
-        };
-        // Mobile browsers require showNotification via service worker
-        // (new Notification() is unsupported or restricted on mobile)
-        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-            navigator.serviceWorker.ready
-                .then(reg => reg.showNotification(title, swOptions))
-                .catch(e => console.error('[BrowserNotify] SW notify failed:', e));
-            return;
-        }
-        // Desktop fallback
         try {
-            const n = new Notification(title, swOptions);
+            const n = new Notification(title, { body, icon: '/static/images/logo.png', ...notifOptions });
             n.onclick = () => {
                 window.focus();
                 n.close();
@@ -192,33 +124,4 @@ const BrowserNotify = {
         BrowserNotify.send('Make Your Reps', 'Browser notifications are working!', { pane: 'home' });
         setStatus('Browser notification sent.');
     });
-
-    document.getElementById('test-push-notif-btn')?.addEventListener('click', async () => {
-        const btn = document.getElementById('test-push-notif-btn');
-        btn.disabled = true;
-
-        // Force SW update so push handlers are definitely active
-        if ('serviceWorker' in navigator) {
-            const reg = await navigator.serviceWorker.getRegistration();
-            if (reg) await reg.update();
-        }
-
-        setStatus('Registering push subscription…');
-        const sub = await BrowserNotify.subscribePush({ force: true });
-        if (!sub.ok) {
-            btn.disabled = false;
-            setStatus('Subscription failed: ' + sub.reason, false);
-            return;
-        }
-
-        setStatus('Sending test push…');
-        const res = await apiClient.post('board/api/push/test/');
-        btn.disabled = false;
-        if (res.status === 'success') {
-            setStatus('Push sent — you should receive a notification shortly.');
-        } else {
-            setStatus(res.message || 'Push failed. Check VAPID keys are configured.', false);
-        }
-    });
 }());
-

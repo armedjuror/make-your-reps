@@ -375,19 +375,6 @@ const Onboarding = {
         document.dispatchEvent(new Event('appConfigLoaded'));
         BrowserNotify.updatePermissionUI();
         BrowserNotify.startTimelinePoller();
-        // Register push subscription if permission was already granted
-        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-            BrowserNotify.subscribePush();
-        }
-
-        // Handle pane-switch messages from service worker (notification tap)
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.addEventListener('message', e => {
-                if (e.data?.type === 'SWITCH_PANE' && e.data.pane) {
-                    switchPane(e.data.pane);
-                }
-            });
-        }
 
         if (!AppConfig.userDetail?.is_onboarded) {
             Onboarding.show();

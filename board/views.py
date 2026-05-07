@@ -28,7 +28,7 @@ from main.config_manager import get_config
 from main.utils import NoDestroyViewSet, AuthenticatedModelViewSet
 from board.tasks import generate_timeline_for_new_item
 from board.gamification import award_points, deduct_points, update_daily_streak
-from board.models import GoogleCalendarToken, LinkedCalendar, PushSubscription
+from board.models import GoogleCalendarToken, LinkedCalendar
 
 
 # ──────────────────────────────────────
@@ -1625,58 +1625,6 @@ class FeedbackView(APIView):
         user = User.objects.filter(id=user_id).first() if user_id else None
         Feedback.objects.create(user=user, type=fb_type, subject=subject, message=message)
         return Response({'status': 'success'})
-
-
-# ── Push Notifications ──────────────────────────────────────────────────────
-
-class PushVapidKeyView(APIView):
-    """Return the VAPID public key so the frontend can subscribe."""
-    def get(self, request):
-        from django.conf import settings
-        return Response({'public_key': settings.VAPID_PUBLIC_KEY})
-
-
-class PushSubscribeView(APIView):
-    """Store or remove a push subscription for the authenticated user."""
-
-    def post(self, request):
-        user_id = request.session.get('user_id')
-        if not user_id:
-            return Response({'status': 'error'}, status=401)
-        endpoint = request.data.get('endpoint')
-        keys = request.data.get('keys', {})
-        p256dh = keys.get('p256dh', '')
-        auth = keys.get('auth', '')
-        if not endpoint or not p256dh or not auth:
-            return Response({'status': 'error', 'message': 'Missing fields'}, status=400)
-        PushSubscription.objects.update_or_create(
-            endpoint=endpoint,
-            defaults={'user_id': user_id, 'p256dh': p256dh, 'auth': auth},
-        )
-        return Response({'status': 'success'})
-
-    def delete(self, request):
-        user_id = request.session.get('user_id')
-        endpoint = request.data.get('endpoint')
-        if user_id and endpoint:
-            PushSubscription.objects.filter(user_id=user_id, endpoint=endpoint).delete()
-        return Response({'status': 'success'})
-
-
-class PushTestView(APIView):
-    """Send an immediate test push notification to the requesting user."""
-
-    def post(self, request):
-        from board.push import send_push_test
-        user_id = request.session.get('user_id')
-        if not user_id:
-            return Response({'status': 'error', 'message': 'Not authenticated'}, status=401)
-        try:
-            user = User.objects.get(id=user_id)
-            send_push_test(user)
-            return Response({'status': 'success'})
-        except Exception as e:
-            return Response({'status': 'error', 'message': str(e)})
 
 
 def _compute_productivity_score(user_id, target_date, now=None):

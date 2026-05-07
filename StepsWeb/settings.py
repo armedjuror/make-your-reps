@@ -163,11 +163,6 @@ GOOGLE_CALENDAR_CLIENT_SECRET = os.environ.get('GOOGLE_CALENDAR_CLIENT_SECRET', 
 GOOGLE_CALENDAR_REDIRECT_URI = os.environ.get('GOOGLE_CALENDAR_REDIRECT_URI', 'https://makeyourreps.com/board/api/calendar/callback/')
 SITE_URL = os.environ.get('SITE_URL', 'https://makeyourreps.com')
 
-# Web Push / VAPID
-VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY', '').replace('\\n', '\n')
-VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY', '')
-VAPID_CLAIMS = {'sub': os.environ.get('VAPID_ADMIN_EMAIL', 'mailto:admin@makeyourreps.com')}
-
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'APP': {
@@ -240,11 +235,6 @@ CELERY_BEAT_SCHEDULE = {
     'send-reengagement-emails-daily': {
         'task': 'board.tasks.send_reengagement_emails',
         'schedule': crontab(hour=9, minute=0),
-    },
-    # Runs every 5 minutes — sends push notifications for upcoming timeline events
-    'send-timeline-push-notifications': {
-        'task': 'board.tasks.send_timeline_push_notifications',
-        'schedule': crontab(minute='*/5'),
     },
 }
 
