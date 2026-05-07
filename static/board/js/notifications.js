@@ -18,7 +18,7 @@ const BrowserNotify = {
         }
     },
 
-    async subscribePush() {
+    async subscribePush({ force = false } = {}) {
         if (!('PushManager' in window) || !('serviceWorker' in navigator)) {
             return { ok: false, reason: 'Push not supported on this browser/device.' };
         }
@@ -27,22 +27,23 @@ const BrowserNotify = {
         }
         try {
             const reg = await navigator.serviceWorker.ready;
-
-            // Unsubscribe stale subscription so we always get a fresh one
-            const existing = await reg.pushManager.getSubscription();
-            if (existing) {
-                await this._sendSubscriptionToServer(existing);
-                return { ok: true };
-            }
-
             const keyRes = await apiClient.get('board/api/push/vapid-key/');
             if (!keyRes.public_key) {
                 return { ok: false, reason: 'VAPID public key not configured on server.' };
             }
+            const appKey = this._urlBase64ToUint8Array(keyRes.public_key);
+
+            const existing = await reg.pushManager.getSubscription();
+            if (existing && !force) {
+                await this._sendSubscriptionToServer(existing);
+                return { ok: true };
+            }
+            // Force-unsubscribe so we get a fresh subscription with the current VAPID key
+            if (existing) await existing.unsubscribe();
 
             const subscription = await reg.pushManager.subscribe({
                 userVisibleOnly: true,
-                applicationServerKey: this._urlBase64ToUint8Array(keyRes.public_key),
+                applicationServerKey: appKey,
             });
             await this._sendSubscriptionToServer(subscription);
             return { ok: true };
@@ -197,7 +198,7 @@ const BrowserNotify = {
         btn.disabled = true;
 
         setStatus('Registering push subscription…');
-        const sub = await BrowserNotify.subscribePush();
+        const sub = await BrowserNotify.subscribePush({ force: true });
         if (!sub.ok) {
             btn.disabled = false;
             setStatus('Subscription failed: ' + sub.reason, false);
