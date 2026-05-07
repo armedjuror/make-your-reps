@@ -31,9 +31,9 @@ def generate_daily_timeline(user_id=None):
     for user in users:
         _generate_habit_events(user, today, weekday)
         _generate_todo_events(user, today)
-        _generate_routine_events(user, today, weekday)
         _generate_system_reminders(user, today)
         _generate_accountability_partner_events(user, today)
+        _sync_calendar_events(user, today)
 
 
 def _generate_habit_events(user, today, weekday):
@@ -118,39 +118,13 @@ def _generate_todo_events(user, today):
             )
 
 
-def _generate_routine_events(user, today, weekday):
-    """Create timeline events from routine entries."""
-    # Determine routine type: weekday (Mon-Fri) = workday, weekend = holiday
-    is_weekend = weekday in [5, 6]
-    routine_type = 'holiday' if is_weekend else 'workday'
-
-    entries = RoutineEntry.objects.filter(
-        user=user,
-        routine_type=routine_type,
-    )
-
-    for entry in entries:
-        timestamp = timezone.make_aware(
-            datetime.combine(today, entry.time)
-        )
-
-        exists = TimelineEvent.objects.filter(
-            user=user,
-            event_type=TimelineEventType.ROUTINE,
-            reference__model='RoutineEntry',
-            reference__id=entry.id,
-            timestamp__date=today
-        ).exists()
-
-        if not exists:
-            TimelineEvent.objects.create(
-                user=user,
-                timestamp=timestamp,
-                event_type=TimelineEventType.ROUTINE,
-                event=entry.title,
-                reference={'model': 'RoutineEntry', 'id': entry.id},
-                action=None,  # Routine events have no action
-            )
+def _sync_calendar_events(user, today):
+    """Pull Google Calendar events for today and upsert into TimelineEvent."""
+    try:
+        from board.calendar_views import sync_calendar_events_for_user_date
+        sync_calendar_events_for_user_date(user, today)
+    except Exception:
+        pass
 
 
 def _generate_system_reminders(user, today):
@@ -162,69 +136,8 @@ def _generate_system_reminders(user, today):
     """
     user_detail = UserDetail.objects.filter(user=user).first()
 
-    # ── Sleep tracker reminder at 7:00 AM ──
-    sleep_track_time = timezone.make_aware(
-        datetime.combine(today, time(7, 0))
-    )
-    if not TimelineEvent.objects.filter(
-        user=user,
-        event_type=TimelineEventType.SLEEP_TRACKER,
-        timestamp__date=today
-    ).exists():
-        TimelineEvent.objects.create(
-            user=user,
-            timestamp=sleep_track_time,
-            event_type=TimelineEventType.SLEEP_TRACKER,
-            event="Good morning! How many hours did you sleep last night?",
-            reference=None,
-            action={'log_sleep': [True, False]},
-        )
 
-    # ── Journal reminder ──
-    if user_detail and user_detail.sleep_time:
-        # 30 minutes before sleep time
-        sleep_dt = datetime.combine(today, user_detail.sleep_time)
-        journal_dt = sleep_dt - timedelta(minutes=30)
-        journal_time = journal_dt.time()
-    else:
-        journal_time = time(21, 0)  # 9:00 PM default
 
-    journal_timestamp = timezone.make_aware(
-        datetime.combine(today, journal_time)
-    )
-    if not TimelineEvent.objects.filter(
-        user=user,
-        event_type=TimelineEventType.JOURNAL,
-        timestamp__date=today
-    ).exists():
-        TimelineEvent.objects.create(
-            user=user,
-            timestamp=journal_timestamp,
-            event_type=TimelineEventType.JOURNAL,
-            event="Time to reflect! Write a few lines in your journal.",
-            reference=None,
-            action={'open_journal': [True, False]},
-        )
-
-    # ── Sleep notification at sleep_time ──
-    if user_detail and user_detail.sleep_time:
-        sleep_timestamp = timezone.make_aware(
-            datetime.combine(today, user_detail.sleep_time)
-        )
-        if not TimelineEvent.objects.filter(
-            user=user,
-            event_type=TimelineEventType.TEXT,
-            timestamp=sleep_timestamp,
-            event__contains='time to sleep'
-        ).exists():
-            TimelineEvent.objects.create(
-                user=user,
-                timestamp=sleep_timestamp,
-                event_type=TimelineEventType.TEXT,
-                event="It's time to sleep. Good night! 🌙",
-                reference=None,
-                action=None,
-            )
 
 
 def _generate_accountability_partner_events(user, today):
@@ -343,33 +256,8 @@ def generate_timeline_for_new_item(item_type, item_id):
                     action={'mark_done': [True, False]},
                 )
 
-    elif item_type == 'routine':
-        try:
-            entry = RoutineEntry.objects.get(pk=item_id)
-        except RoutineEntry.DoesNotExist:
-            return
-
-        is_weekend = weekday in [5, 6]
-        expected_type = 'holiday' if is_weekend else 'workday'
-        if entry.routine_type != expected_type:
-            return
-
-        exists = TimelineEvent.objects.filter(
-            user=entry.user,
-            event_type=TimelineEventType.ROUTINE,
-            reference={'model': 'RoutineEntry', 'id': entry.id},
-            timestamp__date=today,
-        ).exists()
-        if not exists:
-            timestamp = timezone.make_aware(datetime.combine(today, entry.time))
-            TimelineEvent.objects.create(
-                user=entry.user,
-                timestamp=timestamp,
-                event_type=TimelineEventType.ROUTINE,
-                event=entry.title,
-                reference={'model': 'RoutineEntry', 'id': entry.id},
-                action=None,
-            )
+    # Routine events are no longer stored in the DB.
+    # They are computed at the application layer in TimelineEventViewSet.list.
 
 
 @shared_task

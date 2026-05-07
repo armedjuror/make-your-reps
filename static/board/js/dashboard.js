@@ -143,7 +143,7 @@ function bindEvents() {
     document.getElementById('pomodoro-toggle-mode').addEventListener('click', () => Pomodoro.toggleMode());
 
     // Search
-    document.getElementById('search-engine-btn').addEventListener('click', toggleSearchEngineDropdown);
+    document.getElementById('search-engine-btn').addEventListener('click', () => toggleSearchEngineDropdown());
     document.getElementById('search-input').addEventListener('keydown', e => {
         if (e.key === 'Enter') { e.preventDefault(); DefaultPane.doSearch(); }
     });
@@ -152,14 +152,14 @@ function bindEvents() {
     document.getElementById('new-habit-btn').addEventListener('click', () => Habits.showHabitModal());
     document.getElementById('workday_routine_button').addEventListener('click', () => showRoutine('workday'));
     document.getElementById('holiday_routine_button').addEventListener('click', () => showRoutine('holiday'));
-    document.getElementById('edit-routine-btn').addEventListener('click', editRoutine);
-    document.getElementById('add-sleep-btn').addEventListener('click', openSleepModal);
+    document.getElementById('edit-routine-btn').addEventListener('click', () => editRoutine());
+    document.getElementById('add-sleep-btn').addEventListener('click', () => openSleepModal());
 
     // Journal pane
     document.getElementById('journal-prev-month').addEventListener('click', () => JournalPane.prevMonth());
     document.getElementById('journal-today').addEventListener('click', () => JournalPane.goToday());
     document.getElementById('journal-next-month').addEventListener('click', () => JournalPane.nextMonth());
-    document.getElementById('journal-editor').addEventListener('focusout', updateJournal);
+    document.getElementById('journal-editor').addEventListener('focusout', () => updateJournal());
 
     // Todos pane
     document.querySelector('.todos-filters').addEventListener('click', e => {
@@ -194,7 +194,7 @@ function bindEvents() {
     document.getElementById('delete-confirm-btn').addEventListener('click', confirmDelete);
 
     // Modal — Sleep
-    document.getElementById('save-sleep-btn').addEventListener('click', saveSleepEntry);
+    document.getElementById('save-sleep-btn').addEventListener('click', () => saveSleepEntry());
 
     // Modal — Routine editor
     document.getElementById('routine-add-row-btn').addEventListener('click', () => RoutineEditor.addRow());
@@ -355,11 +355,8 @@ const Onboarding = {
 };
 
 // ── Initialize ──
-document.addEventListener('DOMContentLoaded', function () {
+(function initDashboard() {
     bindEvents();
-
-    // Set year
-    // document.getElementById('year').innerText = new Date().getFullYear();
 
     const hash = window.location.hash.replace('#', '') || 'home';
     const validPanes = ['home', 'todos', 'trackers', 'journals', 'achievements', 'reading-list', 'friends', 'settings', 'help'];
@@ -383,7 +380,7 @@ document.addEventListener('DOMContentLoaded', function () {
             Onboarding.show();
         }
     });
-});
+}());
 
 // Listen for hash changes
 window.addEventListener('hashchange', function () {

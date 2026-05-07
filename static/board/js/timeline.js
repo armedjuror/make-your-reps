@@ -6,12 +6,55 @@ const Timeline = {
     events: [],
     loading: false,
     hasMore: true,
+    currentDate: null,
+    generatedDates: new Set(),
+
+    _maxDate() {
+        return getDate(new Date(Date.now() + 3 * 86400000));
+    },
 
     init() {
         this.events = [];
         this.hasMore = true;
+        this.currentDate = getDate(new Date());
+        this.updateDateLabel();
         this.loadEvents();
         this.setupScroll();
+
+        document.getElementById('timeline-prev-btn')?.addEventListener('click', () => this.navigateDate(-1));
+        document.getElementById('timeline-next-btn')?.addEventListener('click', () => this.navigateDate(1));
+    },
+
+    updateDateLabel() {
+        const el = document.getElementById('timeline-date-label');
+        if (!el) return;
+        const today = getDate(new Date());
+        const yesterday = getDate(new Date(Date.now() - 86400000));
+        const tomorrow = getDate(new Date(Date.now() + 86400000));
+        if (this.currentDate === today) el.textContent = 'Today';
+        else if (this.currentDate === yesterday) el.textContent = 'Yesterday';
+        else if (this.currentDate === tomorrow) el.textContent = 'Tomorrow';
+        else el.textContent = new Date(this.currentDate + 'T12:00:00').toLocaleDateString('en-US', {
+            weekday: 'short', month: 'short', day: 'numeric'
+        });
+
+        const nextBtn = document.getElementById('timeline-next-btn');
+        if (nextBtn) nextBtn.disabled = this.currentDate >= this._maxDate();
+    },
+
+    async navigateDate(direction) {
+        if (this.loading) return;
+        const d = new Date(this.currentDate + 'T12:00:00');
+        d.setDate(d.getDate() + direction);
+        const newDate = getDate(d);
+
+        if (newDate > this._maxDate()) return;
+
+        this.currentDate = newDate;
+        this.events = [];
+        this.hasMore = true;
+        this.updateDateLabel();
+        await this.loadEvents();
     },
 
     async loadEvents(before = null) {
@@ -19,17 +62,25 @@ const Timeline = {
         this.loading = true;
 
         let url = 'board/api/timeline/';
-        const today = getDate(new Date());
         if (before) {
             url += `?before=${before}`;
         } else {
-            url += `?date=${today}`;
+            url += `?date=${this.currentDate}`;
         }
 
         const res = await apiClient.get(url);
         this.loading = false;
 
         if (res.status === 'success') {
+            // Auto-generate if no real events exist yet for this date
+            const realTypes = ['habit', 'todo', 'meeting', 'accountability_habit', 'accountability_invite', 'friend_request'];
+            const hasRealEvents = res.data.some(e => realTypes.includes(e.event_type));
+            if (!before && !hasRealEvents && !this.generatedDates.has(this.currentDate)) {
+                this.generatedDates.add(this.currentDate);
+                await apiClient.post('board/api/timeline/generate/', { date: this.currentDate });
+                await this.loadEvents();
+                return;
+            }
             this.events = this.events.concat(res.data);
             this.hasMore = res.has_more;
             this.render();
@@ -133,10 +184,10 @@ const Timeline = {
             const anchorAttr = event.id === anchorId ? 'id="timeline-now-anchor"' : '';
 
             let separator = '';
-            if (dateStr !== lastDateStr) {
-                separator = `<div class="timeline-date-separator">${dateLabel(dateStr)}</div>`;
-                lastDateStr = dateStr;
-            }
+            // if (dateStr !== lastDateStr) {
+            //     separator = `<div class="timeline-date-separator">${dateLabel(dateStr)}</div>`;
+            //     lastDateStr = dateStr;
+            // }
 
             return `${separator}
                 <div class="timeline-item ${typeClass} ${responded}" data-id="${event.id}" ${anchorAttr}>

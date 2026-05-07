@@ -157,6 +157,12 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Google Calendar OAuth (separate from allauth login — needs calendar scope)
+GOOGLE_CALENDAR_CLIENT_ID = os.environ.get('GOOGLE_CALENDAR_CLIENT_ID', os.environ.get('GOOGLE_CLIENT_ID', ''))
+GOOGLE_CALENDAR_CLIENT_SECRET = os.environ.get('GOOGLE_CALENDAR_CLIENT_SECRET', os.environ.get('GOOGLE_CLIENT_SECRET', ''))
+GOOGLE_CALENDAR_REDIRECT_URI = os.environ.get('GOOGLE_CALENDAR_REDIRECT_URI', 'https://makeyourreps.com/board/api/calendar/callback/')
+SITE_URL = os.environ.get('SITE_URL', 'https://makeyourreps.com')
+
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'APP': {

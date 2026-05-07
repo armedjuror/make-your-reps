@@ -9,6 +9,11 @@ from board.views import (
     DashboardConfigView, FriendViewSet, FriendRequestViewSet, AccountabilityPartnerViewSet,
     GamificationView, OnboardingCompleteView, FeedbackView,
 )
+from board.calendar_views import (
+    CalendarAuthView, CalendarCallbackView, CalendarListView,
+    CalendarRefreshView, CalendarUpdateView, CalendarDisconnectView,
+    calendar_webhook,
+)
 
 api_router = DefaultRouter()
 api_router.register(r'tasks', TaskViewSet, basename='tasks')
@@ -33,5 +38,13 @@ urlpatterns = [
     path('api/gamification/', GamificationView.as_view(), name='gamification'),
     path('api/onboarding_complete/', OnboardingCompleteView.as_view(), name='onboarding-complete'),
     path('api/feedback/', FeedbackView.as_view(), name='feedback'),
+    # Google Calendar integration
+    path('api/calendar/auth/', CalendarAuthView.as_view(), name='calendar-auth'),
+    path('api/calendar/callback/', CalendarCallbackView.as_view(), name='calendar-callback'),
+    path('api/calendar/accounts/', CalendarListView.as_view(), name='calendar-accounts'),
+    path('api/calendar/accounts/<int:token_id>/refresh/', CalendarRefreshView.as_view(), name='calendar-refresh'),
+    path('api/calendar/accounts/<int:token_id>/disconnect/', CalendarDisconnectView.as_view(), name='calendar-disconnect'),
+    path('api/calendar/calendars/<int:cal_id>/', CalendarUpdateView.as_view(), name='calendar-update'),
+    path('api/calendar/webhook/<int:cal_id>/', calendar_webhook, name='calendar-webhook'),
     path('api/', include(api_router.urls)),
 ]

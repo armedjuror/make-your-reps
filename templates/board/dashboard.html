@@ -242,7 +242,15 @@
 
                 <!-- Timeline -->
                 <div class="timeline-section">
-{#                    <h3 class="section-title-sm">Timeline</h3>#}
+                    <div class="timeline-nav">
+                        <button class="timeline-nav-btn" id="timeline-prev-btn">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <span class="timeline-date-label" id="timeline-date-label">Today</span>
+                        <button class="timeline-nav-btn" id="timeline-next-btn" disabled>
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
                     <div class="timeline-container" id="timeline-container">
                         <div class="timeline-list" id="timeline-list">
                             <div class="timeline-loading">
@@ -566,6 +574,7 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                     <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#sp-general">General</a></li>
                     <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#sp-pomodoro">Pomodoro</a></li>
                     <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#sp-notifications">Notifications</a></li>
+{#                    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#sp-integrations" id="tab-integrations">Integrations</a></li>#}
                     <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#sp-data">Data</a></li>
                 </ul>
                 <div class="tab-content">
@@ -662,6 +671,19 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                                 </button>
                                 <small id="notif-permission-status" class="text-brown"></small>
                             </div>
+                        </div>
+                    </div>
+                    <!-- Integrations -->
+                    <div class="tab-pane fade" id="sp-integrations">
+                        <div class="settings-card">
+                            <h6 class="settings-card-title"><i class="fab fa-google me-2"></i>Google Calendar</h6>
+                            <p class="text-brown small mb-3">
+                                Connect your Google Calendar to see events in your timeline, get a Join button for meetings, and push habit reminders and task deadlines to your calendar.
+                            </p>
+                            <button class="btn btn-paper btn-sm btn-primary mb-4" id="btn-calendar-connect">
+                                <i class="fab fa-google me-1"></i> Connect a Google Account
+                            </button>
+                            <div id="calendar-accounts-list"></div>
                         </div>
                     </div>
                     <!-- Data -->
@@ -1058,6 +1080,26 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                 <div class="modal-footer">
                     <button type="button" class="btn btn-paper" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-paper btn-danger" id="delete-confirm-btn">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calendar Disconnect Confirmation Modal -->
+    <div class="modal fade" id="calendarDisconnectModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><div class="modal-icon info"><i class="fab fa-google"></i></div> Disconnect Google Calendar</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>This will disconnect your Google account and <strong>permanently delete all Google Calendar events</strong> from your timeline.</p>
+                    <p class="text-brown small mb-0">This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-paper" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-paper btn-danger" id="calendar-disconnect-confirm-btn">Disconnect &amp; Delete Events</button>
                 </div>
             </div>
         </div>

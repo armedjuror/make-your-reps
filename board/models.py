@@ -383,6 +383,50 @@ class UserAchievement(models.Model):
         ordering = ['-unlocked_at']
 
 
+# ──────────────────────────────────────
+# Google Calendar Integration
+# ──────────────────────────────────────
+
+class GoogleCalendarToken(models.Model):
+    """Stores OAuth tokens for one Google account linked by a user.
+    A user can connect multiple Google accounts (one row per account)."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='google_calendar_tokens')
+    google_email = models.EmailField()
+    access_token = models.TextField()
+    refresh_token = models.TextField()
+    token_expiry = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('user', 'google_email')
+
+    def __str__(self):
+        return f'{self.user} — {self.google_email}'
+
+
+class LinkedCalendar(models.Model):
+    """A single Google Calendar within a connected Google account."""
+    token = models.ForeignKey(GoogleCalendarToken, on_delete=models.CASCADE, related_name='calendars')
+    calendar_id = models.CharField(max_length=500)        # Google Calendar ID (e.g. primary or email)
+    name = models.CharField(max_length=255)
+    color = models.CharField(max_length=32, blank=True)
+    is_enabled = models.BooleanField(default=False)       # Show events in timeline
+    sync_habits = models.BooleanField(default=False)      # Push habit reminders to this calendar
+    sync_tasks = models.BooleanField(default=False)       # Push task deadlines to this calendar
+    # Webhook channel for real-time updates
+    webhook_channel_id = models.CharField(max_length=255, blank=True)
+    webhook_resource_id = models.CharField(max_length=255, blank=True)
+    webhook_expiry = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('token', 'calendar_id')
+
+    def __str__(self):
+        return f'{self.token.google_email} — {self.name}'
+
+
 class Feedback(models.Model):
     TYPES = [
         ('general', 'General'),

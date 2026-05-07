@@ -28,6 +28,7 @@ from main.config_manager import get_config
 from main.utils import NoDestroyViewSet, AuthenticatedModelViewSet
 from board.tasks import generate_timeline_for_new_item
 from board.gamification import award_points, deduct_points, update_daily_streak
+from board.models import GoogleCalendarToken, LinkedCalendar
 
 
 # ──────────────────────────────────────
@@ -291,7 +292,7 @@ class TaskGroupViewSet(AuthenticatedModelViewSet):
     serializer_class = TaskGroupSerializer
 
     def get_queryset(self):
-        return TaskGroup.objects.filter(is_active=True)
+        return TaskGroup.objects.filter(is_active=True).order_by('id')
 
     def list(self, request, **kwargs):
         user_id = request.session.get('user_id')
@@ -399,8 +400,14 @@ class TaskViewSet(AuthenticatedModelViewSet):
 
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(user_id=user_id)
+            task = serializer.save(user_id=user_id)
             generate_timeline_for_new_item.delay('todo', serializer.data['id'])
+            try:
+                from board.calendar_views import push_task_to_calendar
+                from django.contrib.auth.models import User
+                push_task_to_calendar(User.objects.get(id=user_id), task)
+            except Exception:
+                pass
             return Response({
                 "status": "success",
                 "data": serializer.data
@@ -618,8 +625,14 @@ class HabitViewSet(AuthenticatedModelViewSet):
         user_id = request.session.get('user_id')
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
-            serializer.save(user_id=user_id)
+            habit = serializer.save(user_id=user_id)
             generate_timeline_for_new_item.delay('habit', serializer.data['id'])
+            try:
+                from board.calendar_views import push_habit_to_calendar
+                from django.contrib.auth.models import User
+                push_habit_to_calendar(User.objects.get(id=user_id), habit)
+            except Exception:
+                pass
             return Response({
                 "status": "success",
                 "data": serializer.data
@@ -791,7 +804,6 @@ class RoutineEntryViewSet(AuthenticatedModelViewSet):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             serializer.save(user_id=user_id)
-            generate_timeline_for_new_item.delay('routine', serializer.data['id'])
             return Response({
                 'status': 'success',
                 'data': serializer.data
@@ -839,22 +851,15 @@ class RoutineEntryViewSet(AuthenticatedModelViewSet):
             user_id=user_id, routine_type=routine_type
         ).delete()
 
-        # Delete today's routine timeline events so the re-created entries
-        # don't duplicate them (new entry IDs would bypass the exists check)
-        TimelineEvent.objects.filter(
-            user_id=user_id,
-            event_type=TimelineEventType.ROUTINE,
-            timestamp__date=timezone.localdate(),
-        ).delete()
+        # Routine events are no longer stored in the DB — no timeline cleanup needed.
 
         created = []
         for entry_data in entries:
             entry_data['routine_type'] = routine_type
             serializer = self.get_serializer(data=entry_data)
             if serializer.is_valid():
-                obj = serializer.save(user_id=user_id)
+                serializer.save(user_id=user_id)
                 created.append(serializer.data)
-                generate_timeline_for_new_item('routine', serializer.data['id'])
 
         return Response({
             'status': 'success',
@@ -952,15 +957,24 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
         Paginated timeline. Supports:
         - ?date=YYYY-MM-DD (filter by date, defaults to today)
         - ?before=ISO_TIMESTAMP (for lazy loading older events)
-        - ?limit=N (defaults to 5)
+        - ?limit=N (defaults to 100)
+
+        Routine events are NOT stored in the DB — they are computed here from
+        RoutineEntry rows and injected into the response for the requested date.
+        Google Calendar events are fetched live on first load and kept fresh via webhooks.
         """
+        from django.contrib.auth.models import User
         user_id = request.session.get('user_id')
         target_date = request.GET.get('date')
         before = request.GET.get('before')
         limit = int(request.GET.get('limit', 100))
 
-        queryset = self.get_queryset().filter(user_id=user_id)
+        # Exclude ROUTINE and system reminders from DB — those are computed below
+        queryset = self.get_queryset().filter(user_id=user_id).exclude(
+            event_type=TimelineEventType.ROUTINE
+        )
 
+        parsed_date = None
         if before:
             try:
                 before_dt = datetime.fromisoformat(before)
@@ -969,18 +983,105 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
                 pass
         elif target_date:
             try:
-                d = datetime.strptime(target_date, '%Y-%m-%d').date()
-                queryset = queryset.filter(timestamp__date=d)
+                parsed_date = datetime.strptime(target_date, '%Y-%m-%d').date()
+                queryset = queryset.filter(timestamp__date=parsed_date)
             except ValueError:
                 pass
-        # If neither before nor date specified, return recent events across all days
-        queryset = queryset.order_by('-timestamp')[:limit]
 
-        data = self.get_serializer(queryset, many=True).data
+        queryset = queryset.order_by('-timestamp')[:limit]
+        data = list(self.get_serializer(queryset, many=True).data)
+
+        # Inject routine events for the requested date (app-layer computation)
+        if parsed_date:
+            weekday = parsed_date.weekday()
+            routine_type = 'holiday' if weekday in (5, 6) else 'workday'
+            entries = RoutineEntry.objects.filter(user_id=user_id, routine_type=routine_type)
+            for entry in entries:
+                ts = timezone.make_aware(datetime.combine(parsed_date, entry.time))
+                data.append({
+                    'id': f'routine-{entry.id}',
+                    'timestamp': ts.isoformat(),
+                    'event_type': TimelineEventType.ROUTINE,
+                    'event': entry.title,
+                    'reference': {'model': 'RoutineEntry', 'id': entry.id},
+                    'action': None,
+                    'action_response': None,
+                    'created_at': ts.isoformat(),
+                    'updated_at': ts.isoformat(),
+                })
+
+            # Inject sleep tracker reminder at 7:00 AM
+            sleep_track_ts = timezone.make_aware(datetime.combine(parsed_date, time(7, 0)))
+            data.append({
+                'id': f'sleep-tracker-{parsed_date}',
+                'timestamp': sleep_track_ts.isoformat(),
+                'event_type': TimelineEventType.SLEEP_TRACKER,
+                'event': "Good morning! How many hours did you sleep last night?",
+                'reference': None,
+                'action': {'log_sleep': [True, False]},
+                'action_response': None,
+                'created_at': sleep_track_ts.isoformat(),
+                'updated_at': sleep_track_ts.isoformat(),
+            })
+
+            # Inject system reminders computed from user settings
+            user_detail = UserDetail.objects.filter(user_id=user_id).first()
+            if user_detail and user_detail.sleep_time:
+                from datetime import timedelta as td
+                sleep_dt = datetime.combine(parsed_date, user_detail.sleep_time)
+                journal_dt = sleep_dt - td(minutes=30)
+                journal_ts = timezone.make_aware(journal_dt)
+                sleep_ts = timezone.make_aware(sleep_dt)
+            else:
+                journal_ts = timezone.make_aware(datetime.combine(parsed_date, time(21, 0)))
+                sleep_ts = None
+
+            data.append({
+                'id': f'journal-reminder-{parsed_date}',
+                'timestamp': journal_ts.isoformat(),
+                'event_type': TimelineEventType.JOURNAL,
+                'event': "Time to reflect! Write a few lines in your journal.",
+                'reference': None,
+                'action': {'open_journal': [True, False]},
+                'action_response': None,
+                'created_at': journal_ts.isoformat(),
+                'updated_at': journal_ts.isoformat(),
+            })
+
+            if sleep_ts:
+                data.append({
+                    'id': f'sleep-notif-{parsed_date}',
+                    'timestamp': sleep_ts.isoformat(),
+                    'event_type': TimelineEventType.TEXT,
+                    'event': "It's time to sleep. Good night! 🌙",
+                    'reference': None,
+                    'action': None,
+                    'action_response': None,
+                    'created_at': sleep_ts.isoformat(),
+                    'updated_at': sleep_ts.isoformat(),
+                })
+
+            # Sync Google Calendar events if none are stored yet for this date
+            has_meeting_events = any(e['event_type'] == TimelineEventType.MEETING for e in data)
+            if not has_meeting_events:
+                try:
+                    user = User.objects.get(id=user_id)
+                    from board.calendar_views import sync_calendar_events_for_user_date
+                    sync_calendar_events_for_user_date(user, parsed_date)
+                    # Re-fetch MEETING events that were just upserted
+                    meeting_qs = self.get_queryset().filter(
+                        user_id=user_id,
+                        event_type=TimelineEventType.MEETING,
+                        timestamp__date=parsed_date,
+                    )
+                    data.extend(self.get_serializer(meeting_qs, many=True).data)
+                except Exception:
+                    pass
+
         return Response({
             'status': 'success',
             'data': data,
-            'has_more': len(data) == limit
+            'has_more': len(data) == limit,
         })
 
     def create(self, request, **kwargs):
@@ -1093,6 +1194,38 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
             return {'propagated': False, 'reason': str(e)}
 
         return {'propagated': False, 'reason': 'Unknown event type'}
+
+    @action(detail=False, methods=['post'], url_path='generate')
+    def generate(self, request, **kwargs):
+        """Generate timeline events for a specific date if not already generated."""
+        from django.contrib.auth.models import User
+        from board.tasks import _generate_habit_events, _generate_todo_events, _sync_calendar_events
+
+        user_id = request.session.get('user_id')
+        date_str = request.data.get('date')
+        if not date_str:
+            return Response({'status': 'error', 'message': 'date required'}, status=400)
+
+        try:
+            target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            return Response({'status': 'error', 'message': 'invalid date'}, status=400)
+
+        today = timezone.localdate()
+        if abs((target_date - today).days) > 30:
+            return Response({'status': 'error', 'message': 'date out of range'}, status=400)
+
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({'status': 'error', 'message': 'user not found'}, status=404)
+
+        weekday = target_date.weekday()
+        _generate_habit_events(user, target_date, weekday)
+        _generate_todo_events(user, target_date)
+        _sync_calendar_events(user, target_date)
+
+        return Response({'status': 'success'})
 
     def destroy(self, request, **kwargs):
         """Don't actually delete timeline events."""
