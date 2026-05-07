@@ -73,19 +73,28 @@ const BrowserNotify = {
 
     send(title, body, options = {}) {
         if (!('Notification' in window) || Notification.permission !== 'granted') return;
+        const { pane, subTab, ...notifOptions } = options;
+        const swOptions = {
+            body,
+            icon: '/static/images/logo.png',
+            data: { pane, subTab },
+            ...notifOptions,
+        };
+        // Mobile browsers require showNotification via service worker
+        // (new Notification() is unsupported or restricted on mobile)
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.ready
+                .then(reg => reg.showNotification(title, swOptions))
+                .catch(e => console.error('[BrowserNotify] SW notify failed:', e));
+            return;
+        }
+        // Desktop fallback
         try {
-            const { pane, subTab, ...notifOptions } = options;
-            const n = new Notification(title, {
-                body,
-                icon: '/static/images/logo.png',
-                ...notifOptions,
-            });
+            const n = new Notification(title, swOptions);
             n.onclick = () => {
                 window.focus();
                 n.close();
-                if (pane && typeof switchPane === 'function') {
-                    switchPane(pane, subTab || null);
-                }
+                if (pane && typeof switchPane === 'function') switchPane(pane, subTab || null);
             };
         } catch (e) {
             console.error('[BrowserNotify] Failed:', e);

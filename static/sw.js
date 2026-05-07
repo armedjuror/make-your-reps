@@ -4,7 +4,7 @@
  * (server-rendered Django app — HTML must always be fresh from network)
  */
 
-const CACHE = 'myr-static-v3';
+const CACHE = 'myr-static-v4';
 
 // Cache only immutable static assets on install
 self.addEventListener('install', e => {
@@ -72,11 +72,16 @@ self.addEventListener('push', e => {
 
 self.addEventListener('notificationclick', e => {
     e.notification.close();
-    const url = e.notification.data?.url || '/board/';
+    const data = e.notification.data || {};
+    const url = data.url || '/board/';
     e.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
             for (const client of list) {
                 if (client.url.includes('/board/') && 'focus' in client) {
+                    // Tell the open tab to switch pane if we have one
+                    if (data.pane) {
+                        client.postMessage({ type: 'SWITCH_PANE', pane: data.pane, subTab: data.subTab || null });
+                    }
                     return client.focus();
                 }
             }
