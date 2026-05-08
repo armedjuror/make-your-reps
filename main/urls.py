@@ -16,4 +16,5 @@ urlpatterns = [
     path('unsubscribe/<uuid:token>/', unsubscribe, name='unsubscribe'),
     path('internal/', internal_dashboard, name='internal-dashboard'),
     path('.well-known/assetlinks.json', assetlinks),
+    path('api/mobile-auth/', mobile_auth_view),
 ]

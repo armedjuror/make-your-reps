@@ -1,5 +1,6 @@
 from django.contrib.auth import logout
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.http import Http404, HttpResponseForbidden, JsonResponse
 from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
@@ -152,3 +153,18 @@ def assetlinks(request):
         }
     }]
     return JsonResponse(data, safe=False)
+
+
+def mobile_auth_view(request):
+    token = request.GET.get('token')
+    if not token:
+        return JsonResponse({'error': 'missing token'}, status=400)
+
+    session_key = cache.get(f'mobile_auth_{token}')
+    if not session_key:
+        return JsonResponse({'error': 'invalid or expired token'}, status=400)
+
+    # Delete token immediately — one time use
+    cache.delete(f'mobile_auth_{token}')
+
+    return JsonResponse({'session_key': session_key})
