@@ -2,7 +2,7 @@ from django.urls import path
 
 from board.views import accept_invite_by_token
 from main.views import index, logout_view, refresh, privacy_policy, manifest, release_log, delete_account, unsubscribe, \
-    internal_dashboard, assetlinks
+    internal_dashboard, assetlinks, mobile_auth_view
 
 urlpatterns = [
     path('', index, name='index'),
