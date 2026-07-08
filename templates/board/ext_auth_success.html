@@ -1,0 +1,87 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signed In | Make Your Reps</title>
+    <link rel="icon" type="image/x-icon" href="{% static 'images/logo.png' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --ink-brown: #98753f;
+            --ink-gray: #a09080;
+            --paper-bg: #13100d;
+            --paper-bg-end: #1c1710;
+            --border: rgba(152,117,63,0.18);
+        }
+        html, body {
+            height: 100%;
+            font-family: 'Montserrat', sans-serif;
+            background: var(--paper-bg);
+            color: #ede4d4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .card {
+            border: 1.5px solid var(--border);
+            border-radius: 18px;
+            padding: 48px 44px;
+            background: var(--paper-bg-end);
+            text-align: center;
+            max-width: 360px;
+            width: 90%;
+            animation: fadeUp 0.5s ease both;
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .check-ring {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: rgba(152,117,63,0.12);
+            border: 1.5px solid rgba(152,117,63,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            font-size: 1.6rem;
+            color: var(--ink-brown);
+        }
+        h1 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #ede4d4;
+            margin-bottom: 10px;
+            letter-spacing: -0.01em;
+        }
+        p {
+            font-size: 0.82rem;
+            color: var(--ink-gray);
+            line-height: 1.6;
+        }
+        .close-note {
+            margin-top: 28px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            font-size: 0.75rem;
+            color: var(--ink-gray);
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="check-ring">✓</div>
+        <h1>You're signed in!</h1>
+        <p>Your board is ready. You can close this window and open a new tab.</p>
+        <div class="close-note">This window will close automatically in a moment…</div>
+    </div>
+    <script>
+        setTimeout(() => window.close(), 2000);
+    </script>
+</body>
+</html>

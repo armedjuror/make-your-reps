@@ -2,7 +2,7 @@ from django.urls import path
 
 from board.views import accept_invite_by_token
 from main.views import index, logout_view, refresh, privacy_policy, manifest, release_log, delete_account, unsubscribe, \
-    internal_dashboard, assetlinks
+    internal_dashboard, assetlinks, ext_auth_success
 
 urlpatterns = [
     path('', index, name='index'),
@@ -16,4 +16,5 @@ urlpatterns = [
     path('unsubscribe/<uuid:token>/', unsubscribe, name='unsubscribe'),
     path('internal/', internal_dashboard, name='internal-dashboard'),
     path('.well-known/assetlinks.json', assetlinks),
+    path('ext-auth/success/', ext_auth_success, name='ext-auth-success'),
 ]
