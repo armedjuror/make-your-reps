@@ -49,6 +49,10 @@ def refresh(request):
         }, status=401)
 
 
+def ext_auth_success(request):
+    return render(request, 'board/ext_auth_success.html')
+
+
 def logout_view(request):
     if request.user.is_authenticated:
         logout(request)
