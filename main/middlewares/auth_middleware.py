@@ -29,8 +29,10 @@ class AuthMiddleware(MiddlewareMixin):
     Middleware to handle auth token cookies and validation
     """
     def process_request(self, request):
-        if '/accounts/google/login/' in request.path:
-            request.session['client_type'] = request.GET.get('client_type')
+        if request.path.rstrip('/') == '/accounts/google/login':
+            client_type = request.GET.get('client_type')
+            if client_type:
+                request.session['client_type'] = client_type
 
         if request.user.is_authenticated:
             request.session['user_id'] = request.user.id
