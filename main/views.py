@@ -52,6 +52,22 @@ def ext_auth_success(request):
     return render(request, 'board/ext_auth_success.html')
 
 
+@csrf_exempt
+def ext_auth_logout(request):
+    auth_header = request.META.get('HTTP_AUTHORIZATION', '')
+    if not auth_header.startswith('Bearer '):
+        return JsonResponse({'error': 'missing token'}, status=400)
+    token_string = auth_header.split(' ', 1)[1]
+    from main.utils import RefreshToken
+    user, token_obj = RefreshToken.validate_token(token_string)
+    if token_obj:
+        token_obj.is_active = False
+        token_obj.save(update_fields=['is_active'])
+    response = JsonResponse({'status': 'ok'})
+    response.delete_cookie('myrt')
+    return response
+
+
 def logout_view(request):
     if request.user.is_authenticated:
         logout(request)
