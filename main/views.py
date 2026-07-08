@@ -5,8 +5,8 @@ from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
 
 from main.config_manager import get_config
-from main.models import AnnouncementLog, EmailPreference, ReleaseLog
-from main.utils import handle_exceptions
+from main.models import AnnouncementLog, EmailPreference, ExtensionUninstallFeedback, ReleaseLog, UninstallReason
+from main.utils import get_client_ip, handle_exceptions
 
 
 # Create your views here.
@@ -94,12 +94,28 @@ def internal_dashboard(request):
     if not request.user.is_authenticated or not request.user.is_superuser:
         return HttpResponseForbidden()
 
+    from django.db.models import Count
+
     total_users = User.objects.filter(is_active=True).exclude(email='').count()
     opted_out_marketing = EmailPreference.objects.filter(marketing_emails=False).count()
     opted_out_announcements = EmailPreference.objects.filter(announcement_emails=False).count()
     prefs_created = EmailPreference.objects.count()
     latest_release = ReleaseLog.objects.order_by('-released_at', '-id').first()
     recent_announcements = AnnouncementLog.objects.select_related('release', 'sent_by')[:8]
+
+    uninstall_total = ExtensionUninstallFeedback.objects.count()
+    uninstall_by_reason = (
+        ExtensionUninstallFeedback.objects
+        .values('reason')
+        .annotate(count=Count('id'))
+        .order_by('-count')
+    )
+    reason_display = dict(UninstallReason.choices)
+    uninstall_reasons = [
+        {'reason': r['reason'], 'label': reason_display.get(r['reason'], r['reason'] or 'No reason selected'), 'count': r['count']}
+        for r in uninstall_by_reason
+    ]
+    recent_uninstalls = ExtensionUninstallFeedback.objects.exclude(comment='')[:10]
 
     return render(request, 'internal/dashboard.html', {
         'total_users': total_users,
@@ -108,6 +124,9 @@ def internal_dashboard(request):
         'prefs_created': prefs_created,
         'latest_release': latest_release,
         'recent_announcements': recent_announcements,
+        'uninstall_total': uninstall_total,
+        'uninstall_reasons': uninstall_reasons,
+        'recent_uninstalls': recent_uninstalls,
     })
 
 
@@ -128,6 +147,29 @@ def unsubscribe(request, token):
         'pref': pref,
         'saved': saved,
         'site_url': 'https://makeyourreps.com',
+    })
+
+
+@csrf_exempt
+def extension_uninstall_feedback(request):
+    submitted = False
+    if request.method == 'POST':
+        reason = request.POST.get('reason', '')
+        comment = request.POST.get('comment', '')[:1000]
+        version = request.POST.get('version', '')[:16]
+        valid_reasons = {k for k, _ in UninstallReason.choices}
+        ExtensionUninstallFeedback.objects.create(
+            reason=reason if reason in valid_reasons else '',
+            comment=comment,
+            extension_version=version,
+            ip_address=get_client_ip(request),
+        )
+        submitted = True
+
+    return render(request, 'board/extension_uninstall.html', {
+        'reasons': UninstallReason.choices,
+        'submitted': submitted,
+        'version': request.GET.get('v', ''),
     })
 
 

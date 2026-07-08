@@ -16,8 +16,8 @@
 }
 
 [data-theme="dark"] {
-    --paper-bg-end: #2a2620;
-    --paper-bg-center: #534f48;
+    --paper-bg-end: #040404;
+    --paper-bg-center: #403c37;
     --grid-dots: #706857;
     --ink-brown: rgb(186, 130, 56);
     --ink-black: #e8e3d3;
