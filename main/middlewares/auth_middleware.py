@@ -7,21 +7,21 @@ from main.models import LoginActivity
 from main.utils import get_auth_token, RefreshToken, AccessToken, get_client_ip
 
 
-class BearerCSRFExemptMiddleware:
+from django.middleware.csrf import CsrfViewMiddleware
+
+
+class SelectiveCsrfMiddleware(CsrfViewMiddleware):
     """
-    Skip CSRF enforcement for requests authenticated via Bearer token.
+    CSRF middleware that skips enforcement for Bearer token requests.
     Bearer token auth is not CSRF-vulnerable — an attacker on another origin
     cannot read the user's token, so they cannot include it in a forged request.
     Web/session-based requests (no Authorization header) still go through
-    normal CSRF validation.
+    normal CSRF validation including origin checking.
     """
-    def __init__(self, get_response):
-        self.get_response = get_response
-
-    def __call__(self, request):
+    def process_view(self, request, callback, callback_args, callback_kwargs):
         if request.META.get('HTTP_AUTHORIZATION', '').startswith('Bearer '):
-            request._dont_enforce_csrf_checks = True
-        return self.get_response(request)
+            return None
+        return super().process_view(request, callback, callback_args, callback_kwargs)
 
 
 class AuthMiddleware(MiddlewareMixin):
