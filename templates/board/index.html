@@ -68,12 +68,34 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fredericka+the+Great&family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredericka+the+Great&family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,400;1,600&family=Inter:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=Domine:wght@400..700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'board/css/style.css' %}">
     <link rel="stylesheet" href="{% static 'board/css/bootstrap-social.css' %}">
     <style>
         /* ── Neutralise dashboard body::after on this page ── */
         body::after { display: none !important; }
+
+        /* ── Landing typography ── */
+        .landing-nav, .hero, .features-section, .pricing-section,
+        .integrations-section, .cta-section, .landing-footer {
+            font-family: 'Montserrat', sans-serif;
+        }
+        .hero h1,
+        .features-section h2,
+        .pricing-section h2,
+        .integrations-section h2,
+        .cta-section h2 {
+            font-family: 'Montserrat', serif;
+            letter-spacing: -0.02em;
+        }
+        /* ── Cursor glow ── */
+        .cursor-glow {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 9999;
+            transition: none;
+        }
 
         /* ── Landing page extras ── */
         .landing-nav {
@@ -173,14 +195,16 @@
         }
         .hero h1 {
             font-size: clamp(1.8rem, 3.5vw, 2.9rem);
-            font-weight: 800;
+            font-weight: 100;
             color: var(--ink-brown);
             line-height: 1.15;
             margin-bottom: 18px;
         }
         .hero h1 em {
             font-style: normal;
-            border-bottom: 3px solid var(--ink-brown);
+            position: relative;
+            font-weight: 700;
+            font-size: 1.3em;
         }
         .hero-sub {
             font-size: clamp(0.9rem, 1.6vw, 1.05rem);
@@ -189,6 +213,45 @@
             margin-bottom: 36px;
         }
         .hero-cta { margin-bottom: 0; }
+
+        /* ── Keyframes ── */
+        @keyframes heroFadeUp {
+            from { opacity: 0; transform: translateY(22px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes heroFadeRight {
+            from { opacity: 0; transform: translateX(36px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes underlineGrow {
+            from { transform: scaleX(0); }
+            to   { transform: scaleX(1); }
+        }
+        @keyframes floatY {
+            0%, 100% { transform: translateY(0px); }
+            50%       { transform: translateY(-10px); }
+        }
+
+        /* ── Hero entrance (staggered) ── */
+        .hero-badge  { opacity: 0; animation: heroFadeUp 0.5s ease both; animation-delay: 0.05s; }
+        .hero h1     { opacity: 0; animation: heroFadeUp 0.55s ease both; animation-delay: 0.2s; }
+        .hero-sub    { opacity: 0; animation: heroFadeUp 0.55s ease both; animation-delay: 0.35s; }
+        .hero-cta    { opacity: 0; animation: heroFadeUp 0.55s ease both; animation-delay: 0.5s; }
+        .hero-visual { opacity: 0; animation: heroFadeRight 0.65s ease both; animation-delay: 0.25s; }
+
+        /* ── Floating chart card ── */
+        .hero-chart-card { animation: floatY 5s ease-in-out infinite; }
+
+        /* ── Scroll reveal ── */
+        .reveal {
+            opacity: 0;
+            transform: translateY(28px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
 
         /* Chart card in hero */
         .hero-chart-card {
@@ -243,7 +306,7 @@
             background: var(--paper-bg-end, #faf7f2);
             transition: border-color 0.2s, transform 0.2s;
         }
-        .feature-card:hover { border-color: var(--ink-brown); transform: translateY(-2px); }
+        .feature-card:hover { border-color: var(--ink-brown); transform: translateY(-5px); box-shadow: 0 12px 28px rgba(152,117,63,0.13); }
         .feature-card-icon {
             width: 44px; height: 44px;
             border-radius: 10px;
@@ -572,6 +635,9 @@
 </head>
 <body data-theme="dark" data-font="Jetbrains Mono" data-clock="12h">
 
+<!-- ── Cursor glow ── -->
+<div class="cursor-glow" id="cursorGlow" aria-hidden="true"></div>
+
 <!-- ── Navigation ── -->
 <header>
     <nav class="landing-nav" id="landingNav" aria-label="Main navigation">
@@ -601,10 +667,9 @@
             <div class="hero-badge">
                 <i class="fas fa-fire"></i> Gamified · AI-Powered · Free
             </div>
-            <h1>Your personal board for <em>building habits</em> that actually stick</h1>
+            <h1>Build habits that <br><em>actually stick</em></h1>
             <p class="hero-sub">
-                Make Your Reps combines a habit tracker, todo manager, Pomodoro timer, daily journal,
-                and an AI assistant — all gamified with XP, streaks, and achievements so you never lose momentum.
+                Your personal productivity board — gamified with XP, streaks &amp; achievements so you never quit.
             </p>
             <div class="hero-cta">
                 {% if user.is_authenticated %}
@@ -615,7 +680,7 @@
                     <form action="{% provider_login_url 'google' %}?client_type=web" method="POST" style="display:inline;">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-paper btn-primary" style="padding: 12px 32px; font-size: 1rem;">
-                            <i class="fa-brands fa-google me-2"></i> Continue with Google — it's free now!
+                            <i class="fa-brands fa-google me-2"></i> Continue with Google
                         </button>
                     </form>
                 {% endif %}
@@ -996,6 +1061,49 @@
         document.getElementById('year').innerText = String(new Date().getFullYear());
         new ResponsiveCompoundChart('compoundChart');
 
+        // ── Scroll reveal ──
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    revealObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.12 });
+
+        // Section headings
+        ['.features-section h2', '.features-section .section-sub',
+         '.pricing-section h2',  '.pricing-section .section-sub',
+         '.integrations-section h2', '.integrations-section .section-sub',
+         '.cta-section h2', '.cta-section p', '.pricing-free-note'
+        ].forEach(sel => {
+            document.querySelectorAll(sel).forEach(el => {
+                el.classList.add('reveal');
+                revealObserver.observe(el);
+            });
+        });
+
+        // Feature cards — staggered
+        document.querySelectorAll('.feature-card').forEach((card, i) => {
+            card.classList.add('reveal');
+            card.style.transitionDelay = `${i * 0.06}s`;
+            revealObserver.observe(card);
+        });
+
+        // Pricing cards — staggered
+        document.querySelectorAll('.pricing-card').forEach((card, i) => {
+            card.classList.add('reveal');
+            card.style.transitionDelay = `${i * 0.1}s`;
+            revealObserver.observe(card);
+        });
+
+        // Integration cards — staggered
+        document.querySelectorAll('.integration-card').forEach((card, i) => {
+            card.classList.add('reveal');
+            card.style.transitionDelay = `${i * 0.07}s`;
+            revealObserver.observe(card);
+        });
+
         // Scroll: add background to nav
         const nav = document.getElementById('landingNav');
         window.addEventListener('scroll', () => {
@@ -1018,6 +1126,25 @@
                 hamburger.setAttribute('aria-expanded', 'false');
             });
         });
+
+        // ── Cursor glow ──
+        const glow = document.getElementById('cursorGlow');
+        let mx = window.innerWidth / 2, my = window.innerHeight / 2;
+        let cx = mx, cy = my;
+        let cx2 = mx, cy2 = my;
+
+        document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; }, { passive: true });
+
+        (function animateGlow() {
+            cx  += (mx - cx)  * 0.07;
+            cy  += (my - cy)  * 0.07;
+            cx2 += (mx - cx2) * 0.025;
+            cy2 += (my - cy2) * 0.025;
+            glow.style.background =
+                `radial-gradient(520px at ${cx}px ${cy}px, rgba(152,117,63,0.11), transparent 70%),` +
+                `radial-gradient(900px at ${cx2}px ${cy2}px, rgba(152,117,63,0.055), transparent 70%)`;
+            requestAnimationFrame(animateGlow);
+        })();
     });
 </script>
 </body>

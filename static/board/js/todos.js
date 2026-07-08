@@ -44,7 +44,6 @@ const Todo = {
             if (res.status === 'success') {
                 bootstrap.Modal.getInstance(document.getElementById('todoModal')).hide();
                 showSuccess('Task added!');
-                if (panesLoaded.trackers) loadTodos();
                 if (panesLoaded.todos) { TodosPane.loadTodos(); TodosPane.loadGroups(); }
                 General.loadProductivityScore();
             } else {
