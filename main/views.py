@@ -54,17 +54,22 @@ def ext_auth_success(request):
 
 @csrf_exempt
 def ext_auth_logout(request):
+    # Invalidate the refresh token in DB if provided
     auth_header = request.META.get('HTTP_AUTHORIZATION', '')
-    if not auth_header.startswith('Bearer '):
-        return JsonResponse({'error': 'missing token'}, status=400)
-    token_string = auth_header.split(' ', 1)[1]
-    from main.utils import RefreshToken
-    user, token_obj = RefreshToken.validate_token(token_string)
-    if token_obj:
-        token_obj.is_active = False
-        token_obj.save(update_fields=['is_active'])
+    if auth_header.startswith('Bearer '):
+        token_string = auth_header.split(' ', 1)[1]
+        from main.utils import RefreshToken
+        user, token_obj = RefreshToken.validate_token(token_string)
+        if token_obj:
+            token_obj.is_active = False
+            token_obj.save(update_fields=['is_active'])
+
+    # Flush the Django session so sessionid cookie becomes invalid
+    logout(request)
+
     response = JsonResponse({'status': 'ok'})
     response.delete_cookie('myrt')
+    response.delete_cookie('sessionid')
     return response
 
 

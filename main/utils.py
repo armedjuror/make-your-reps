@@ -27,7 +27,7 @@ def get_auth_token(request):
         token = auth_header.split(' ')[1]
         if not token:
             token = request.COOKIES.get('myrt')
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=['HS256'])
         return payload, token
     else:
         return None, None

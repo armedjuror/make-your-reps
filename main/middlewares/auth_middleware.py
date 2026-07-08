@@ -7,6 +7,23 @@ from main.models import LoginActivity
 from main.utils import get_auth_token, RefreshToken, AccessToken, get_client_ip
 
 
+class BearerCSRFExemptMiddleware:
+    """
+    Skip CSRF enforcement for requests authenticated via Bearer token.
+    Bearer token auth is not CSRF-vulnerable — an attacker on another origin
+    cannot read the user's token, so they cannot include it in a forged request.
+    Web/session-based requests (no Authorization header) still go through
+    normal CSRF validation.
+    """
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if request.META.get('HTTP_AUTHORIZATION', '').startswith('Bearer '):
+            request._dont_enforce_csrf_checks = True
+        return self.get_response(request)
+
+
 class AuthMiddleware(MiddlewareMixin):
     """
     Middleware to handle auth token cookies and validation
@@ -78,6 +95,20 @@ class AuthMiddleware(MiddlewareMixin):
                     secure=request.is_secure(),
                     samesite='Strict'
                 )
+            elif request.session.get('client_type') == 'extension' and not request.COOKIES.get('myrt'):
+                try:
+                    jwt_token, _ = RefreshToken.generate_token(request.user, request)
+                    response.set_cookie(
+                        'myrt',
+                        jwt_token,
+                        max_age=30 * 24 * 60 * 60,  # 30 days
+                        httponly=True,
+                        secure=request.is_secure(),
+                        samesite='Strict'
+                    )
+                    request.session.pop('client_type', None)
+                except Exception:
+                    pass
             if request.session.get('access_token'):
                 del request.session['access_token']
             if request.session.get('refresh_token'):
