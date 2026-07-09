@@ -413,7 +413,7 @@
     position: relative;
     display: flex;
     align-items: center;
-    background: rgba(152, 117, 63, 0.05);
+    background: rgba(152, 117, 63, 0.2);
     border: 1.5px solid rgba(152, 117, 63, 0.2);
     border-radius: 50px;
     overflow: visible;
@@ -782,15 +782,14 @@
 
 /* ── Reading List ── */
 .reading-list-section {
-    text-align: left;
-    margin-bottom: 50px;
+    width: 100%;
 }
 
 .reading-list-grid {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: center;
     gap: 10px;
-    justify-content: center;
 }
 
 .reading-list-item {

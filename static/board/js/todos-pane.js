@@ -7,13 +7,15 @@ const TodosPane = {
     todos: [],
     selectedGroup: 'all',
     filter: 'pending', // 'pending' | 'done' | 'all'
-    deadlineFilter: null, // null | 'today' | 'this-week'
+    deadlineFilter: 'today', // null | 'today' | 'this-week'
 
     async init() {
         await this.loadGroups();
         await this.loadTodos();
         this.setupEnterKey();
         document.getElementById('todos-manage-groups-btn').addEventListener('click', () => this.showManageGroupsModal());
+        const todayBtn = document.querySelector(`.todo-deadline-filter[data-deadline-filter="today"]`);
+        if (todayBtn) todayBtn.classList.add('active');
     },
 
     setupEnterKey() {
