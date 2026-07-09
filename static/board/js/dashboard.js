@@ -491,9 +491,7 @@ const PullToRefresh = {
             ind.style.opacity = '1';
             ind.style.transform = 'translateX(-50%) translateY(0px)';
         }
-        Promise.resolve(this._reload()).finally(() => {
-            setTimeout(() => { this._hide(); this.refreshing = false; }, 500);
-        });
+        window.location.reload();
     },
 
     _hide() {
