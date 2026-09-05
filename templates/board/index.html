@@ -390,6 +390,93 @@
             .hero-visual { width: 100%; }
             .hero h1 { font-size: clamp(1.8rem, 6vw, 2.4rem); }
         }
+        /* ── Extension banner ── */
+        .ext-banner {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 200;
+            background: linear-gradient(90deg, rgba(152,117,63,0.18) 0%, rgba(152,117,63,0.1) 100%);
+            border-bottom: 1px solid rgba(152,117,63,0.28);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 9px 48px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.82rem;
+            color: var(--ink-brown-light, #c4a472);
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        .ext-banner.hidden {
+            transform: translateY(-100%);
+            opacity: 0;
+            pointer-events: none;
+        }
+        .ext-banner-text { line-height: 1.4; }
+        .ext-banner-text strong { color: #ede4d4; }
+        .ext-banner-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(152,117,63,0.2);
+            border: 1px solid rgba(152,117,63,0.4);
+            color: #ede4d4;
+            text-decoration: none;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            white-space: nowrap;
+            transition: background 0.15s;
+        }
+        .ext-banner-link:hover { background: rgba(152,117,63,0.35); color: #fff; }
+        .ext-banner-close {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--ink-gray, #a09080);
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 4px;
+            line-height: 1;
+            transition: color 0.15s;
+        }
+        .ext-banner-close:hover { color: #ede4d4; }
+
+        body.has-ext-banner .landing-nav { top: 40px; }
+
+        /* ── Extension CTA pill in hero ── */
+        .ext-cta-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 14px;
+            padding: 8px 18px;
+            border: 1.5px solid rgba(152,117,63,0.3);
+            border-radius: 24px;
+            color: var(--ink-gray, #a09080);
+            text-decoration: none;
+            font-size: 0.82rem;
+            font-weight: 600;
+            transition: border-color 0.15s, color 0.15s, background 0.15s;
+        }
+        .ext-cta-pill:hover {
+            border-color: var(--ink-brown, #98753f);
+            color: var(--ink-brown, #98753f);
+            background: rgba(152,117,63,0.06);
+        }
+        .ext-cta-pill img { width: 16px; height: 16px; }
+
+        @media (max-width: 600px) {
+            .ext-banner { padding: 9px 36px 9px 16px; font-size: 0.78rem; }
+            body.has-ext-banner .landing-nav { top: 52px; }
+        }
+
         @media (max-width: 600px) {
             .landing-nav { padding: 12px 16px; }
             .nav-hamburger { display: flex; }
@@ -635,6 +722,18 @@
 </head>
 <body data-theme="dark" data-font="Jetbrains Mono" data-clock="12h">
 
+<!-- ── Extension announcement banner ── -->
+<div class="ext-banner" id="extBanner" role="banner" aria-label="Chrome Extension announcement">
+    <span class="ext-banner-text">
+        <strong>Now available:</strong> Make Your Reps Chrome Extension — turn every new tab into your productivity board.
+    </span>
+    {# Replace EXTENSION_ID below with your Chrome Web Store extension ID after publishing #}
+    <a class="ext-banner-link" href="https://chromewebstore.google.com/detail/make-your-reps/EXTENSION_ID" target="_blank" rel="noopener">
+        <i class="fab fa-chrome"></i> Install free
+    </a>
+    <button class="ext-banner-close" id="extBannerClose" aria-label="Dismiss">&times;</button>
+</div>
+
 <!-- ── Cursor glow ── -->
 <div class="cursor-glow" id="cursorGlow" aria-hidden="true"></div>
 
@@ -652,6 +751,8 @@
             <a href="#pricing">Pricing</a>
             <a href="{% url 'release-log' %}">What's New</a>
             <a href="/privacy-policy">Privacy</a>
+            {# Replace EXTENSION_ID below with your Chrome Web Store extension ID after publishing #}
+            <a href="https://chromewebstore.google.com/detail/make-your-reps/EXTENSION_ID" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;"><i class="fab fa-chrome"></i> Extension</a>
             {% if user.is_authenticated %}
                 <a href="{% url 'dashboard' %}" class="btn btn-paper btn-primary btn-sm">Open Board</a>
             {% endif %}
@@ -684,6 +785,11 @@
                         </button>
                     </form>
                 {% endif %}
+                <br>
+                {# Replace EXTENSION_ID below with your Chrome Web Store extension ID after publishing #}
+                <a class="ext-cta-pill" href="https://chromewebstore.google.com/detail/make-your-reps/EXTENSION_ID" target="_blank" rel="noopener">
+                    <i class="fab fa-chrome"></i> Also available as a Chrome Extension
+                </a>
             </div>
         </div>
 
@@ -1059,6 +1165,20 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('year').innerText = String(new Date().getFullYear());
+
+        // ── Extension banner dismiss ──
+        const banner = document.getElementById('extBanner');
+        const closeBtn = document.getElementById('extBannerClose');
+        if (localStorage.getItem('extBannerDismissed')) {
+            banner.classList.add('hidden');
+        } else {
+            document.body.classList.add('has-ext-banner');
+        }
+        closeBtn.addEventListener('click', () => {
+            banner.classList.add('hidden');
+            document.body.classList.remove('has-ext-banner');
+            localStorage.setItem('extBannerDismissed', '1');
+        });
         new ResponsiveCompoundChart('compoundChart');
 
         // ── Scroll reveal ──
