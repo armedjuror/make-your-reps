@@ -555,8 +555,8 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                             <button class="btn btn-paper btn-sm todo-filter" data-filter="done">Done</button>
                             <button class="btn btn-paper btn-sm todo-filter" data-filter="all">All</button>
                             <span class="todos-filter-sep"></span>
-                            <button class="btn btn-paper btn-sm todo-deadline-filter" data-deadline-filter="today">Till Today</button>
-                            <button class="btn btn-paper btn-sm todo-deadline-filter" data-deadline-filter="this-week">Till This Week</button>
+                            <button class="btn btn-paper btn-sm todo-deadline-filter" data-deadline-filter="today">Today</button>
+                            <button class="btn btn-paper btn-sm todo-deadline-filter" data-deadline-filter="this-week">This week</button>
                             <input type="date" id="todos-date-filter" class="todos-date-filter-input" title="Filter till date">
                         </div>
                         <div class="todos-add-bar">
@@ -564,6 +564,11 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                             <i class="fas fa-plus me-1"></i> Add Task
                         </button>
                     </div>
+                    </div>
+                    <div class="todos-backlog" id="todos-backlog" hidden>
+                        <i class="fas fa-box-archive"></i>
+                        <span id="todos-backlog-text"></span>
+                        <button class="btn btn-paper btn-sm" id="todos-backlog-btn" type="button">Review backlog</button>
                     </div>
                     <div class="todos-list" id="todos-pane-list">
                         <div class="mt-4 text-center">
