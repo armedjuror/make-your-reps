@@ -2677,3 +2677,76 @@
 .sw-paper i:nth-child(1) { background: #f4ecd8; } .sw-paper i:nth-child(2) { background: #fffdf6; } .sw-paper i:nth-child(3) { background: #98753f; }
 .sw-terminal i:nth-child(1) { background: #0a0f0a; } .sw-terminal i:nth-child(2) { background: #111a11; } .sw-terminal i:nth-child(3) { background: #4ade80; }
 .sw-plain i:nth-child(1) { background: #ffffff; } .sw-plain i:nth-child(2) { background: #f3f4f6; } .sw-plain i:nth-child(3) { background: #2f5bea; }
+
+/* ══════════════════════════════════════════════════
+   TODAY (v2) — timeline hero, bookmark rail, focus strip
+══════════════════════════════════════════════════ */
+#pane-home > .container-fluid { max-width: 1040px; }
+#pane-home .default-pane-content { text-align: left; padding: 0 16px 40px; }
+
+.today { display: grid; grid-template-columns: 168px minmax(0, 1fr); gap: 28px; align-items: start; padding-top: 20px; }
+.today-main { min-width: 0; }
+
+/* Bookmarks: vertical chips */
+.today-rail { position: sticky; top: 16px; }
+.today-rail .reading-list-grid { align-items: stretch; gap: 6px; }
+.today-rail .reading-list-item {
+    width: auto; height: auto; justify-content: flex-start;
+    border-radius: 999px; padding: 0; transform: none;
+}
+.today-rail .reading-list-item:hover { transform: none; }
+.today-rail .rl-link { justify-content: flex-start; gap: 10px; padding: 6px 12px 6px 8px; min-width: 0; }
+.today-rail .rl-icon, .today-rail .rl-letter { width: 22px; height: 22px; border-radius: 6px; font-size: .7rem; flex-shrink: 0; }
+.today-rail .rl-name {
+    display: block; font-size: .8rem; color: var(--ink-black);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.today-rail .rl-edit-btn { top: 50%; right: 8px; transform: translateY(-50%); }
+.reading-list-add-btn {
+    width: 100%; padding: 6px 12px; border: 1px dashed rgba(var(--accent-rgb), .35); border-radius: 999px;
+    background: transparent; color: var(--ink-gray); font-size: .8rem; cursor: pointer;
+}
+.reading-list-add-btn:hover { color: var(--ink-brown); border-color: var(--ink-brown); }
+
+/* Head: greeting + compact focus strip */
+.today-head { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.today-head .greeting-main { margin: 0; }
+.today-head .greeting-main h1 { font-size: 1.7rem; margin: 0; }
+.today-head .greeting-main p { margin: 2px 0 0; font-size: .9rem; }
+
+.today-head .pomodoro-section {
+    display: flex; align-items: center; gap: 14px; margin: 0; padding: 8px 14px; max-width: none;
+    background: transparent; border: 1px solid rgba(var(--accent-rgb), .25); border-radius: 12px;
+}
+.today-head .pomodoro-main { display: block; }
+.today-head .pomodoro-controls { margin: 0; gap: 6px; }
+.today-head .pomodoro-display { margin: 0 4px 0 0; align-items: flex-start; }
+.today-head .pomodoro-time { font-size: 1.25rem; letter-spacing: 1px; }
+.today-head .pomodoro-cycles,
+.today-head .gami-xp-bar-wrap,
+.today-head .gami-sep { display: none; }
+.today-head .pomodoro-focus-today { margin: 0; min-height: 0; }
+.today-head .gami-status-bar { margin: 0; padding: 0; gap: 12px; flex-wrap: nowrap; white-space: nowrap; }
+
+.today .search-section { margin: 18px 0 22px; }
+.today .search-bar { min-height: 42px; border-radius: 12px; background: transparent; }
+
+/* Timeline: let it be the page */
+.today .timeline-section { margin: 0; }
+.today .timeline-nav { justify-content: flex-start; gap: 10px; margin-bottom: 10px; }
+.today .timeline-date-label { font-size: .95rem; letter-spacing: 0; }
+.today .timeline-nav-btn { font-size: .8rem; padding: 4px 8px; }
+.today .timeline-container { max-height: none; overflow: visible; }
+.today .timeline-container::before, .today .timeline-container::after { display: none; }
+
+@media (max-width: 1200px) {
+    .today { grid-template-columns: 1fr; gap: 14px; padding-top: 8px; }
+    .today-rail { position: static; order: 2; }
+    .today-rail .reading-list-grid { flex-direction: row; flex-wrap: wrap; }
+    .today-rail .reading-list-item { max-width: 100%; }
+    .today-rail .rl-name { max-width: 110px; }
+    .today-head .pomodoro-section { width: 100%; flex-wrap: wrap; justify-content: space-between; row-gap: 6px; }
+    .today-head .pomodoro-focus-today { display: none; }
+    .today-head .gami-status-bar { width: 100%; justify-content: flex-start; }
+    .today .search-section { display: block; }
+}

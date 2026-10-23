@@ -170,53 +170,6 @@
         <div class="container-fluid">
             <div class="default-pane-content">
 
-                <!-- Pomodoro Timer -->
-                <div class="pomodoro-section">
-                    <div class="pomodoro-main">
-                        <div class="pomodoro-controls">
-                            <div class="pomodoro-display">
-                            <span class="pomodoro-mode" id="pomodoro-mode">Focus</span>
-                            <span class="pomodoro-time" id="pomodoro-time">25:00</span>
-                        </div>
-                        <button class="btn btn-paper btn-primary btn-sm" id="pomodoro-start">
-                            <i class="fas fa-play"></i>
-                        </button>
-                        <button class="btn btn-paper btn-sm" id="pomodoro-reset">
-                            <i class="fas fa-redo"></i>
-                        </button>
-                        <button class="btn btn-paper btn-sm" id="pomodoro-toggle-mode">
-                            <i class="fas fa-coffee"></i>
-                        </button>
-                    </div>
-                        </div>
-                    <div class="pomodoro-cycles" id="pomodoro-cycles"></div>
-                    <div class="pomodoro-focus-today"><span id="pomodoro-focused-today"></span></div>
-                    <!-- Gamification Status Bar -->
-                    <div class="gami-status-bar" id="gami-status-bar">
-                        <div class="gami-stat" title="Daily streak">
-                            <i class="fas fa-fire gami-icon-streak"></i>
-                            <span id="gami-streak">0</span>
-                            <small>streak</small>
-                        </div>
-                        <div class="gami-sep">·</div>
-                        <div class="gami-stat" title="Level">
-                            <i class="fas fa-bolt gami-icon-level"></i>
-                            <span id="gami-level-name">Newcomer</span>
-                        </div>
-                        <div class="gami-sep">·</div>
-                        <div class="gami-stat" title="Total points">
-                            <i class="fas fa-star gami-icon-pts"></i>
-                            <span id="gami-points">0</span>
-                            <small>pts</small>
-                        </div>
-                        <div class="gami-xp-bar-wrap" title="XP to next level">
-                            <div class="gami-xp-bar">
-                                <div class="gami-xp-fill" id="gami-xp-fill" style="width:0%"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Pomodoro Toast -->
                 <div id="pomodoro-toast" class="pomo-toast">
                     <div class="pomo-toast-inner">
@@ -228,50 +181,100 @@
                     </div>
                 </div>
 
-                <!-- Greeting -->
-                <div class="greeting-main">
-                    <h1 id="greeting-text">Good Morning!</h1>
-                    <p id="greeting-sub">Let's make today amazing</p>
-                </div>
+                <div class="today">
+                    <!-- Bookmarks: quick site access -->
+                    <aside class="today-rail">
+                        <div class="reading-list-section">
+                            <div class="reading-list-grid" id="reading-list-grid"></div>
+                        </div>
+                    </aside>
 
-
-                <!-- Search Bar -->
-                <div class="search-section">
-                    <div class="search-bar">
-                        <input type="text" class="search-input" id="search-input"
-                               placeholder="Search (Ctrl+k: Search, Ctrl+;: Todo, Ctrl+h: New Habit, Ctrl+j: Journal)"
-                               autocomplete="off">
-                        <div class="search-engine-dropdown" id="search-engine-dropdown"></div>
-                        <div class="search-engine-select" id="search-engine-btn">
-                        <i class="fab fa-google" id="search-engine-icon"></i>
-                    </div>
-                    </div>
-                </div>
-
-                <!-- Timeline -->
-                <div class="timeline-section">
-                    <div class="timeline-nav">
-                        <button class="timeline-nav-btn" id="timeline-prev-btn">
-                            <i class="fas fa-chevron-left"></i>
-                        </button>
-                        <span class="timeline-date-label" id="timeline-date-label">Today</span>
-                        <button class="timeline-nav-btn" id="timeline-next-btn" disabled>
-                            <i class="fas fa-chevron-right"></i>
-                        </button>
-                    </div>
-                    <div class="timeline-container" id="timeline-container">
-                        <div class="timeline-list" id="timeline-list">
-                            <div class="timeline-loading">
+                    <div class="today-main">
+                        <!-- Greeting + focus strip -->
+                        <div class="today-head">
+                            <div class="greeting-main">
+                                <h1 id="greeting-text">Good Morning!</h1>
+                                <p id="greeting-sub">Let's make today amazing</p>
+                            </div>
+                        <div class="pomodoro-section">
+                            <div class="pomodoro-main">
+                                <div class="pomodoro-controls">
+                                    <div class="pomodoro-display">
+                                    <span class="pomodoro-mode" id="pomodoro-mode">Focus</span>
+                                    <span class="pomodoro-time" id="pomodoro-time">25:00</span>
+                                </div>
+                                <button class="btn btn-paper btn-primary btn-sm" id="pomodoro-start">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                                <button class="btn btn-paper btn-sm" id="pomodoro-reset">
+                                    <i class="fas fa-redo"></i>
+                                </button>
+                                <button class="btn btn-paper btn-sm" id="pomodoro-toggle-mode">
+                                    <i class="fas fa-coffee"></i>
+                                </button>
+                            </div>
+                                </div>
+                            <div class="pomodoro-cycles" id="pomodoro-cycles"></div>
+                            <div class="pomodoro-focus-today"><span id="pomodoro-focused-today"></span></div>
+                            <!-- Gamification Status Bar -->
+                            <div class="gami-status-bar" id="gami-status-bar">
+                                <div class="gami-stat" title="Daily streak">
+                                    <i class="fas fa-fire gami-icon-streak"></i>
+                                    <span id="gami-streak">0</span>
+                                    <small>streak</small>
+                                </div>
+                                <div class="gami-sep">·</div>
+                                <div class="gami-stat" title="Level">
+                                    <i class="fas fa-bolt gami-icon-level"></i>
+                                    <span id="gami-level-name">Newcomer</span>
+                                </div>
+                                <div class="gami-sep">·</div>
+                                <div class="gami-stat" title="Total points">
+                                    <i class="fas fa-star gami-icon-pts"></i>
+                                    <span id="gami-points">0</span>
+                                    <small>pts</small>
+                                </div>
+                                <div class="gami-xp-bar-wrap" title="XP to next level">
+                                    <div class="gami-xp-bar">
+                                        <div class="gami-xp-fill" id="gami-xp-fill" style="width:0%"></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="timeline-gradient-top"></div>
-                        <div class="timeline-gradient-bottom"></div>
-                    </div>
-                </div>
+                        </div>
 
-                <!-- Reading List (Featured Bookmarks) -->
-                <div class="reading-list-section">
-                    <div class="reading-list-grid" id="reading-list-grid">
+                        <!-- Search Bar -->
+                        <div class="search-section">
+                            <div class="search-bar">
+                                <input type="text" class="search-input" id="search-input"
+                                       placeholder="Search the web, or press Ctrl+K"
+                                       autocomplete="off">
+                                <div class="search-engine-dropdown" id="search-engine-dropdown"></div>
+                                <div class="search-engine-select" id="search-engine-btn">
+                                    <i class="fab fa-google" id="search-engine-icon"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Timeline: the hero of Today -->
+                        <div class="timeline-section">
+                            <div class="timeline-nav">
+                                <button class="timeline-nav-btn" id="timeline-prev-btn" aria-label="Previous day">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <span class="timeline-date-label" id="timeline-date-label">Today</span>
+                                <button class="timeline-nav-btn" id="timeline-next-btn" aria-label="Next day" disabled>
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+                            <div class="timeline-container" id="timeline-container">
+                                <div class="timeline-list" id="timeline-list">
+                                    <div class="timeline-loading"></div>
+                                </div>
+                                <div class="timeline-gradient-top"></div>
+                                <div class="timeline-gradient-bottom"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
