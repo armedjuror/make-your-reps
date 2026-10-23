@@ -7,6 +7,12 @@ from django.db import models
 
 
 class Theme(models.TextChoices):
+    INK = 'ink'
+    PAPER = 'paper'
+    TERMINAL = 'terminal'
+    PLAIN = 'plain'
+    # Legacy names, kept so existing rows stay valid. The UI treats
+    # 'light' as 'paper' and 'dark' as 'ink'.
     DARK = 'dark'
     LIGHT = 'light'
 

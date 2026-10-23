@@ -5,7 +5,6 @@
 
 let currentPane = 'home';
 let panesLoaded = { home: false, todos: false, trackers: false, journals: false, achievements: false, 'reading-list': false, friends: false, settings: false, help: false };
-let currentTheme = 'light';
 
 // ── Pane Switching ──
 function switchPane(pane) {
@@ -70,14 +69,6 @@ function closeMobileMenu() {
     document.getElementById('mobile-menu-overlay').classList.remove('open');
 }
 
-// ── Theme ──
-function toggleTheme() {
-    currentTheme = currentTheme === 'light' ? 'dark' : 'light';
-    document.body.setAttribute('data-theme', currentTheme);
-    document.getElementById('themeIcon').className = currentTheme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
-    apiClient.put('board/api/user_details/', {default_theme: currentTheme});
-}
-
 // ── Font ──
 function applyFont(fontFamily) {
     document.body.style.fontFamily = `'${fontFamily}', sans-serif`;
@@ -118,7 +109,7 @@ function bindEvents() {
     document.querySelectorAll('.tab-item[data-pane]').forEach(item => {
         item.addEventListener('click', () => switchPane(item.dataset.pane));
     });
-    document.getElementById('tab-theme-btn').addEventListener('click', toggleTheme);
+    Theme.bindPicker();
     // Settings is now triggered from the Others pane sub-tab
 
     // Navigation — mobile menu
@@ -134,7 +125,7 @@ function bindEvents() {
         item.addEventListener('click', () => switchPane(item.dataset.pane));
     });
     document.getElementById('mobile-bottom-more-btn').addEventListener('click', toggleMobileMenu);
-    document.getElementById('mobile-theme-btn').addEventListener('click', () => { toggleTheme(); closeMobileMenu(); });
+    document.getElementById('mobile-theme-btn').addEventListener('click', () => { closeMobileMenu(); Theme.openAppearance(); });
     // Settings is now triggered from the Others pane sub-tab
 
     // Pomodoro
@@ -208,7 +199,6 @@ function bindEvents() {
     document.getElementById('group-save-btn').addEventListener('click', () => TodosPane.saveGroup());
 
     // Settings — general
-    document.getElementById('themeSelect').addEventListener('change', () => Settings.changeTheme());
     document.getElementById('fontSelect').addEventListener('change', () => Settings.changeFont());
     document.getElementById('clockFormatSelect').addEventListener('change', () => Settings.changeClockFormat());
     document.getElementById('searchEngineSelect').addEventListener('change', () => Settings.changeSearchEngine());
@@ -363,7 +353,6 @@ const Onboarding = {
     const initialPane = validPanes.includes(hash) ? hash : 'home';
 
     AppConfig.load().then(() => {
-        currentTheme = AppConfig.userDetail?.default_theme || 'light';
 
         panesLoaded.home = true;
         initHomePane();
