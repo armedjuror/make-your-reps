@@ -1116,6 +1116,18 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
                 'error': 'action_response is required'
             }, status=status.HTTP_400_BAD_REQUEST)
 
+        # A snooze is 'tomorrow' or a date (YYYY-MM-DD) that is today or later
+        snooze = action_response.get('snooze') if isinstance(action_response, dict) else None
+        if snooze and snooze != 'tomorrow':
+            try:
+                if datetime.strptime(str(snooze), '%Y-%m-%d').date() < timezone.localdate():
+                    raise ValueError('past')
+            except ValueError:
+                return Response({
+                    'status': 'failed',
+                    'error': 'snooze must be tomorrow or a date from today onwards (YYYY-MM-DD)'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
         event.action_response = action_response
         event.save()
 
@@ -1149,12 +1161,14 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
                 return {'propagated': True, 'model': 'HabitLog', 'is_done': mark_done}
 
             elif event.event_type == TimelineEventType.TODO and model_name == 'Task':
-                if action_response.get('snooze') == 'tomorrow':
-                    # Move the deadline to tomorrow, keeping the time of day
+                if action_response.get('snooze'):
+                    # Move the deadline to the chosen day (default tomorrow), keeping the time of day
                     task = Task.objects.get(pk=model_id, user_id=user_id, is_deleted=False)
-                    tomorrow = timezone.localdate() + timedelta(days=1)
+                    target = action_response['snooze']
+                    new_day = (timezone.localdate() + timedelta(days=1) if target == 'tomorrow'
+                               else datetime.strptime(str(target), '%Y-%m-%d').date())
                     time_of_day = timezone.localtime(task.deadline).time() if task.deadline else time(9, 0)
-                    task.deadline = timezone.make_aware(datetime.combine(tomorrow, time_of_day))
+                    task.deadline = timezone.make_aware(datetime.combine(new_day, time_of_day))
                     task.save()
                     return {'propagated': True, 'model': 'Task', 'snoozed_to': task.deadline.isoformat()}
                 mark_done = action_response.get('mark_done', False)

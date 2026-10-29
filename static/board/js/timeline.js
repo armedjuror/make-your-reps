@@ -107,7 +107,8 @@ const Timeline = {
     // ── Filters (All / Habits / Todos / Routine) ──
     filter: 'all',
     showEarlier: false,
-    confirmSnoozeAll: false,
+    reschedTarget: null,   // event id, or 'all', while the date picker is open
+    reschedDate: '',
     showAllOverdue: false,
     groupFilter: '',   // '' = all groups, otherwise a task group id
     FILTER_TYPES: {
@@ -158,10 +159,32 @@ const Timeline = {
         return h ? `${h}h ${m}m` : `${m}m`;
     },
 
+    _tomorrow() {
+        return getDate(new Date(Date.now() + 86400000));
+    },
+
+    /** Inline date chooser for rescheduling one overdue task or all of them. */
+    _pickerHtml(target, verb) {
+        if (!this.reschedDate) this.reschedDate = this._tomorrow();
+        const d = this.reschedDate;
+        const quick = (label, days) => {
+            const v = getDate(new Date(Date.now() + days * 86400000));
+            return `<button type="button" class="tl-link" data-tl-action="resched-quick" data-date="${v}">${label}</button>`;
+        };
+        return `
+            <div class="tl-resched">
+                <input type="date" class="tl-date" data-tl-date min="${getDate(new Date())}" value="${this.esc(d)}" aria-label="New date">
+                ${quick('Tomorrow', 1)}${quick('In a week', 7)}
+                <button type="button" class="btn btn-paper btn-sm btn-primary" data-tl-action="resched-go" data-target="${this.esc(target)}">${verb}</button>
+                <button type="button" class="tl-link" data-tl-action="resched-cancel">Cancel</button>
+            </div>`;
+    },
+
     _actionsFor(event, extraClass) {
         const html = this.renderAction(event);
         if (!extraClass.includes('timeline-overdue') || event.action_response) return html;
-        const btn = `<button type="button" class="btn btn-paper btn-sm ms-1" data-tl-action="snooze" data-event-id="${event.id}"><i class="fas fa-forward me-1"></i>Tomorrow</button>`;
+        if (this.reschedTarget === event.id) return html + this._pickerHtml(String(event.id), 'Move');
+        const btn = `<button type="button" class="btn btn-paper btn-sm ms-1" data-tl-action="resched-open" data-target="${event.id}"><i class="fas fa-calendar-day me-1"></i>Reschedule</button>`;
         return html.includes('timeline-actions') ? html.replace(/<\/div>\s*$/, btn + '</div>') : html;
     },
 
@@ -223,9 +246,10 @@ const Timeline = {
                         <span><i class="fas fa-triangle-exclamation"></i> Overdue &middot; ${overdue.length}</span>
                         <span class="tl-overdue-actions">
                             ${overdue.length > 1 ? `<button type="button" class="tl-link" data-tl-action="toggle-overdue">${this.showAllOverdue ? 'Show less' : `Show all ${overdue.length}`}</button>` : ''}
-                            <button type="button" class="tl-link" data-tl-action="snooze-all">${this.confirmSnoozeAll ? `Move all ${overdue.length} to tomorrow?` : 'Reschedule all'}</button>
+                            <button type="button" class="tl-link" data-tl-action="resched-open" data-target="all">Reschedule all</button>
                         </span>
                     </div>
+                    ${this.reschedTarget === 'all' ? this._pickerHtml('all', `Move all ${overdue.length}`) : ''}
                     ${shown.map(e => this._itemHtml(e, 'timeline-overdue')).join('')}
                 </div>`;
         }
@@ -302,13 +326,25 @@ const Timeline = {
             if (btn.dataset.tlAction === 'toggle-earlier') this.showEarlier = !this.showEarlier;
             const act = btn.dataset.tlAction;
             if (act === 'toggle-overdue') this.showAllOverdue = !this.showAllOverdue;
-            if (act === 'snooze') { btn.disabled = true; this.snooze(Number(btn.dataset.eventId)); return; }
-            if (act === 'snooze-all') {
-                // Two-step: first click asks, second click does it
-                if (this.confirmSnoozeAll) { btn.disabled = true; this.snoozeAllOverdue(); return; }
-                this.confirmSnoozeAll = true;
+            if (act === 'resched-open') {
+                const t = btn.dataset.target;
+                this.reschedTarget = t === 'all' ? 'all' : Number(t);
+                this.reschedDate = this._tomorrow();
+            }
+            if (act === 'resched-cancel') this.reschedTarget = null;
+            if (act === 'resched-quick') this.reschedDate = btn.dataset.date;
+            if (act === 'resched-go') {
+                const date = this.reschedDate;
+                if (!date || date < getDate(new Date())) return;
+                const t = btn.dataset.target;
+                btn.disabled = true;
+                if (t === 'all') this.snoozeAllOverdue(date); else this.snooze(Number(t), date);
+                return;
             }
             this.render();
+        });
+        if (list) list.addEventListener('change', (e) => {
+            if (e.target.matches('[data-tl-date]')) this.reschedDate = e.target.value;
         });
         document.querySelectorAll('.timeline-chip').forEach(b =>
             b.addEventListener('click', () => this.setFilter(b.dataset.tlFilter)));
@@ -321,11 +357,12 @@ const Timeline = {
         }, 60000);
     },
 
-    async snooze(eventId) {
+    async snooze(eventId, date = 'tomorrow') {
         const res = await apiClient.put(`board/api/timeline/${eventId}/respond/`, {
-            action_response: { snooze: 'tomorrow' }
+            action_response: { snooze: date }
         });
         if (res.status === 'success') {
+            this.reschedTarget = null;
             const idx = this.events.findIndex(e => e.id === eventId);
             if (idx >= 0) this.events[idx] = res.data;
             this.render();
@@ -334,16 +371,16 @@ const Timeline = {
         return res.status === 'success';
     },
 
-    async snoozeAllOverdue() {
+    async snoozeAllOverdue(date = 'tomorrow') {
         const ids = this.events
             .filter(e => this._isOverdue(e) && !(e.action_response && e.action_response.snooze))
             .map(e => e.id);
         for (const id of ids) {
             const idx = this.events.findIndex(e => e.id === id);
-            const res = await apiClient.put(`board/api/timeline/${id}/respond/`, { action_response: { snooze: 'tomorrow' } });
+            const res = await apiClient.put(`board/api/timeline/${id}/respond/`, { action_response: { snooze: date } });
             if (res.status === 'success' && idx >= 0) this.events[idx] = res.data;
         }
-        this.confirmSnoozeAll = false;
+        this.reschedTarget = null;
         this.render();
         if (typeof TodosPane !== 'undefined' && panesLoaded?.todos) TodosPane.loadTodos();
     },

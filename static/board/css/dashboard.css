@@ -2822,6 +2822,9 @@
 .timeline-label { font-size: .7rem; font-weight: 700; letter-spacing: .1em; color: var(--ink-brown); margin-bottom: 2px; }
 .today .timeline-item { align-items: flex-start; }
 .today .timeline-empty { text-align: center; color: var(--ink-gray); padding: 18px 0; font-size: .9rem; }
+.tl-resched { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 8px 0 4px; }
+.tl-overdue-head + .tl-resched { margin: 0 0 10px; }
+.tl-date { font: inherit; font-size: .85rem; padding: 4px 10px; color: var(--ink-black); background: var(--surface-raised, transparent); border: 1px solid rgba(var(--accent-rgb), .45); border-radius: 8px; color-scheme: light dark; }
 .tl-overdue-actions { display: inline-flex; gap: 14px; align-items: center; }
 .tl-overdue .timeline-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 
