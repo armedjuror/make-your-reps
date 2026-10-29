@@ -71,7 +71,8 @@ function closeMobileMenu() {
 
 // ── Font ──
 function applyFont(fontFamily) {
-    document.body.style.fontFamily = `'${fontFamily}', sans-serif`;
+    const fallback = /serif$/i.test(fontFamily) && !/sans/i.test(fontFamily) ? 'serif' : /mono/i.test(fontFamily) ? 'monospace' : 'sans-serif';
+    document.body.style.fontFamily = `'${fontFamily}', ${fallback}`;
     document.body.setAttribute('data-font', fontFamily);
 }
 

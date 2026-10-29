@@ -243,7 +243,7 @@ const Timeline = {
             html += `
                 <div class="tl-overdue">
                     <div class="tl-overdue-head">
-                        <span><i class="fas fa-triangle-exclamation"></i> Overdue &middot; ${overdue.length}</span>
+                        <span><i class="fas fa-triangle-exclamation"></i> ${this.esc(Theme.text('overdue'))} &middot; ${overdue.length}</span>
                         <span class="tl-overdue-actions">
                             ${overdue.length > 1 ? `<button type="button" class="tl-link" data-tl-action="toggle-overdue">${this.showAllOverdue ? 'Show less' : `Show all ${overdue.length}`}</button>` : ''}
                             <button type="button" class="tl-link" data-tl-action="resched-open" data-target="all">Reschedule all</button>
@@ -277,13 +277,13 @@ const Timeline = {
             <div class="timeline-now" id="timeline-now-anchor">
                 <div class="timeline-time">${this._fmtTime(now)}</div>
                 <div class="timeline-now-dot"></div>
-                <div class="timeline-now-label">NOW</div>
+                <div class="timeline-now-label">${this.esc(Theme.text('now'))}</div>
                 <div class="timeline-now-line"></div>
             </div>`;
 
         upcoming.forEach((e, i) => {
             html += i === 0
-                ? this._itemHtml(e, 'timeline-next', `NEXT &middot; IN ${this._until(new Date(e.timestamp), now).toUpperCase()}`)
+                ? this._itemHtml(e, 'timeline-next', this.esc(Theme.text('next', this._until(new Date(e.timestamp), now).toUpperCase())))
                 : this._itemHtml(e);
         });
         if (!upcoming.length) html += '<div class="timeline-empty">Nothing else today.</div>';
@@ -507,6 +507,7 @@ const Timeline = {
                 this.events[idx] = res.data;
             }
             this.render();
+            if (value === true && typeof Theme !== 'undefined') Theme.celebrate();
             // Refresh productivity score
             General.loadProductivityScore();
         }
