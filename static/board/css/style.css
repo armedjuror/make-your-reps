@@ -3,11 +3,16 @@
    Every colour and shape in the UI comes from these variables.
    --accent-rgb is the accent as "r, g, b" so tints can be written as
    rgba(var(--accent-rgb), 0.15).
-   Four themes, each with its own personality:
+   Nine themes, each with its own personality:
      ink       dark, warm amber, dotted notebook
      terminal  dark, phosphor green, CRT scanlines, square corners
      tech      dark navy, sky blue, blueprint grid, glowing edges
      aurora    light, white, violet/blue gradient glow, soft glass
+     sensei    light, washi paper, vermilion seal, spacious serif
+     coach     black and hazard yellow, heavy condensed caps
+     garden    light, sage and clay, round and soft
+     orbit     deep space, nebula violet, telemetry
+     quest     sunny sky, thick outlines, arcade red
    "dark" is a legacy alias of ink; "light", "paper", "plain" map to aurora.
    ══════════════════════════════════════════════════════════════ */
 :root,
@@ -166,6 +171,195 @@
     --radius-lg: 20px;
     --radius-pill: 999px;
     --glow: 0 8px 30px rgba(109, 94, 240, 0.18);
+}
+
+/* SENSEI — washi paper, sumi ink, one vermilion seal. Quiet and spacious. */
+[data-theme="sensei"] {
+    --paper-bg: #f4efe6;
+    --paper-bg-end: #ece5d6;
+    --paper-bg-center: #f8f4ec;
+    --page-bg:
+        radial-gradient(circle at 88% 14%, transparent 0 150px, rgba(28, 27, 25, 0.06) 151px 153px, transparent 154px),
+        radial-gradient(ellipse at 50% 0%, var(--paper-bg-center) 0%, var(--paper-bg-end) 100%);
+    --grid-image: repeating-linear-gradient(90deg, rgba(60, 50, 30, 0.025) 0 1px, transparent 1px 7px);
+    --grid-size: auto;
+    --grid-opacity: 1;
+    --grid-dots: transparent;
+    --ink-brown: #c8321f;
+    --accent-rgb: 200, 50, 31;
+    --ink-black: #1c1b19;
+    --ink-gray: #756f63;
+    --ink-brown-light: #d49a8c;
+    --ink-red: #b3261e;
+    --ink-green: #55704f;
+    --margin-line: #d9d1bf;
+    --hole-color: #cfc6b0;
+    --coffee-stain: #cfc6b0;
+    --yellow-tint: #efe7d6;
+    --surface-raised: #fbf8f1;
+    --shell-bg: rgba(251, 248, 241, 0.92);
+    --shell-bg-soft: rgba(251, 248, 241, 0.7);
+    --overlay-bg: rgba(244, 239, 230, 0.9);
+    --gold: #a8812c;
+    --gold-rgb: 168, 129, 44;
+    --on-accent: #fbf8f1;
+    --radius-sm: 1px;
+    --radius-md: 2px;
+    --radius-lg: 3px;
+    --radius-pill: 2px;
+    --glow: none;
+}
+
+/* COACH — black and hazard yellow, heavy and loud */
+[data-theme="coach"] {
+    --paper-bg: #0b0b0b;
+    --paper-bg-end: #050505;
+    --paper-bg-center: #141414;
+    --page-bg: linear-gradient(180deg, var(--paper-bg-center) 0%, var(--paper-bg-end) 100%);
+    --grid-image: repeating-linear-gradient(135deg, rgba(250, 204, 21, 0.045) 0 14px, transparent 14px 28px);
+    --grid-size: auto;
+    --grid-opacity: 1;
+    --grid-dots: transparent;
+    --ink-brown: #facc15;
+    --accent-rgb: 250, 204, 21;
+    --ink-black: #f5f5f4;
+    --ink-gray: #a3a3a3;
+    --ink-brown-light: #8a7410;
+    --ink-red: #ff3b30;
+    --ink-green: #22c55e;
+    --margin-line: #3a3a3a;
+    --hole-color: #3a3a3a;
+    --coffee-stain: #3a3a3a;
+    --yellow-tint: #231f05;
+    --surface-raised: #171717;
+    --shell-bg: rgba(10, 10, 10, 0.95);
+    --shell-bg-soft: rgba(10, 10, 10, 0.7);
+    --overlay-bg: rgba(0, 0, 0, 0.85);
+    --gold: #facc15;
+    --gold-rgb: 250, 204, 21;
+    --on-accent: #0a0a0a;
+    --radius-sm: 0px;
+    --radius-md: 2px;
+    --radius-lg: 2px;
+    --radius-pill: 0px;
+    --glow: none;
+}
+
+/* GARDEN — sage, clay and sunlight; round, soft, alive */
+[data-theme="garden"] {
+    --paper-bg: #f3f7ec;
+    --paper-bg-end: #e2edd6;
+    --paper-bg-center: #fbfdf6;
+    --page-bg:
+        radial-gradient(ellipse 50% 40% at 10% 5%, rgba(255, 224, 140, 0.35) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 50% at 95% 100%, rgba(134, 190, 130, 0.30) 0%, transparent 70%),
+        linear-gradient(180deg, var(--paper-bg-center) 0%, var(--paper-bg-end) 100%);
+    --grid-image: radial-gradient(circle at center, rgba(91, 140, 90, 0.22) 1.2px, transparent 1.4px);
+    --grid-size: 28px 28px;
+    --grid-opacity: 0.7;
+    --grid-dots: rgba(91, 140, 90, 0.3);
+    --ink-brown: #4f8a4e;
+    --accent-rgb: 79, 138, 78;
+    --ink-black: #2a3826;
+    --ink-gray: #66775d;
+    --ink-brown-light: #a5c8a0;
+    --ink-red: #c9633a;
+    --ink-green: #3f8f4a;
+    --margin-line: #cfe0c4;
+    --hole-color: #c3d8b8;
+    --coffee-stain: #c3d8b8;
+    --yellow-tint: #e8f2da;
+    --surface-raised: rgba(255, 255, 255, 0.85);
+    --shell-bg: rgba(255, 255, 255, 0.88);
+    --shell-bg-soft: rgba(255, 255, 255, 0.7);
+    --overlay-bg: rgba(228, 238, 215, 0.88);
+    --gold: #d9a21b;
+    --gold-rgb: 217, 162, 27;
+    --on-accent: #ffffff;
+    --radius-sm: 12px;
+    --radius-md: 18px;
+    --radius-lg: 26px;
+    --radius-pill: 999px;
+    --glow: 0 10px 28px rgba(79, 138, 78, 0.16);
+}
+
+/* ORBIT — deep space, nebula violet, mission-control telemetry */
+[data-theme="orbit"] {
+    --paper-bg: #07060f;
+    --paper-bg-end: #04030a;
+    --paper-bg-center: #130d2b;
+    --page-bg:
+        radial-gradient(ellipse 70% 50% at 50% 115%, rgba(139, 92, 246, 0.28) 0%, transparent 70%),
+        radial-gradient(ellipse at 50% 0%, var(--paper-bg-center) 0%, var(--paper-bg-end) 75%);
+    --grid-image:
+        radial-gradient(circle at 12% 18%, rgba(255,255,255,.55) 0.7px, transparent 1.1px),
+        radial-gradient(circle at 78% 32%, rgba(255,255,255,.4) 0.7px, transparent 1.1px),
+        radial-gradient(circle at 44% 74%, rgba(255,255,255,.45) 0.7px, transparent 1.1px),
+        radial-gradient(circle at 90% 82%, rgba(255,255,255,.35) 0.7px, transparent 1.1px),
+        repeating-radial-gradient(circle at 50% 118%, transparent 0 118px, rgba(183, 148, 255, 0.07) 119px 120px);
+    --grid-size: 190px 190px, 230px 230px, 170px 170px, 260px 260px, auto;
+    --grid-opacity: 1;
+    --grid-dots: rgba(183, 148, 255, 0.2);
+    --ink-brown: #b794ff;
+    --accent-rgb: 183, 148, 255;
+    --ink-black: #ece8ff;
+    --ink-gray: #8f89b0;
+    --ink-brown-light: #5b4a99;
+    --ink-red: #ff6b8a;
+    --ink-green: #5eead4;
+    --margin-line: #2a2150;
+    --hole-color: #2a2150;
+    --coffee-stain: #2a2150;
+    --yellow-tint: #1b1340;
+    --surface-raised: #110c26;
+    --shell-bg: rgba(12, 8, 30, 0.92);
+    --shell-bg-soft: rgba(12, 8, 30, 0.6);
+    --overlay-bg: rgba(4, 3, 12, 0.85);
+    --gold: #fcd34d;
+    --gold-rgb: 252, 211, 77;
+    --on-accent: #12082b;
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-pill: 999px;
+    --glow: 0 0 22px rgba(183, 148, 255, 0.25);
+}
+
+/* QUEST — sunny sky, thick black outlines, arcade red and coin gold */
+[data-theme="quest"] {
+    --paper-bg: #8fd3ff;
+    --paper-bg-end: #bfe8ff;
+    --paper-bg-center: #6ec5ff;
+    --page-bg: linear-gradient(180deg, var(--paper-bg-center) 0%, var(--paper-bg-end) 78%, #9be07a 78%, #6fc24f 100%);
+    --grid-image:
+        linear-gradient(rgba(255, 255, 255, 0.16) 2px, transparent 2px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.16) 2px, transparent 2px);
+    --grid-size: 32px 32px;
+    --grid-opacity: 1;
+    --grid-dots: rgba(255, 255, 255, 0.3);
+    --ink-brown: #e4372c;
+    --accent-rgb: 228, 55, 44;
+    --ink-black: #1a1a2e;
+    --ink-gray: #3d4468;
+    --ink-brown-light: #1a1a2e;
+    --ink-red: #c0221a;
+    --ink-green: #1f8a3b;
+    --margin-line: #1a1a2e;
+    --hole-color: #1a1a2e;
+    --coffee-stain: #1a1a2e;
+    --yellow-tint: #fff3b0;
+    --surface-raised: #ffffff;
+    --shell-bg: #ffffff;
+    --shell-bg-soft: rgba(255, 255, 255, 0.85);
+    --overlay-bg: rgba(143, 211, 255, 0.9);
+    --gold: #fbd000;
+    --gold-rgb: 251, 208, 0;
+    --on-accent: #ffffff;
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 8px;
+    --radius-pill: 6px;
+    --glow: 4px 4px 0 #1a1a2e;
 }
 
 * {
@@ -568,11 +762,11 @@ body::after {
 }
 
 
-:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"]) .form-control, .form-control::placeholder {
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .form-control, .form-control::placeholder {
     color: var(--ink-black);
 }
 
-:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"]) .form-control:focus {
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .form-control:focus {
     color: var(--ink-black);
 }
 
@@ -722,7 +916,7 @@ body::after {
     pointer-events: none;
 }
 
-:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"]) .loader-overlay {
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .loader-overlay {
     background: var(--overlay-bg);
 }
 
@@ -1112,12 +1306,12 @@ body::after {
 }
 
 /* Dark theme support */
-:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"]) .nav-popup {
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .nav-popup {
     background: var(--surface-raised);
     color: white;
 }
 
-:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"]) .hamburger-line {
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .hamburger-line {
     background: rgba(var(--accent-rgb), 0.9);
 }
 
@@ -1141,11 +1335,11 @@ body::after {
     color: rgba(var(--accent-rgb), 1);
 }
 
-:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"]) .nav-link {
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .nav-link {
     color: rgba(var(--accent-rgb), 0.9);
 }
 
-:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"]) .nav-link:hover {
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .nav-link:hover {
     background: rgba(var(--accent-rgb), 0.2);
     color: rgba(var(--accent-rgb), 1);
 }
@@ -1330,20 +1524,20 @@ body::after {
 }
 
 /* Dark theme support */
-:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"]) .current-habit-display {
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .current-habit-display {
     background: rgba(var(--accent-rgb), 0.1);
 }
 
-:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"]) .habit-action-btn {
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .habit-action-btn {
     background: var(--surface-raised);
     color: inherit;
 }
 
-:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"]) .partner-management {
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .partner-management {
     background: rgba(23, 162, 184, 0.1);
 }
 
-:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"]) .current-partner-card {
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .current-partner-card {
     background: var(--surface-raised);
 }
 

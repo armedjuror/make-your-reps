@@ -542,14 +542,14 @@
 }
 
 /* Dark theme adjustments */
-:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"]) .stat-card,
-:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"]) .habit-card,
-:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"]) .badge-card,
-:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"]) .timeline-content,
-:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"]) .share-preview {
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .stat-card,
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .habit-card,
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .badge-card,
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .timeline-content,
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .share-preview {
     background: var(--paper-bg-end);
 }
 
-:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"]) .badge-card.earned {
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .badge-card.earned {
     background: linear-gradient(135deg, rgba(var(--gold-rgb), 0.2), rgba(var(--accent-rgb), 0.1));
 }

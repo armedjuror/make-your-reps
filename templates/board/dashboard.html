@@ -8,7 +8,7 @@
     <script>
         // Apply the saved theme before first paint to avoid a flash.
         (function () {
-            var map = { dark: 'ink', light: 'aurora', paper: 'aurora', plain: 'aurora' }, ok = ['ink', 'terminal', 'tech', 'aurora'], t = null;
+            var map = { dark: 'ink', light: 'aurora', paper: 'aurora', plain: 'aurora' }, ok = ['ink', 'terminal', 'tech', 'aurora', 'sensei', 'coach', 'garden', 'orbit', 'quest'], t = null;
             try { t = localStorage.getItem('mr_theme'); } catch (e) {}
             t = map[t] || t;
             if (ok.indexOf(t) < 0) t = '{{ user_detail.default_theme|default:"ink" }}';
@@ -20,7 +20,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fredericka+the+Great&family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredericka+the+Great&family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=JetBrains+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Barlow+Condensed:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=DotGothic16&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'board/css/style.css' %}">
     <link rel="stylesheet" href="{% static 'board/css/dashboard.css' %}">
     <!-- PWA -->
@@ -624,6 +624,11 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                                                                         <button type="button" class="theme-swatch" data-theme-value="terminal" aria-pressed="false"><span class="sw sw-terminal"><i></i><i></i><i></i></span>Terminal</button>
                                     <button type="button" class="theme-swatch" data-theme-value="tech" aria-pressed="false"><span class="sw sw-tech"><i></i><i></i><i></i></span>Tech</button>
                                     <button type="button" class="theme-swatch" data-theme-value="aurora" aria-pressed="false"><span class="sw sw-aurora"><i></i><i></i><i></i></span>Aurora</button>
+                                    <button type="button" class="theme-swatch" data-theme-value="sensei" aria-pressed="false"><span class="sw sw-sensei"><i></i><i></i><i></i></span>Sensei</button>
+                                    <button type="button" class="theme-swatch" data-theme-value="coach" aria-pressed="false"><span class="sw sw-coach"><i></i><i></i><i></i></span>Coach</button>
+                                    <button type="button" class="theme-swatch" data-theme-value="garden" aria-pressed="false"><span class="sw sw-garden"><i></i><i></i><i></i></span>Garden</button>
+                                    <button type="button" class="theme-swatch" data-theme-value="orbit" aria-pressed="false"><span class="sw sw-orbit"><i></i><i></i><i></i></span>Orbit</button>
+                                    <button type="button" class="theme-swatch" data-theme-value="quest" aria-pressed="false"><span class="sw sw-quest"><i></i><i></i><i></i></span>Quest</button>
                                 </div>
                             </div>
                             <div class="mb-3">
@@ -632,6 +637,13 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                                     <option value="Montserrat">Montserrat</option>
                                     <option value="Lato">Lato</option>
                                     <option value="JetBrains Mono">JetBrains Mono</option>
+                                    <option value="Space Grotesk">Space Grotesk</option>
+                                    <option value="Plus Jakarta Sans">Plus Jakarta Sans</option>
+                                    <option value="Instrument Serif">Instrument Serif</option>
+                                    <option value="Barlow Condensed">Barlow Condensed</option>
+                                    <option value="Nunito">Nunito</option>
+                                    <option value="Space Mono">Space Mono</option>
+                                    <option value="DotGothic16">DotGothic16</option>
                                 </select>
                             </div>
                             <div class="mb-3">
