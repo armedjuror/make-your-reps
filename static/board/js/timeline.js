@@ -109,6 +109,7 @@ const Timeline = {
     showEarlier: false,
     confirmSnoozeAll: false,
     showAllOverdue: false,
+    groupFilter: '',   // '' = all groups, otherwise a task group id
     FILTER_TYPES: {
         habits: ['habit', 'accountability_habit'],
         todos: ['todo'],
@@ -119,6 +120,22 @@ const Timeline = {
         const d = document.createElement('div');
         d.textContent = str == null ? '' : String(str);
         return d.innerHTML;
+    },
+
+    /** Fill the group select from the task groups present in the loaded events. */
+    _syncGroupSelect(events) {
+        const sel = document.getElementById('timeline-group-filter');
+        if (!sel) return;
+        const groups = new Map();
+        events.forEach(e => { if (e.group) groups.set(String(e.group.id), e.group.name); });
+        if (this.groupFilter && !groups.has(this.groupFilter)) this.groupFilter = '';
+        sel.hidden = groups.size === 0;
+        const opts = ['<option value="">All groups</option>']
+            .concat([...groups].sort((a, b) => a[1].localeCompare(b[1]))
+                .map(([id, name]) => `<option value="${this.esc(id)}">${this.esc(name)}</option>`));
+        const html = opts.join('');
+        if (sel.dataset.sig !== html) { sel.innerHTML = html; sel.dataset.sig = html; }
+        sel.value = this.groupFilter;
     },
 
     setFilter(filter) {
@@ -157,7 +174,7 @@ const Timeline = {
                 <div class="timeline-icon"><i class="${this.getTypeIcon(event.event_type)}"></i></div>
                 <div class="timeline-content">
                     ${label ? `<div class="timeline-label">${label}</div>` : ''}
-                    <div class="timeline-event-text">${this.esc(event.event)}</div>
+                    <div class="timeline-event-text">${this.esc(event.event)}${event.group ? ` <span class="timeline-group">${this.esc(event.group.name)}</span>` : ''}</div>
                     ${this._actionsFor(event, extraClass)}
                 </div>
             </div>`;
@@ -168,8 +185,10 @@ const Timeline = {
         if (!list) return;
 
         let events = this.events.filter(e => !(e.action_response && e.action_response.snooze));
+        this._syncGroupSelect(events);
         const types = this.FILTER_TYPES[this.filter];
         if (types) events = events.filter(e => types.includes(e.event_type));
+        if (this.groupFilter) events = events.filter(e => e.group && String(e.group.id) === this.groupFilter);
 
         if (events.length === 0) {
             list.innerHTML = `<div class="timeline-empty">${this.filter === 'all'
@@ -197,13 +216,13 @@ const Timeline = {
         let html = '';
 
         if (overdue.length) {
-            const shown = this.showAllOverdue ? overdue : overdue.slice(0, 2);
+            const shown = this.showAllOverdue ? overdue : overdue.slice(0, 1);
             html += `
                 <div class="tl-overdue">
                     <div class="tl-overdue-head">
                         <span><i class="fas fa-triangle-exclamation"></i> Overdue &middot; ${overdue.length}</span>
                         <span class="tl-overdue-actions">
-                            ${overdue.length > 2 ? `<button type="button" class="tl-link" data-tl-action="toggle-overdue">${this.showAllOverdue ? 'Show less' : `Show all ${overdue.length}`}</button>` : ''}
+                            ${overdue.length > 1 ? `<button type="button" class="tl-link" data-tl-action="toggle-overdue">${this.showAllOverdue ? 'Show less' : `Show all ${overdue.length}`}</button>` : ''}
                             <button type="button" class="tl-link" data-tl-action="snooze-all">${this.confirmSnoozeAll ? `Move all ${overdue.length} to tomorrow?` : 'Reschedule all'}</button>
                         </span>
                     </div>
@@ -263,7 +282,11 @@ const Timeline = {
                 const top = a.getBoundingClientRect().top;
                 if (top <= window.innerHeight * 0.55) return;
                 if (scroller && scroller !== document.body) {
-                    scroller.scrollTo({ top: scroller.scrollTop + top - 200, behavior: 'smooth' });
+                    let target = scroller.scrollTop + top - 200;
+                    // Never scroll the greeting out of view on small screens
+                    const g = document.getElementById('greeting-text');
+                    if (g) target = Math.min(target, scroller.scrollTop + g.getBoundingClientRect().top - scroller.getBoundingClientRect().top - 12);
+                    scroller.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
                 } else {
                     window.scrollTo({ top: window.scrollY + top - 160, behavior: 'smooth' });
                 }
@@ -289,6 +312,8 @@ const Timeline = {
         });
         document.querySelectorAll('.timeline-chip').forEach(b =>
             b.addEventListener('click', () => this.setFilter(b.dataset.tlFilter)));
+        const gsel = document.getElementById('timeline-group-filter');
+        if (gsel) gsel.addEventListener('change', () => { this.groupFilter = gsel.value; this.render(); });
         // Keep the NOW marker honest while the tab stays open
         setInterval(() => {
             const pane = document.getElementById('pane-home');

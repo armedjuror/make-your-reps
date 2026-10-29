@@ -2743,6 +2743,7 @@
     .bookmark-strip .reading-list-grid { position: static; flex: 0 0 auto; flex-direction: row; flex-wrap: nowrap; justify-content: center; gap: 10px; }
     .bookmark-strip .reading-list-grid { gap: 8px; }
     .bookmark-strip .reading-list-item, .bookmark-strip .reading-list-add-btn { flex: 0 0 auto; width: 48px; height: 48px; padding: 0; }
+    .today-head { padding-top: 22px; }
     .today-head .greeting-main h1 { font-size: 1.05rem; }
     .today-head .pomodoro-section { width: 100%; flex-wrap: wrap; justify-content: center; row-gap: 6px; }
     .today-head .pomodoro-focus-today { display: none; }
@@ -2825,6 +2826,9 @@
 .tl-overdue .timeline-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 
 /* Timeline bar: date navigation and filters on one row */
+.timeline-group { display: inline-block; margin-left: 6px; padding: 1px 8px; font-size: .68rem; font-weight: 600; letter-spacing: .02em; color: var(--ink-brown); border: 1px solid rgba(var(--accent-rgb), .35); border-radius: 999px; vertical-align: middle; white-space: nowrap; }
+.timeline-group-select { font: inherit; font-size: .8rem; padding: 5px 12px; color: var(--ink-black); background: var(--surface-raised, transparent); border: 1px solid rgba(var(--accent-rgb), .35); border-radius: 999px; max-width: 160px; cursor: pointer; }
+.timeline-group-select[hidden] { display: none; }
 .timeline-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px 16px; margin: 0 0 16px; }
 .today .timeline-bar .timeline-nav { margin: 0; justify-content: flex-start; }
 .timeline-bar .timeline-chips { margin: 0; justify-content: flex-end; }
