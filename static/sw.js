@@ -4,7 +4,7 @@
  * (server-rendered Django app — HTML must always be fresh from network)
  */
 
-const CACHE = 'myr-static-v1.6';
+const CACHE = 'myr-static-v2.0';
 
 // Cache only immutable static assets on install
 self.addEventListener('install', e => {
@@ -36,14 +36,16 @@ self.addEventListener('fetch', e => {
         return;
     }
 
-    // Cache-first for static assets
+    // Static assets: network-first so a deploy is picked up immediately; the cache is only an offline fallback.
     if (url.pathname.startsWith('/static/')) {
         e.respondWith(
-            caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
-                const clone = res.clone();
-                caches.open(CACHE).then(c => c.put(e.request, clone));
+            fetch(e.request).then(res => {
+                if (res.ok) {
+                    const clone = res.clone();
+                    caches.open(CACHE).then(c => c.put(e.request, clone));
+                }
                 return res;
-            }))
+            }).catch(() => caches.match(e.request))
         );
         return;
     }
