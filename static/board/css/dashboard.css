@@ -2735,15 +2735,12 @@
     .today { padding-top: 8px; }
     .pane { padding-top: 12px; }
     /* The fixed footer/pomodoro pill sits at top: 65px (~36px tall) on small screens */
-    .bookmark-strip { display: block; margin: 108px 12px 0; padding-bottom: 4px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+    .bookmark-strip { display: flex; justify-content: safe center; margin: 108px 12px 0; padding: 4px 0 8px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
     .bookmark-strip::-webkit-scrollbar { display: none; }
-    .bookmark-strip .reading-list-grid { position: static; flex-direction: row; flex-wrap: nowrap; justify-content: flex-start; gap: 8px; }
-    .bookmark-strip .reading-list-item { flex: 0 0 auto; width: auto; height: auto; border-radius: 999px; transform: none; }
-    .bookmark-strip .rl-link { gap: 8px; padding: 6px 12px 6px 8px; }
-    .bookmark-strip .rl-icon, .bookmark-strip .rl-letter { width: 20px; height: 20px; border-radius: 6px; font-size: .65rem; }
-    .bookmark-strip .rl-name { display: block; font-size: .78rem; white-space: nowrap; max-width: 110px; overflow: hidden; text-overflow: ellipsis; }
-    .bookmark-strip .rl-edit-btn { display: none; }
-    .bookmark-strip .reading-list-add-btn { white-space: nowrap; flex: 0 0 auto; }
+    /* Same tiles as desktop, laid out horizontally */
+    .bookmark-strip .reading-list-grid { position: static; flex: 0 0 auto; flex-direction: row; flex-wrap: nowrap; justify-content: center; gap: 10px; }
+    .bookmark-strip .reading-list-grid { gap: 8px; }
+    .bookmark-strip .reading-list-item, .bookmark-strip .reading-list-add-btn { flex: 0 0 auto; width: 48px; height: 48px; padding: 0; }
     .today-head .pomodoro-section { width: 100%; flex-wrap: wrap; justify-content: center; row-gap: 6px; }
     .today-head .pomodoro-focus-today { display: none; }
     .today-head .gami-status-bar { width: 100%; justify-content: center; }
