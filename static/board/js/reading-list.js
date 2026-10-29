@@ -45,8 +45,8 @@ const ReadingList = {
     },
 
     renderFeatured() {
-        const grid = document.getElementById('reading-list-grid');
-        if (!grid) return;
+        const grids = document.querySelectorAll('#reading-list-grid, .bookmark-strip-grid');
+        if (!grids.length) return;
 
         const itemsHtml = this.items.map(item => {
             const iconHtml = item.icon
@@ -63,7 +63,7 @@ const ReadingList = {
 
         const addBtn = `<button class="reading-list-add-btn" onclick="ReadingList.showAddModal()" title="Add bookmark"><i class="fas fa-plus"></i></button>`;
 
-        grid.innerHTML = itemsHtml + addBtn;
+        grids.forEach(g => { g.innerHTML = itemsHtml + addBtn; });
     },
 
     escapeHtml(str) {

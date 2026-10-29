@@ -2688,32 +2688,9 @@
 .today { max-width: 860px; margin: 0 auto; padding-top: 20px; }
 .today-main { min-width: 0; }
 
-/* Bookmarks: vertical chip rail, on every tab */
-.bookmark-rail {
-    position: fixed; left: 16px; top: 110px; width: 168px; z-index: 20;
-    max-height: calc(100vh - 150px); overflow-y: auto; scrollbar-width: none;
-}
-.bookmark-rail::-webkit-scrollbar { display: none; }
-@media (min-width: 1201px) { .pane { padding-left: 196px; } }
-.bookmark-rail .reading-list-section { margin: 0; width: 100%; }
-.bookmark-rail .reading-list-grid {
-    position: static; display: flex; flex-direction: column; flex-wrap: nowrap;
-    align-items: stretch; justify-content: flex-start; gap: 6px;
-}
-.bookmark-rail .reading-list-item {
-    width: auto; height: auto; justify-content: flex-start;
-    border-radius: 999px; padding: 0; transform: none;
-}
-.bookmark-rail .reading-list-item:hover { transform: none; }
-.bookmark-rail .rl-link { justify-content: flex-start; gap: 10px; padding: 6px 12px 6px 8px; min-width: 0; }
-.bookmark-rail .rl-icon, .bookmark-rail .rl-letter { width: 22px; height: 22px; border-radius: 6px; font-size: .7rem; flex-shrink: 0; }
-.bookmark-rail .rl-name { display: block; font-size: .8rem; color: var(--ink-black); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bookmark-rail .rl-edit-btn { top: 50%; right: 8px; transform: translateY(-50%); }
-.reading-list-add-btn {
-    width: 100%; padding: 6px 12px; border: 1px dashed rgba(var(--accent-rgb), .35); border-radius: 999px;
-    background: transparent; color: var(--ink-gray); font-size: .8rem; cursor: pointer;
-}
-.reading-list-add-btn:hover { color: var(--ink-brown); border-color: var(--ink-brown); }
+/* Bookmarks on small screens: one strip under the top bar, on every tab.
+   Desktop keeps the original bookmark block inside Today. */
+.bookmark-strip { display: none; }
 
 /* Head: greeting + compact focus strip */
 .today-head { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; }
@@ -2749,11 +2726,18 @@
 @media (max-width: 1200px) {
     .today { padding-top: 8px; }
     .pane { padding-top: 12px; }
-    .bookmark-rail { position: static; width: auto; max-height: none; margin: 64px 12px 0; padding-bottom: 4px; overflow-x: auto; overflow-y: hidden; }
-    .bookmark-rail .reading-list-grid { flex-direction: row; flex-wrap: nowrap; }
-    .bookmark-rail .reading-list-item { flex: 0 0 auto; }
-    .bookmark-rail .rl-name { max-width: 110px; }
-    .reading-list-add-btn { width: auto; white-space: nowrap; }
+    /* The fixed footer/pomodoro pill sits at top: 65px (~36px tall) on small screens */
+    .bookmark-strip { display: block; margin: 108px 12px 0; padding-bottom: 4px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+    .bookmark-strip::-webkit-scrollbar { display: none; }
+    .bookmark-strip .reading-list-grid { position: static; flex-direction: row; flex-wrap: nowrap; justify-content: flex-start; gap: 8px; }
+    .bookmark-strip .reading-list-item { flex: 0 0 auto; width: auto; height: auto; border-radius: 999px; transform: none; }
+    .bookmark-strip .rl-link { gap: 8px; padding: 6px 12px 6px 8px; }
+    .bookmark-strip .rl-icon, .bookmark-strip .rl-letter { width: 20px; height: 20px; border-radius: 6px; font-size: .65rem; }
+    .bookmark-strip .rl-name { display: block; font-size: .78rem; white-space: nowrap; max-width: 110px; overflow: hidden; text-overflow: ellipsis; }
+    .bookmark-strip .rl-edit-btn { display: none; }
+    .bookmark-strip .reading-list-add-btn { white-space: nowrap; flex: 0 0 auto; }
+    /* The in-page block would duplicate the strip */
+    #pane-home .reading-list-section { display: none; }
     .today-head .pomodoro-section { width: 100%; flex-wrap: wrap; justify-content: center; row-gap: 6px; }
     .today-head .pomodoro-focus-today { display: none; }
     .today-head .gami-status-bar { width: 100%; justify-content: center; }
