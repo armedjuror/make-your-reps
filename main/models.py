@@ -120,6 +120,29 @@ class ReleaseLog(models.Model):
         return f'v{self.version} — {self.title}'
 
 
+class UninstallReason(TextChoices):
+    not_useful = 'not_useful', "Wasn't useful enough"
+    too_slow    = 'too_slow',  'Made browser too slow'
+    privacy     = 'privacy',   'Privacy concerns'
+    accidental  = 'accidental','Installed by accident'
+    switching   = 'switching', 'Switching to another tool'
+    other       = 'other',     'Other'
+
+
+class ExtensionUninstallFeedback(models.Model):
+    reason = models.CharField(max_length=20, choices=UninstallReason.choices, blank=True)
+    comment = models.TextField(blank=True)
+    extension_version = models.CharField(max_length=16, blank=True)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-submitted_at']
+
+    def __str__(self):
+        return f'{self.get_reason_display() or "No reason"} — {self.submitted_at:%Y-%m-%d}'
+
+
 class AnnouncementLog(models.Model):
     AUDIENCE_TEST = 'test'
     AUDIENCE_ALL = 'all'

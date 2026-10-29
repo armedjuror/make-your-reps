@@ -7,13 +7,32 @@ from main.models import LoginActivity
 from main.utils import get_auth_token, RefreshToken, AccessToken, get_client_ip
 
 
+from django.middleware.csrf import CsrfViewMiddleware
+
+
+class SelectiveCsrfMiddleware(CsrfViewMiddleware):
+    """
+    CSRF middleware that skips enforcement for Bearer token requests.
+    Bearer token auth is not CSRF-vulnerable — an attacker on another origin
+    cannot read the user's token, so they cannot include it in a forged request.
+    Web/session-based requests (no Authorization header) still go through
+    normal CSRF validation including origin checking.
+    """
+    def process_view(self, request, callback, callback_args, callback_kwargs):
+        if request.META.get('HTTP_AUTHORIZATION', '').startswith('Bearer '):
+            return None
+        return super().process_view(request, callback, callback_args, callback_kwargs)
+
+
 class AuthMiddleware(MiddlewareMixin):
     """
     Middleware to handle auth token cookies and validation
     """
     def process_request(self, request):
-        if '/accounts/google/login/' in request.path:
-            request.session['client_type'] = request.GET.get('client_type')
+        if request.path.rstrip('/') == '/accounts/google/login':
+            client_type = request.GET.get('client_type')
+            if client_type:
+                request.session['client_type'] = client_type
 
         if request.user.is_authenticated:
             request.session['user_id'] = request.user.id
@@ -78,6 +97,20 @@ class AuthMiddleware(MiddlewareMixin):
                     secure=request.is_secure(),
                     samesite='Strict'
                 )
+            elif request.session.get('client_type') == 'extension' and not request.COOKIES.get('myrt'):
+                try:
+                    jwt_token, _ = RefreshToken.generate_token(request.user, request)
+                    response.set_cookie(
+                        'myrt',
+                        jwt_token,
+                        max_age=30 * 24 * 60 * 60,  # 30 days
+                        httponly=True,
+                        secure=request.is_secure(),
+                        samesite='Strict'
+                    )
+                    request.session.pop('client_type', None)
+                except Exception:
+                    pass
             if request.session.get('access_token'):
                 del request.session['access_token']
             if request.session.get('refresh_token'):
