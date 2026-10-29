@@ -1083,7 +1083,7 @@
 
 .calendar-grid {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 6px;
 }
 
@@ -1097,6 +1097,7 @@
 }
 
 .calendar-day {
+    min-width: 0;
     border: 1px solid rgba(var(--accent-rgb), 0.1);
     border-radius: 8px;
     padding: 4px;
@@ -2692,7 +2693,7 @@
 #pane-home .default-pane-content { text-align: left; padding: 0 16px 40px; }
 
 
-.today { max-width: 860px; margin: 0 auto; padding-top: 20px; }
+.today-pane { max-width: 860px; margin: 0 auto; padding-top: 20px; }
 .today-main { min-width: 0; }
 
 /* Bookmarks: left column on desktop, one strip under the top bar on small screens; on every tab. */
@@ -2729,19 +2730,19 @@
 .today-head .pomodoro-focus-today { margin: 0; min-height: 0; }
 .today-head .gami-status-bar { margin: 0; padding: 0; gap: 12px; flex-wrap: nowrap; white-space: nowrap; }
 
-.today .search-section { margin: 18px 0 22px; }
-.today .search-bar { min-height: 42px; border-radius: 12px; background: transparent; }
+.today-pane .search-section { margin: 18px 0 22px; }
+.today-pane .search-bar { min-height: 42px; border-radius: 12px; background: transparent; }
 
 /* Timeline: let it be the page */
-.today .timeline-section { margin: 0; }
-.today .timeline-nav { justify-content: center; gap: 14px; margin-bottom: 10px; }
-.today .timeline-date-label { font-size: .95rem; letter-spacing: 0; }
-.today .timeline-nav-btn { font-size: .8rem; padding: 4px 8px; }
-.today .timeline-container { max-height: none; overflow: visible; }
-.today .timeline-container::before, .today .timeline-container::after { display: none; }
+.today-pane .timeline-section { margin: 0; }
+.today-pane .timeline-nav { justify-content: center; gap: 14px; margin-bottom: 10px; }
+.today-pane .timeline-date-label { font-size: .95rem; letter-spacing: 0; }
+.today-pane .timeline-nav-btn { font-size: .8rem; padding: 4px 8px; }
+.today-pane .timeline-container { max-height: none; overflow: visible; }
+.today-pane .timeline-container::before, .today-pane .timeline-container::after { display: none; }
 
 @media (max-width: 1200px) {
-    .today { padding-top: 8px; }
+    .today-pane { padding-top: 8px; }
     .pane { padding-top: 12px; }
     /* The fixed footer/pomodoro pill sits at top: 65px (~36px tall) on small screens */
     .bookmark-strip { display: flex; justify-content: safe center; margin: 108px 12px 0; padding: 4px 0 8px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
@@ -2755,7 +2756,7 @@
     .today-head .pomodoro-section { width: 100%; flex-wrap: wrap; justify-content: center; row-gap: 6px; }
     .today-head .pomodoro-focus-today { display: none; }
     .today-head .gami-status-bar { width: 100%; justify-content: center; }
-    .today .search-section { display: block; }
+    .today-pane .search-section { display: block; }
 }
 
 /* ── Todos: backlog banner ── */
@@ -2827,8 +2828,8 @@
     background: rgba(var(--accent-rgb), .08);
 }
 .timeline-label { font-size: .7rem; font-weight: 700; letter-spacing: .1em; color: var(--ink-brown); margin-bottom: 2px; }
-.today .timeline-item { align-items: flex-start; }
-.today .timeline-empty { text-align: center; color: var(--ink-gray); padding: 18px 0; font-size: .9rem; }
+.today-pane .timeline-item { align-items: flex-start; }
+.today-pane .timeline-empty { text-align: center; color: var(--ink-gray); padding: 18px 0; font-size: .9rem; }
 .tl-resched { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 8px 0 4px; }
 .tl-overdue-head + .tl-resched { margin: 0 0 10px; }
 .tl-date { font: inherit; font-size: .85rem; padding: 4px 10px; color: var(--ink-black); background: var(--surface-raised, transparent); border: 1px solid rgba(var(--accent-rgb), .45); border-radius: 8px; color-scheme: light dark; }
@@ -2840,7 +2841,7 @@
 .timeline-group-select { font: inherit; font-size: .8rem; padding: 5px 12px; color: var(--ink-black); background: var(--surface-raised, transparent); border: 1px solid rgba(var(--accent-rgb), .35); border-radius: 999px; max-width: 160px; cursor: pointer; }
 .timeline-group-select[hidden] { display: none; }
 .timeline-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px 16px; margin: 0 0 16px; }
-.today .timeline-bar .timeline-nav { margin: 0; justify-content: flex-start; }
+.today-pane .timeline-bar .timeline-nav { margin: 0; justify-content: flex-start; }
 .timeline-bar .timeline-chips { margin: 0; justify-content: flex-end; }
 @media (max-width: 600px) {
     .timeline-bar { justify-content: center; }
