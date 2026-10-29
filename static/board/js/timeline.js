@@ -20,6 +20,7 @@ const Timeline = {
         this.updateDateLabel();
         this.loadEvents();
         this.setupScroll();
+        if (!this._bound) { this._bound = true; this._bindListEvents(); }
 
         document.getElementById('timeline-prev-btn')?.addEventListener('click', () => this.navigateDate(-1));
         document.getElementById('timeline-next-btn')?.addEventListener('click', () => this.navigateDate(1));
@@ -102,106 +103,178 @@ const Timeline = {
         });
     },
 
+    // ── Filters (All / Habits / Todos / Routine) ──
+    filter: 'all',
+    showEarlier: false,
+    showAllOverdue: false,
+    FILTER_TYPES: {
+        habits: ['habit', 'accountability_habit'],
+        todos: ['todo'],
+        routine: ['routine', 'sleep_tracker', 'journal'],
+    },
+
+    esc(str) {
+        const d = document.createElement('div');
+        d.textContent = str == null ? '' : String(str);
+        return d.innerHTML;
+    },
+
+    setFilter(filter) {
+        this.filter = filter;
+        document.querySelectorAll('.timeline-chip').forEach(b =>
+            b.classList.toggle('active', b.dataset.tlFilter === filter));
+        this.render();
+    },
+
+    _fmtTime(ts) {
+        const clockFormat = document.body.getAttribute('data-clock') || '12h';
+        return clockFormat === '24h'
+            ? ts.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+            : ts.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    },
+
+    _until(ts, now) {
+        const min = Math.max(0, Math.round((ts - now) / 60000));
+        const h = Math.floor(min / 60), m = min % 60;
+        return h ? `${h}h ${m}m` : `${m}m`;
+    },
+
+    _itemHtml(event, extraClass = '', label = '') {
+        const ts = new Date(event.timestamp);
+        const responded = event.action_response ? 'responded' : '';
+        return `
+            <div class="timeline-item ${this.esc('timeline-type-' + event.event_type)} ${responded} ${extraClass}" data-id="${event.id}">
+                <div class="timeline-time">${this._fmtTime(ts)}</div>
+                <div class="timeline-icon"><i class="${this.getTypeIcon(event.event_type)}"></i></div>
+                <div class="timeline-content">
+                    ${label ? `<div class="timeline-label">${label}</div>` : ''}
+                    <div class="timeline-event-text">${this.esc(event.event)}</div>
+                    ${this.renderAction(event)}
+                </div>
+            </div>`;
+    },
+
     render() {
         const list = document.getElementById('timeline-list');
         if (!list) return;
 
-        if (this.events.length === 0) {
-            const now = new Date();
-            const clockFormat = document.body.getAttribute('data-clock') || '12h';
-            const fmt = t => clockFormat === '24h'
-                ? t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-                : t.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-            const t = (offsetMin) => {
-                const d = new Date(now); d.setMinutes(d.getMinutes() - offsetMin); return fmt(d);
-            };
-            const todayLabel = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-            list.innerHTML = `
-                <div class="timeline-date-separator">${todayLabel}</div>
-                <div class="timeline-item timeline-type-routine" style="opacity:0.45;">
-                    <div class="timeline-time">${t(90)}</div>
-                    <div class="timeline-icon"><i class="fas fa-clock"></i></div>
-                    <div class="timeline-content"><div class="timeline-event-text">Morning routine — Wake up &amp; stretch</div></div>
-                </div>
-                <div class="timeline-item timeline-type-habit" style="opacity:0.45;">
-                    <div class="timeline-time">${t(60)}</div>
-                    <div class="timeline-icon"><i class="fas fa-bolt"></i></div>
-                    <div class="timeline-content"><div class="timeline-event-text">Habit reminder — Read 10 pages</div><div class="timeline-actions"><span class="badge-done"><i class="fas fa-check"></i> Done</span></div></div>
-                </div>
-                <div class="timeline-item timeline-type-todo" style="opacity:0.45;">
-                    <div class="timeline-time">${t(30)}</div>
-                    <div class="timeline-icon"><i class="fas fa-check-square"></i></div>
-                    <div class="timeline-content"><div class="timeline-event-text">Task due — Finish project draft</div></div>
-                </div>
-                <div class="timeline-item timeline-type-journal" style="opacity:0.45;" id="timeline-now-anchor">
-                    <div class="timeline-time">${t(5)}</div>
-                    <div class="timeline-icon"><i class="fas fa-pen-fancy"></i></div>
-                    <div class="timeline-content"><div class="timeline-event-text">Journal reminder — How was your morning?</div></div>
-                </div>
-                <div class="timeline-empty" style="margin-top:12px;">No real events yet — these are previews.</div>
-            `;
-            this.scrollToNow();
+        let events = this.events;
+        const types = this.FILTER_TYPES[this.filter];
+        if (types) events = events.filter(e => types.includes(e.event_type));
+
+        if (events.length === 0) {
+            list.innerHTML = `<div class="timeline-empty">${this.filter === 'all'
+                ? 'Nothing scheduled for this day.' : 'Nothing here for this filter.'}</div>`;
             return;
         }
 
-        const clockFormat = document.body.getAttribute('data-clock') || '12h';
         const now = new Date();
+        const todayStr = getDate(now);
+        const sorted = [...events].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-        // Sort ascending (oldest first)
-        const sorted = [...this.events].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-        let lastDateStr = null;
-        const today = getDate(now);
-        const yesterday = getDate(new Date(Date.now() - 86400000));
-
-        const dateLabel = (dateStr) => {
-            if (dateStr === today) return 'Today';
-            if (dateStr === yesterday) return 'Yesterday';
-            return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-        };
-
-        // Find the last event at or before now to use as scroll anchor
-        let anchorId = null;
-        for (const event of sorted) {
-            if (new Date(event.timestamp) <= now) anchorId = event.id;
-            else break;
+        // Other days: a plain chronological list
+        if (this.currentDate !== todayStr) {
+            list.innerHTML = sorted.map(e => this._itemHtml(e)).join('');
+            return;
         }
 
-        list.innerHTML = sorted.map(event => {
-            const ts = new Date(event.timestamp);
-            const dateStr = getDate(ts);
-            let timeStr;
-            if (clockFormat === '24h') {
-                timeStr = ts.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-            } else {
-                timeStr = ts.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-            }
+        // Today: overdue card, earlier (collapsed), NOW, next, upcoming
+        const isOverdue = e => e.event_type === 'todo' && !e.action_response && /^overdue/i.test(e.event || '');
+        const overdue = sorted.filter(isOverdue);
+        const rest = sorted.filter(e => !isOverdue(e));
+        const past = rest.filter(e => new Date(e.timestamp) <= now);
+        const upcoming = rest.filter(e => new Date(e.timestamp) > now);
 
-            const typeIcon = this.getTypeIcon(event.event_type);
-            const typeClass = `timeline-type-${event.event_type}`;
-            const actionHtml = this.renderAction(event);
-            const responded = event.action_response ? 'responded' : '';
-            const anchorAttr = event.id === anchorId ? 'id="timeline-now-anchor"' : '';
+        let html = '';
 
-            let separator = '';
-            // if (dateStr !== lastDateStr) {
-            //     separator = `<div class="timeline-date-separator">${dateLabel(dateStr)}</div>`;
-            //     lastDateStr = dateStr;
-            // }
-
-            return `${separator}
-                <div class="timeline-item ${typeClass} ${responded}" data-id="${event.id}" ${anchorAttr}>
-                    <div class="timeline-time">${timeStr}</div>
-                    <div class="timeline-icon"><i class="${typeIcon}"></i></div>
-                    <div class="timeline-content">
-                        <div class="timeline-event-text">${event.event}</div>
-                        ${actionHtml}
+        if (overdue.length) {
+            const shown = this.showAllOverdue ? overdue : overdue.slice(0, 2);
+            html += `
+                <div class="tl-overdue">
+                    <div class="tl-overdue-head">
+                        <span><i class="fas fa-triangle-exclamation"></i> Overdue &middot; ${overdue.length}</span>
+                        ${overdue.length > 2 ? `<button type="button" class="tl-link" data-tl-action="toggle-overdue">${this.showAllOverdue ? 'Show less' : 'Show all'}</button>` : ''}
                     </div>
-                </div>
-            `;
-        }).join('');
+                    ${shown.map(e => this._itemHtml(e, 'timeline-overdue')).join('')}
+                </div>`;
+        }
 
-        this.scrollToNow();
+        // Past: keep the most recent one visible, fold the rest
+        const latest = past.length ? past[past.length - 1] : null;
+        const folded = past.slice(0, -1);
+        if (folded.length) {
+            const pending = folded.filter(e => e.action && !e.action_response).length;
+            const names = folded.slice(-6).map(e => this.esc(e.event)).join(' &middot; ');
+            html += `
+                <div class="tl-earlier ${this.showEarlier ? 'open' : ''}">
+                    <button type="button" class="tl-earlier-head" data-tl-action="toggle-earlier" aria-expanded="${this.showEarlier}">
+                        <span class="tl-earlier-title">${folded.length} earlier today${pending ? ` <em>&middot; ${pending} not done</em>` : ''}</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    ${this.showEarlier
+                        ? `<div class="tl-earlier-body">${folded.map(e => this._itemHtml(e)).join('')}</div>`
+                        : `<div class="tl-earlier-names">${names}</div>`}
+                </div>`;
+        }
+        if (latest) html += this._itemHtml(latest, 'timeline-previous');
+
+        html += `
+            <div class="timeline-now" id="timeline-now-anchor">
+                <div class="timeline-time">${this._fmtTime(now)}</div>
+                <div class="timeline-now-dot"></div>
+                <div class="timeline-now-label">NOW</div>
+                <div class="timeline-now-line"></div>
+            </div>`;
+
+        upcoming.forEach((e, i) => {
+            html += i === 0
+                ? this._itemHtml(e, 'timeline-next', `NEXT &middot; IN ${this._until(new Date(e.timestamp), now).toUpperCase()}`)
+                : this._itemHtml(e);
+        });
+        if (!upcoming.length) html += '<div class="timeline-empty">Nothing else today.</div>';
+
+        list.innerHTML = html;
+
+        // First paint of Today: bring NOW into view if it landed below the fold
+        if (!this._scrolled) {
+            this._scrolled = true;
+            requestAnimationFrame(() => {
+                const a = document.getElementById('timeline-now-anchor');
+                if (!a) return;
+                // The scrolling element is the window on desktop, an inner pane on mobile
+                let scroller = a.parentElement;
+                while (scroller && scroller !== document.body) {
+                    const oy = getComputedStyle(scroller).overflowY;
+                    if ((oy === 'auto' || oy === 'scroll') && scroller.scrollHeight > scroller.clientHeight) break;
+                    scroller = scroller.parentElement;
+                }
+                const top = a.getBoundingClientRect().top;
+                if (top <= window.innerHeight * 0.55) return;
+                if (scroller && scroller !== document.body) {
+                    scroller.scrollTo({ top: scroller.scrollTop + top - 200, behavior: 'smooth' });
+                } else {
+                    window.scrollTo({ top: window.scrollY + top - 160, behavior: 'smooth' });
+                }
+            });
+        }
+    },
+
+    _bindListEvents() {
+        const list = document.getElementById('timeline-list');
+        if (list) list.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-tl-action]');
+            if (!btn) return;
+            if (btn.dataset.tlAction === 'toggle-earlier') this.showEarlier = !this.showEarlier;
+            if (btn.dataset.tlAction === 'toggle-overdue') this.showAllOverdue = !this.showAllOverdue;
+            this.render();
+        });
+        document.querySelectorAll('.timeline-chip').forEach(b =>
+            b.addEventListener('click', () => this.setFilter(b.dataset.tlFilter)));
+        // Keep the NOW marker honest while the tab stays open
+        setInterval(() => {
+            const pane = document.getElementById('pane-home');
+            if (pane && pane.style.display !== 'none' && !document.activeElement?.closest?.('#timeline-list')) this.render();
+        }, 60000);
     },
 
     scrollToNow() {

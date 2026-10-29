@@ -163,6 +163,13 @@
 
     </div>
 
+    <!-- Bookmarks: quick site access, available on every tab -->
+    <aside class="bookmark-rail" id="bookmark-rail" aria-label="Bookmarks">
+        <div class="reading-list-section">
+            <div class="reading-list-grid" id="reading-list-grid"></div>
+        </div>
+    </aside>
+
     <!-- ═══════════════════════════════════════════ -->
     <!-- PANE: HOME (Default)                        -->
     <!-- ═══════════════════════════════════════════ -->
@@ -182,12 +189,6 @@
                 </div>
 
                 <div class="today">
-                    <!-- Bookmarks: quick site access -->
-                    <aside class="today-rail">
-                        <div class="reading-list-section">
-                            <div class="reading-list-grid" id="reading-list-grid"></div>
-                        </div>
-                    </aside>
 
                     <div class="today-main">
                         <!-- Greeting + focus strip -->
@@ -266,6 +267,12 @@
                                 <button class="timeline-nav-btn" id="timeline-next-btn" aria-label="Next day" disabled>
                                     <i class="fas fa-chevron-right"></i>
                                 </button>
+                            </div>
+                            <div class="timeline-chips" id="timeline-filters" role="group" aria-label="Filter timeline">
+                                <button type="button" class="timeline-chip active" data-tl-filter="all">All</button>
+                                <button type="button" class="timeline-chip" data-tl-filter="habits">Habits</button>
+                                <button type="button" class="timeline-chip" data-tl-filter="todos">Todos</button>
+                                <button type="button" class="timeline-chip" data-tl-filter="routine">Routine</button>
                             </div>
                             <div class="timeline-container" id="timeline-container">
                                 <div class="timeline-list" id="timeline-list">
