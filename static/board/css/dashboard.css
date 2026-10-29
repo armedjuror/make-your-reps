@@ -2823,3 +2823,12 @@
 .today .timeline-empty { text-align: center; color: var(--ink-gray); padding: 18px 0; font-size: .9rem; }
 .tl-overdue-actions { display: inline-flex; gap: 14px; align-items: center; }
 .tl-overdue .timeline-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* Timeline bar: date navigation and filters on one row */
+.timeline-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px 16px; margin: 0 0 16px; }
+.today .timeline-bar .timeline-nav { margin: 0; justify-content: flex-start; }
+.timeline-bar .timeline-chips { margin: 0; justify-content: flex-end; }
+@media (max-width: 600px) {
+    .timeline-bar { justify-content: center; }
+    .timeline-bar .timeline-chips { justify-content: center; }
+}

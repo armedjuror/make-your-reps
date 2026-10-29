@@ -257,20 +257,22 @@
 
                         <!-- Timeline: the hero of Today -->
                         <div class="timeline-section">
-                            <div class="timeline-nav">
-                                <button class="timeline-nav-btn" id="timeline-prev-btn" aria-label="Previous day">
-                                    <i class="fas fa-chevron-left"></i>
-                                </button>
-                                <span class="timeline-date-label" id="timeline-date-label">Today</span>
-                                <button class="timeline-nav-btn" id="timeline-next-btn" aria-label="Next day" disabled>
-                                    <i class="fas fa-chevron-right"></i>
-                                </button>
-                            </div>
-                            <div class="timeline-chips" id="timeline-filters" role="group" aria-label="Filter timeline">
-                                <button type="button" class="timeline-chip active" data-tl-filter="all">All</button>
-                                <button type="button" class="timeline-chip" data-tl-filter="habits">Habits</button>
-                                <button type="button" class="timeline-chip" data-tl-filter="todos">Todos</button>
-                                <button type="button" class="timeline-chip" data-tl-filter="routine">Routine</button>
+                            <div class="timeline-bar">
+                                <div class="timeline-nav">
+                                    <button class="timeline-nav-btn" id="timeline-prev-btn" aria-label="Previous day">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </button>
+                                    <span class="timeline-date-label" id="timeline-date-label">Today</span>
+                                    <button class="timeline-nav-btn" id="timeline-next-btn" aria-label="Next day" disabled>
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                                <div class="timeline-chips" id="timeline-filters" role="group" aria-label="Filter timeline">
+                                    <button type="button" class="timeline-chip active" data-tl-filter="all">All</button>
+                                    <button type="button" class="timeline-chip" data-tl-filter="habits">Habits</button>
+                                    <button type="button" class="timeline-chip" data-tl-filter="todos">Todos</button>
+                                    <button type="button" class="timeline-chip" data-tl-filter="routine">Routine</button>
+                                </div>
                             </div>
                             <div class="timeline-container" id="timeline-container">
                                 <div class="timeline-list" id="timeline-list">
