@@ -63,13 +63,22 @@
     }
     </script>
 
+    <script>
+        (function () {
+            var ok = ['ink','terminal','tech','aurora','sensei','coach','garden','orbit','quest'], t = null;
+            try { t = localStorage.getItem('mr_theme'); } catch (e) {}
+            var map = { dark: 'ink', light: 'aurora', paper: 'aurora', plain: 'aurora' };
+            t = map[t] || t;
+            document.documentElement.setAttribute('data-theme', ok.indexOf(t) < 0 ? 'ink' : t);
+        })();
+    </script>
     <link rel="icon" type="image/x-icon" href="{% static 'images/logo.png' %}">
     <link rel="apple-touch-icon" href="{% static 'images/logo.png' %}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fredericka+the+Great&family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,400;1,600&family=Inter:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=Domine:wght@400..700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredericka+the+Great&family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,400;1,600&family=Inter:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=Domine:wght@400..700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Barlow+Condensed:wght@500;600;700&family=Nunito:wght@400;600;700&family=Space+Mono:wght@400;700&family=DotGothic16&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'board/css/style.css' %}">
     <link rel="stylesheet" href="{% static 'board/css/bootstrap-social.css' %}">
     <style>
@@ -86,7 +95,7 @@
         .pricing-section h2,
         .integrations-section h2,
         .cta-section h2 {
-            font-family: 'Montserrat', serif;
+            font-family: var(--landing-font, 'Montserrat'), serif;
             letter-spacing: -0.02em;
         }
         /* ── Cursor glow ── */
@@ -184,9 +193,9 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            background: rgba(152,117,63,0.1);
+            background: rgba(var(--accent-rgb),0.1);
             color: var(--ink-brown);
-            border: 1px solid rgba(152,117,63,0.25);
+            border: 1px solid rgba(var(--accent-rgb),0.25);
             border-radius: 20px;
             padding: 5px 14px;
             font-size: 0.78rem;
@@ -257,7 +266,7 @@
         /* Chart card in hero */
         .hero-chart-card {
             width: 100%;
-            border: 1.5px solid rgba(152,117,63,0.18);
+            border: 1.5px solid rgba(var(--accent-rgb),0.18);
             border-radius: 18px;
             padding: 28px 24px 20px;
             background: var(--paper-bg-end, #faf7f2);
@@ -301,17 +310,17 @@
             gap: 20px;
         }
         .feature-card {
-            border: 1.5px solid rgba(152,117,63,0.18);
+            border: 1.5px solid rgba(var(--accent-rgb),0.18);
             border-radius: 14px;
             padding: 24px 22px;
             background: var(--paper-bg-end, #faf7f2);
             transition: border-color 0.2s, transform 0.2s;
         }
-        .feature-card:hover { border-color: var(--ink-brown); transform: translateY(-5px); box-shadow: 0 12px 28px rgba(152,117,63,0.13); }
+        .feature-card:hover { border-color: var(--ink-brown); transform: translateY(-5px); box-shadow: 0 12px 28px rgba(var(--accent-rgb),0.13); }
         .feature-card-icon {
             width: 44px; height: 44px;
             border-radius: 10px;
-            background: rgba(152,117,63,0.1);
+            background: rgba(var(--accent-rgb),0.1);
             display: flex; align-items: center; justify-content: center;
             color: var(--ink-brown);
             font-size: 1.1rem;
@@ -347,7 +356,10 @@
         }
 
         .theme-strip { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-top:36px; }
-        .theme-chip { display:inline-flex; align-items:center; gap:8px; padding:7px 14px; border-radius:999px; font-size:0.8rem; font-weight:600; border:1.5px solid rgba(152,117,63,0.18); background:var(--paper-bg-end,#faf7f2); color:var(--ink-brown); }
+        .theme-chip { cursor:pointer; font-family:inherit; transition:transform .15s, border-color .15s, box-shadow .15s; display:inline-flex; align-items:center; gap:8px; padding:7px 14px; border-radius:999px; font-size:0.8rem; font-weight:600; border:1.5px solid rgba(var(--accent-rgb),0.18); background:var(--paper-bg-end,#faf7f2); color:var(--ink-brown); }
+        .theme-chip:hover { transform:translateY(-2px); border-color:var(--ink-brown); }
+        .theme-chip.active { border-color:var(--ink-brown); box-shadow:0 0 0 2px rgba(var(--accent-rgb),.35); }
+        .theme-strip-hint { width:100%; text-align:center; font-size:.78rem; color:var(--ink-gray); margin:0 0 2px; }
         .theme-chip i { width:12px; height:12px; border-radius:50%; display:inline-block; background:var(--c); box-shadow:0 0 0 2px rgba(0,0,0,.08); }
 
         .cta-section {
@@ -367,7 +379,7 @@
         }
 
         .landing-footer {
-            border-top: 1px solid rgba(152,117,63,0.12);
+            border-top: 1px solid rgba(var(--accent-rgb),0.12);
             padding: 28px 32px;
             display: flex;
             align-items: center;
@@ -400,8 +412,8 @@
             position: fixed;
             top: 0; left: 0; right: 0;
             z-index: 200;
-            background: linear-gradient(90deg, rgba(152,117,63,0.18) 0%, rgba(152,117,63,0.1) 100%);
-            border-bottom: 1px solid rgba(152,117,63,0.28);
+            background: linear-gradient(90deg, rgba(var(--accent-rgb),0.18) 0%, rgba(var(--accent-rgb),0.1) 100%);
+            border-bottom: 1px solid rgba(var(--accent-rgb),0.28);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
             display: flex;
@@ -409,9 +421,9 @@
             justify-content: center;
             gap: 12px;
             padding: 9px 48px;
-            font-family: 'Montserrat', sans-serif;
+            font-family: var(--landing-font, 'Montserrat'), sans-serif;
             font-size: 0.82rem;
-            color: var(--ink-brown-light, #c4a472);
+            color: var(--ink-gray, #c4a472);
             transition: transform 0.3s ease, opacity 0.3s ease;
         }
         .ext-banner.hidden {
@@ -420,14 +432,14 @@
             pointer-events: none;
         }
         .ext-banner-text { line-height: 1.4; }
-        .ext-banner-text strong { color: #ede4d4; }
+        .ext-banner-text strong { color: var(--ink-black); }
         .ext-banner-link {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            background: rgba(152,117,63,0.2);
-            border: 1px solid rgba(152,117,63,0.4);
-            color: #ede4d4;
+            background: rgba(var(--accent-rgb),0.2);
+            border: 1px solid rgba(var(--accent-rgb),0.4);
+            color: var(--ink-black);
             text-decoration: none;
             padding: 4px 12px;
             border-radius: 20px;
@@ -436,7 +448,7 @@
             white-space: nowrap;
             transition: background 0.15s;
         }
-        .ext-banner-link:hover { background: rgba(152,117,63,0.35); color: #fff; }
+        .ext-banner-link:hover { background: rgba(var(--accent-rgb),0.35); color: var(--ink-black); }
         .ext-banner-close {
             position: absolute;
             right: 14px;
@@ -462,7 +474,7 @@
             gap: 8px;
             margin-top: 14px;
             padding: 8px 18px;
-            border: 1.5px solid rgba(152,117,63,0.3);
+            border: 1.5px solid rgba(var(--accent-rgb),0.3);
             border-radius: 24px;
             color: var(--ink-gray, #a09080);
             text-decoration: none;
@@ -473,7 +485,7 @@
         .ext-cta-pill:hover {
             border-color: var(--ink-brown, #98753f);
             color: var(--ink-brown, #98753f);
-            background: rgba(152,117,63,0.06);
+            background: rgba(var(--accent-rgb),0.06);
         }
         .ext-cta-pill img { width: 16px; height: 16px; }
 
@@ -530,7 +542,7 @@
             align-items: stretch;
         }
         .pricing-card {
-            border: 1.5px solid rgba(152,117,63,0.18);
+            border: 1.5px solid rgba(var(--accent-rgb),0.18);
             border-radius: 18px;
             padding: 28px 24px 24px;
             background: var(--paper-bg-end, #faf7f2);
@@ -541,7 +553,7 @@
         }
         .pricing-card.featured {
             border-color: var(--ink-brown);
-            box-shadow: 0 0 0 1px rgba(152,117,63,0.2), 0 8px 32px rgba(152,117,63,0.12);
+            box-shadow: 0 0 0 1px rgba(var(--accent-rgb),0.2), 0 8px 32px rgba(var(--accent-rgb),0.12);
         }
         .pricing-card.coming-soon {
             opacity: 0.82;
@@ -552,7 +564,7 @@
             left: 50%;
             transform: translateX(-50%);
             background: var(--ink-brown);
-            color: #fff;
+            color: var(--on-accent, #fff);
             font-size: 0.72rem;
             font-weight: 700;
             letter-spacing: 0.06em;
@@ -562,9 +574,9 @@
             white-space: nowrap;
         }
         .pricing-badge.coming {
-            background: rgba(152,117,63,0.15);
+            background: rgba(var(--accent-rgb),0.15);
             color: var(--ink-brown);
-            border: 1px solid rgba(152,117,63,0.3);
+            border: 1px solid rgba(var(--accent-rgb),0.3);
         }
         .pricing-plan-name {
             font-size: 1rem;
@@ -596,7 +608,7 @@
         }
         .pricing-divider {
             border: none;
-            border-top: 1px solid rgba(152,117,63,0.14);
+            border-top: 1px solid rgba(var(--accent-rgb),0.14);
             margin: 0 0 18px;
         }
         .pricing-features {
@@ -624,7 +636,7 @@
             margin-top: 1px;
         }
         .pricing-features li .feat-icon.check { color: #10b981; }
-        .pricing-features li .feat-icon.cross { color: rgba(152,117,63,0.3); }
+        .pricing-features li .feat-icon.cross { color: rgba(var(--accent-rgb),0.3); }
         .pricing-cta-btn {
             display: block;
             width: 100%;
@@ -642,11 +654,11 @@
         }
         .pricing-cta-btn:hover {
             background: var(--ink-brown);
-            color: #fff;
+            color: var(--on-accent, #fff);
         }
         .pricing-cta-btn.primary {
             background: var(--ink-brown);
-            color: #fff;
+            color: var(--on-accent, #fff);
         }
         .pricing-cta-btn.primary:hover {
             background: transparent;
@@ -698,7 +710,7 @@
             flex-wrap: wrap;
         }
         .integration-card {
-            border: 1.5px solid rgba(152,117,63,0.18);
+            border: 1.5px solid rgba(var(--accent-rgb),0.18);
             border-radius: 14px;
             width: 88px;
             height: 88px;
@@ -725,7 +737,7 @@
         }
     </style>
 </head>
-<body data-theme="dark" data-font="Jetbrains Mono" data-clock="12h">
+<body data-font="Jetbrains Mono" data-clock="12h">
 
 <!-- ── Extension announcement banner ── -->
 <div class="ext-banner" id="extBanner" role="banner" aria-label="Chrome Extension announcement">
@@ -936,16 +948,17 @@
             </article>
 
         </div>
-        <div class="theme-strip" aria-label="Available themes">
-            <span class="theme-chip"><i style="--c:#c9a063"></i>Ink</span>
-            <span class="theme-chip"><i style="--c:#3ddc84"></i>Terminal</span>
-            <span class="theme-chip"><i style="--c:#38bdf8"></i>Tech</span>
-            <span class="theme-chip"><i style="--c:#8b5cf6"></i>Aurora</span>
-            <span class="theme-chip"><i style="--c:#d8d2c4"></i>Sensei</span>
-            <span class="theme-chip"><i style="--c:#ffd400"></i>Coach</span>
-            <span class="theme-chip"><i style="--c:#7aa67a"></i>Garden</span>
-            <span class="theme-chip"><i style="--c:#a78bfa"></i>Orbit</span>
-            <span class="theme-chip"><i style="--c:#e4372c"></i>Quest</span>
+        <div class="theme-strip" role="group" aria-label="Available themes">
+            <p class="theme-strip-hint">Tap a theme to try it on this page</p>
+            <button type="button" class="theme-chip" data-theme-pick="ink"><i style="--c:#c9a063"></i>Ink</button>
+            <button type="button" class="theme-chip" data-theme-pick="terminal"><i style="--c:#3ddc84"></i>Terminal</button>
+            <button type="button" class="theme-chip" data-theme-pick="tech"><i style="--c:#38bdf8"></i>Tech</button>
+            <button type="button" class="theme-chip" data-theme-pick="aurora"><i style="--c:#8b5cf6"></i>Aurora</button>
+            <button type="button" class="theme-chip" data-theme-pick="sensei"><i style="--c:#d8d2c4"></i>Sensei</button>
+            <button type="button" class="theme-chip" data-theme-pick="coach"><i style="--c:#ffd400"></i>Coach</button>
+            <button type="button" class="theme-chip" data-theme-pick="garden"><i style="--c:#7aa67a"></i>Garden</button>
+            <button type="button" class="theme-chip" data-theme-pick="orbit"><i style="--c:#a78bfa"></i>Orbit</button>
+            <button type="button" class="theme-chip" data-theme-pick="quest"><i style="--c:#e4372c"></i>Quest</button>
         </div>
     </section>
 
@@ -1086,6 +1099,39 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
 <script>
+    // Landing page theming: tints, canvas and font follow the chosen theme.
+    var ACCENT = '152,117,63';
+    function accent(o) { return 'rgba(' + ACCENT + ',' + o + ')'; }
+    var LANDING_FONTS = { ink: 'Montserrat', terminal: 'JetBrains Mono', tech: 'Space Grotesk', aurora: 'Plus Jakarta Sans',
+        sensei: 'Instrument Serif', coach: 'Barlow Condensed', garden: 'Nunito', orbit: 'Space Mono', quest: 'DotGothic16' };
+    var landingChart = null;
+    function syncAccent() {
+        var cs = getComputedStyle(document.documentElement);
+        var v = cs.getPropertyValue('--accent-rgb').trim();
+        if (v) ACCENT = v;
+        var m = document.querySelector('meta[name="theme-color"]');
+        if (m) m.setAttribute('content', cs.getPropertyValue('--paper-bg-end').trim() || '#2A2621');
+    }
+    function setLandingTheme(t) {
+        document.documentElement.setAttribute('data-theme', t);
+        document.documentElement.style.setProperty('--landing-font', "'" + LANDING_FONTS[t] + "'");
+        try { localStorage.setItem('mr_theme', t); } catch (e) {}
+        syncAccent();
+        document.querySelectorAll('[data-theme-pick]').forEach(function (b) {
+            var on = b.getAttribute('data-theme-pick') === t;
+            b.classList.toggle('active', on); b.setAttribute('aria-pressed', on);
+        });
+        if (landingChart) landingChart.draw();
+    }
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-theme-pick]');
+        if (b) setLandingTheme(b.getAttribute('data-theme-pick'));
+    });
+    document.addEventListener('DOMContentLoaded', function () {
+        setLandingTheme(document.documentElement.getAttribute('data-theme') || 'ink');
+    });
+</script>
+<script>
     // Compound growth chart (unchanged)
     class ResponsiveCompoundChart {
         constructor(canvasId) {
@@ -1130,13 +1176,13 @@
             return { x: cx, y: this.padding + this.height - ((vy / 18) * this.height) };
         }
         drawGrid() {
-            this.ctx.strokeStyle = 'rgba(152,117,63,0.5)';
+            this.ctx.strokeStyle = accent(0.5);
             this.ctx.lineWidth = 1;
             for (let i = 0; i <= 12; i++) { const x = this.padding + (i * this.width / 12); this.ctx.beginPath(); this.ctx.moveTo(x, this.padding); this.ctx.lineTo(x, this.padding + this.height); this.ctx.stroke(); }
             for (let i = 0; i <= 8; i++) { const y = this.padding + (i * this.height / 8); this.ctx.beginPath(); this.ctx.moveTo(this.padding, y); this.ctx.lineTo(this.padding + this.width, y); this.ctx.stroke(); }
         }
         drawAxes() {
-            this.ctx.strokeStyle = 'rgba(152,117,63,1)'; this.ctx.lineWidth = 2;
+            this.ctx.strokeStyle = accent(1); this.ctx.lineWidth = 2;
             this.ctx.beginPath(); this.ctx.moveTo(this.padding, this.padding + this.height); this.ctx.lineTo(this.padding + this.width, this.padding + this.height); this.ctx.stroke();
             this.ctx.beginPath(); this.ctx.moveTo(this.padding, this.padding); this.ctx.lineTo(this.padding, this.padding + this.height); this.ctx.stroke();
         }
@@ -1149,7 +1195,7 @@
         }
         drawLabels() {
             const fs = Math.max(10, Math.min(14, this.canvas.width / 40));
-            this.ctx.fillStyle = 'rgba(152,117,63,1)'; this.ctx.font = `${fs}px Arial`; this.ctx.textAlign = 'center';
+            this.ctx.fillStyle = accent(1); this.ctx.font = `${fs}px Arial`; this.ctx.textAlign = 'center';
             const lo = Math.min(20, this.canvas.height / 20);
             this.ctx.fillText('Day 1', this.padding, this.padding + this.height + lo);
             this.ctx.fillText('Day 183', this.padding + this.width / 2, this.padding + this.height + lo);
@@ -1160,7 +1206,7 @@
             this.ctx.fillText('0.03x', this.padding - lm, this.dataToCanvas(0, Math.pow(0.99, 365)).y + 5);
         }
         drawBaseline() {
-            this.ctx.strokeStyle = 'rgba(152,117,63,1)'; this.ctx.lineWidth = 2; this.ctx.setLineDash([8, 4]);
+            this.ctx.strokeStyle = accent(1); this.ctx.lineWidth = 2; this.ctx.setLineDash([8, 4]);
             const p = this.dataToCanvas(0, 1);
             this.ctx.beginPath(); this.ctx.moveTo(this.padding, p.y); this.ctx.lineTo(this.padding + this.width, p.y); this.ctx.stroke();
             this.ctx.setLineDash([]);
@@ -1205,7 +1251,7 @@
             document.body.classList.remove('has-ext-banner');
             localStorage.setItem('extBannerDismissed', '1');
         });
-        new ResponsiveCompoundChart('compoundChart');
+        landingChart = new ResponsiveCompoundChart('compoundChart');
 
         // ── Scroll reveal ──
         const revealObserver = new IntersectionObserver((entries) => {
@@ -1287,8 +1333,8 @@
             cx2 += (mx - cx2) * 0.025;
             cy2 += (my - cy2) * 0.025;
             glow.style.background =
-                `radial-gradient(520px at ${cx}px ${cy}px, rgba(152,117,63,0.11), transparent 70%),` +
-                `radial-gradient(900px at ${cx2}px ${cy2}px, rgba(152,117,63,0.055), transparent 70%)`;
+                `radial-gradient(520px at ${cx}px ${cy}px, ${accent(0.11)}, transparent 70%),` +
+                `radial-gradient(900px at ${cx2}px ${cy2}px, ${accent(0.055)}, transparent 70%)`;
             requestAnimationFrame(animateGlow);
         })();
     });
