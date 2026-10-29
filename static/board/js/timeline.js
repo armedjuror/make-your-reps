@@ -106,6 +106,7 @@ const Timeline = {
     // ── Filters (All / Habits / Todos / Routine) ──
     filter: 'all',
     showEarlier: false,
+    confirmSnoozeAll: false,
     showAllOverdue: false,
     FILTER_TYPES: {
         habits: ['habit', 'accountability_habit'],
@@ -139,6 +140,13 @@ const Timeline = {
         return h ? `${h}h ${m}m` : `${m}m`;
     },
 
+    _actionsFor(event, extraClass) {
+        const html = this.renderAction(event);
+        if (!extraClass.includes('timeline-overdue') || event.action_response) return html;
+        const btn = `<button type="button" class="btn btn-paper btn-sm ms-1" data-tl-action="snooze" data-event-id="${event.id}"><i class="fas fa-forward me-1"></i>Tomorrow</button>`;
+        return html.includes('timeline-actions') ? html.replace(/<\/div>\s*$/, btn + '</div>') : html;
+    },
+
     _itemHtml(event, extraClass = '', label = '') {
         const ts = new Date(event.timestamp);
         const responded = event.action_response ? 'responded' : '';
@@ -149,7 +157,7 @@ const Timeline = {
                 <div class="timeline-content">
                     ${label ? `<div class="timeline-label">${label}</div>` : ''}
                     <div class="timeline-event-text">${this.esc(event.event)}</div>
-                    ${this.renderAction(event)}
+                    ${this._actionsFor(event, extraClass)}
                 </div>
             </div>`;
     },
@@ -158,7 +166,7 @@ const Timeline = {
         const list = document.getElementById('timeline-list');
         if (!list) return;
 
-        let events = this.events;
+        let events = this.events.filter(e => !(e.action_response && e.action_response.snooze));
         const types = this.FILTER_TYPES[this.filter];
         if (types) events = events.filter(e => types.includes(e.event_type));
 
@@ -179,7 +187,7 @@ const Timeline = {
         }
 
         // Today: overdue card, earlier (collapsed), NOW, next, upcoming
-        const isOverdue = e => e.event_type === 'todo' && !e.action_response && /^overdue/i.test(e.event || '');
+        const isOverdue = e => this._isOverdue(e);
         const overdue = sorted.filter(isOverdue);
         const rest = sorted.filter(e => !isOverdue(e));
         const past = rest.filter(e => new Date(e.timestamp) <= now);
@@ -193,7 +201,10 @@ const Timeline = {
                 <div class="tl-overdue">
                     <div class="tl-overdue-head">
                         <span><i class="fas fa-triangle-exclamation"></i> Overdue &middot; ${overdue.length}</span>
-                        ${overdue.length > 2 ? `<button type="button" class="tl-link" data-tl-action="toggle-overdue">${this.showAllOverdue ? 'Show less' : 'Show all'}</button>` : ''}
+                        <span class="tl-overdue-actions">
+                            ${overdue.length > 2 ? `<button type="button" class="tl-link" data-tl-action="toggle-overdue">${this.showAllOverdue ? 'Show less' : `Show all ${overdue.length}`}</button>` : ''}
+                            <button type="button" class="tl-link" data-tl-action="snooze-all">${this.confirmSnoozeAll ? `Move all ${overdue.length} to tomorrow?` : 'Reschedule all'}</button>
+                        </span>
                     </div>
                     ${shown.map(e => this._itemHtml(e, 'timeline-overdue')).join('')}
                 </div>`;
@@ -265,7 +276,14 @@ const Timeline = {
             const btn = e.target.closest('[data-tl-action]');
             if (!btn) return;
             if (btn.dataset.tlAction === 'toggle-earlier') this.showEarlier = !this.showEarlier;
-            if (btn.dataset.tlAction === 'toggle-overdue') this.showAllOverdue = !this.showAllOverdue;
+            const act = btn.dataset.tlAction;
+            if (act === 'toggle-overdue') this.showAllOverdue = !this.showAllOverdue;
+            if (act === 'snooze') { btn.disabled = true; this.snooze(Number(btn.dataset.eventId)); return; }
+            if (act === 'snooze-all') {
+                // Two-step: first click asks, second click does it
+                if (this.confirmSnoozeAll) { btn.disabled = true; this.snoozeAllOverdue(); return; }
+                this.confirmSnoozeAll = true;
+            }
             this.render();
         });
         document.querySelectorAll('.timeline-chip').forEach(b =>
@@ -275,6 +293,37 @@ const Timeline = {
             const pane = document.getElementById('pane-home');
             if (pane && pane.style.display !== 'none' && !document.activeElement?.closest?.('#timeline-list')) this.render();
         }, 60000);
+    },
+
+    async snooze(eventId) {
+        const res = await apiClient.put(`board/api/timeline/${eventId}/respond/`, {
+            action_response: { snooze: 'tomorrow' }
+        });
+        if (res.status === 'success') {
+            const idx = this.events.findIndex(e => e.id === eventId);
+            if (idx >= 0) this.events[idx] = res.data;
+            this.render();
+            if (typeof TodosPane !== 'undefined' && panesLoaded?.todos) TodosPane.loadTodos();
+        }
+        return res.status === 'success';
+    },
+
+    async snoozeAllOverdue() {
+        const ids = this.events
+            .filter(e => this._isOverdue(e) && !(e.action_response && e.action_response.snooze))
+            .map(e => e.id);
+        for (const id of ids) {
+            const idx = this.events.findIndex(e => e.id === id);
+            const res = await apiClient.put(`board/api/timeline/${id}/respond/`, { action_response: { snooze: 'tomorrow' } });
+            if (res.status === 'success' && idx >= 0) this.events[idx] = res.data;
+        }
+        this.confirmSnoozeAll = false;
+        this.render();
+        if (typeof TodosPane !== 'undefined' && panesLoaded?.todos) TodosPane.loadTodos();
+    },
+
+    _isOverdue(e) {
+        return e.event_type === 'todo' && !e.action_response && /^overdue/i.test(e.event || '');
     },
 
     scrollToNow() {
