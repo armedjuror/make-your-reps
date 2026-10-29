@@ -1,7 +1,7 @@
 import datetime
 from django.db import migrations
 
-VERSION = '2.0.0'
+VERSION = '1.7.0'
 
 
 def seed(apps, schema_editor):
