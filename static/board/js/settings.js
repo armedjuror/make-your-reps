@@ -22,14 +22,6 @@ const Settings = {
         ).join('');
     },
 
-    changeTheme() {
-        const selected = document.getElementById('themeSelect').value;
-        currentTheme = selected;
-        document.body.setAttribute('data-theme', selected);
-        document.getElementById('themeIcon').className = selected === 'light' ? 'fas fa-moon' : 'fas fa-sun';
-        apiClient.put('board/api/user_details/', { default_theme: selected });
-    },
-
     changeFont() {
         const font = document.getElementById('fontSelect').value;
         if (AppConfig.userDetail) AppConfig.userDetail.font_family = font;

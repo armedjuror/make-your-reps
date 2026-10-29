@@ -174,15 +174,15 @@ const Habits = {
             })
         }
 
-function showHabitSettings(habitId, habit, whenWhere, identity, partnerId = null, partnerEmail = null) {
+function showHabitSettings(habitId, habit, whenWhere, identity, notifyAt = null) {
     currentHabitData = {
         id: habitId,
         habit: habit,
         whenWhere: whenWhere,
         identity: identity,
-        partnerId: partnerId,
-        partnerEmail: partnerEmail
+        notifyAt: notifyAt ? String(notifyAt).slice(0, 5) : ''
     };
+    showReminder(currentHabitData.notifyAt);
 
     document.getElementById('currentHabit').textContent = habit;
     document.getElementById('currentHabit').textContent = habit;
@@ -204,6 +204,18 @@ function showHabitSettings(habitId, habit, whenWhere, identity, partnerId = null
     modal.show();
 }
 
+// Show the reminder time (24h "HH:MM") in the settings modal
+function showReminder(hhmm) {
+    const el = document.getElementById('reminderDisplay');
+    if (!el) return;
+    if (!hhmm) { el.textContent = 'None'; return; }
+    const [h, m] = hhmm.split(':').map(Number);
+    const clock = document.body.getAttribute('data-clock') || '12h';
+    el.textContent = clock === '24h'
+        ? hhmm
+        : `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
+}
+
 // Toggle edit form
 function toggleEditForm() {
     const editForm = document.getElementById('editHabitForm');
@@ -214,12 +226,13 @@ function toggleEditForm() {
         document.getElementById('editHabit').value = currentHabitData.habit;
         document.getElementById('editWhenWhere').value = currentHabitData.whenWhere;
         document.getElementById('editIdentity').value = currentHabitData.identity;
+        document.getElementById('editNotify').value = currentHabitData.notifyAt || '';
 
         editForm.style.display = 'block';
         editActions.style.display = 'block';
 
         // Auto-resize inputs
-        resizeInputs();
+        if (typeof resizeInputs === 'function') resizeInputs();
 
         document.getElementById('habit_settings_message').innerHTML =
             '<div class="alert alert-info"><i class="fas fa-edit me-2"></i>Edit your habit details below.</div>';
@@ -233,12 +246,15 @@ function saveHabitChanges() {
     const habit = document.getElementById('editHabit').value.trim();
     const whenWhere = document.getElementById('editWhenWhere').value.trim();
     const identity = document.getElementById('editIdentity').value.trim();
+    const notifyAt = document.getElementById('editNotify').value || '';
 
     if (habit && whenWhere && identity) {
         // Update current data
         currentHabitData.habit = habit;
         currentHabitData.whenWhere = whenWhere;
         currentHabitData.identity = identity;
+        currentHabitData.notifyAt = notifyAt;
+        showReminder(notifyAt);
 
         // Update display
         document.getElementById('currentHabit').textContent = habit;
@@ -258,6 +274,7 @@ function saveHabitChanges() {
                 'habit': habit,
                 'detail': whenWhere,
                 'identity': identity,
+                'notify_at': notifyAt || null,
             }
         ).then((response) => {
                 currentHabitData = {};
@@ -336,9 +353,10 @@ function updatePartnerDisplay() {
     if (!partnerDisplay) return;
     apiClient.get(`board/api/accountability_partners/?habit_id=${currentHabitData.id}`).then(res => {
         if (res.status === 'success') {
-            const count = res.data.length;
-            partnerDisplay.innerHTML = count > 0
-                ? `<span class="partner-badge">${count} partner${count > 1 ? 's' : ''}</span>`
+            const active = res.data.filter(ap => ap.status !== 'inactive');
+            const esc = (t) => { const d = document.createElement('div'); d.textContent = t == null ? '' : String(t); return d.innerHTML; };
+            partnerDisplay.innerHTML = active.length > 0
+                ? active.map(ap => `<span class="partner-badge">${esc(ap.partner_name)}${ap.status === 'request-sent' ? ' <small>(pending)</small>' : ''}</span>`).join(' ')
                 : '<span style="color: var(--ink-brown)">None assigned</span>';
         }
     });

@@ -7,13 +7,25 @@ const TodosPane = {
     todos: [],
     selectedGroup: 'all',
     filter: 'pending', // 'pending' | 'done' | 'all'
-    deadlineFilter: null, // null | 'today' | 'this-week'
+    deadlineFilter: 'today', // null | 'today' | 'this-week'
+    backlogOnly: false,
+    STALE_DAYS: 7, // pending tasks overdue longer than this are shown as backlog
+
+    esc(str) {
+        const d = document.createElement('div');
+        d.textContent = str == null ? '' : String(str);
+        return d.innerHTML;
+    },
 
     async init() {
         await this.loadGroups();
         await this.loadTodos();
         this.setupEnterKey();
         document.getElementById('todos-manage-groups-btn').addEventListener('click', () => this.showManageGroupsModal());
+        const backlogBtn = document.getElementById('todos-backlog-btn');
+        if (backlogBtn) backlogBtn.addEventListener('click', () => { this.backlogOnly = !this.backlogOnly; this.renderTodos(); });
+        const todayBtn = document.querySelector(`.todo-deadline-filter[data-deadline-filter="today"]`);
+        if (todayBtn) todayBtn.classList.add('active');
     },
 
     setupEnterKey() {
@@ -171,6 +183,16 @@ const TodosPane = {
         }
     },
 
+    updateBacklogBanner(count) {
+        const banner = document.getElementById('todos-backlog');
+        if (!banner) return;
+        banner.hidden = count === 0;
+        document.getElementById('todos-backlog-text').textContent = this.backlogOnly
+            ? `Showing ${count} backlog task${count === 1 ? '' : 's'} (overdue by more than ${this.STALE_DAYS} days)`
+            : `${count} task${count === 1 ? ' is' : 's are'} more than ${this.STALE_DAYS} days overdue`;
+        document.getElementById('todos-backlog-btn').textContent = this.backlogOnly ? 'Back to today' : 'Review backlog';
+    },
+
     renderTodos() {
         const list = document.getElementById('todos-pane-list');
         if (!list) return;
@@ -186,8 +208,20 @@ const TodosPane = {
         if (this.filter === 'pending') todos = todos.filter(t => !t.is_done);
         else if (this.filter === 'done') todos = todos.filter(t => t.is_done);
 
+        // Backlog: pending tasks that are long overdue are kept out of the way
+        const staleCutoff = Date.now() - this.STALE_DAYS * 86_400_000;
+        const isStale = t => !t.is_done && t.deadline && new Date(t.deadline).getTime() < staleCutoff;
+        const staleCount = this.todos.filter(isStale).length;
+        this.updateBacklogBanner(staleCount);
+        if (this.backlogOnly && staleCount === 0) this.backlogOnly = false;
+        if (this.backlogOnly) {
+            todos = todos.filter(isStale);
+        } else if (this.deadlineFilter && this.filter !== 'done') {
+            todos = todos.filter(t => !isStale(t));
+        }
+
         // Deadline filter
-        if (this.deadlineFilter) {
+        if (this.deadlineFilter && !this.backlogOnly) {
             const now = new Date();
             const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             const todayEnd = new Date(todayStart.getTime() + 86_400_000);
@@ -236,7 +270,7 @@ const TodosPane = {
                 deadlineHtml = `<span class="todo-deadline ${isOverdue ? 'overdue' : ''}">${d.toLocaleString('en-US', opts)}</span>`;
             }
 
-            const groupLabel = todo.group_name ? `<span class="todo-group-badge">${todo.group_name}</span>` : '';
+            const groupLabel = todo.group_name ? `<span class="todo-group-badge">${this.esc(todo.group_name)}</span>` : '';
 
             return `
                 <div class="todo-item-row ${todo.is_done ? 'completed' : ''}">
@@ -244,7 +278,7 @@ const TodosPane = {
                         <i class="${todo.is_done ? 'fas fa-check-square' : 'far fa-square'}"></i>
                     </div>
                     <div class="todo-info">
-                        <span class="todo-text-main" onclick="TodosPane.toggleTodo(${todo.id}, ${todo.is_done})">${todo.task_name}</span>
+                        <span class="todo-text-main" onclick="TodosPane.toggleTodo(${todo.id}, ${todo.is_done})">${this.esc(todo.task_name)}</span>
                         <div class="todo-meta">
                             ${groupLabel}
                             ${deadlineHtml}

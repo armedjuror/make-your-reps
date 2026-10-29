@@ -1,33 +1,365 @@
-:root {
-    --paper-bg-center: rgba(198, 158, 88, 0.42);
-    --paper-bg-end: rgba(216, 168, 90, 1);
-    --paper-bg: rgb(220, 201, 172);
-    --grid-dots: #f6f2eb;
-    --ink-brown: rgba(152, 117, 63, 1);
-    --ink-black: #2d2d2d;
-    --ink-gray: #5a5a5a;
-    --ink-brown-light: rgb(184, 156, 125);
-    --ink-red: #8b3a3a;
-    --ink-green: #4a6741;
-    --margin-line: #d4af37;
-    --hole-color: #a0956b;
-    --coffee-stain: #d4af37;
-    --yellow-tint: rgba(51, 38, 16, 0.37);
-}
-
-[data-theme="dark"] {
-    --paper-bg-end: #2a2620;
-    --paper-bg-center: #534f48;
-    --grid-dots: #706857;
+/* ══════════════════════════════════════════════════════════════
+   THEME TOKENS
+   Every colour and shape in the UI comes from these variables.
+   --accent-rgb is the accent as "r, g, b" so tints can be written as
+   rgba(var(--accent-rgb), 0.15).
+   Nine themes, each with its own personality:
+     ink       dark, warm amber, dotted notebook
+     terminal  dark, phosphor green, CRT scanlines, square corners
+     tech      dark navy, sky blue, blueprint grid, glowing edges
+     aurora    light, white, violet/blue gradient glow, soft glass
+     sensei    light, washi paper, vermilion seal, spacious serif
+     coach     black and hazard yellow, heavy condensed caps
+     garden    light, sage and clay, round and soft
+     orbit     deep space, nebula violet, telemetry
+     quest     sunny sky, thick outlines, arcade red
+   "dark" is a legacy alias of ink; "light", "paper", "plain" map to aurora.
+   ══════════════════════════════════════════════════════════════ */
+:root,
+[data-theme="dark"],
+[data-theme="ink"] {
+    --paper-bg: rgb(30, 28, 26);
+    --paper-bg-end: #040404;
+    --paper-bg-center: #403c37;
+    --page-bg: radial-gradient(circle at center, var(--paper-bg-center) 0%, var(--paper-bg-end) 100%);
+    --grid-image: radial-gradient(circle at center, var(--grid-dots) 0.8px, transparent 0.8px);
+    --grid-size: 20px 20px;
+    --grid-opacity: 0.6;
+    --grid-dots: #454036;
     --ink-brown: rgb(186, 130, 56);
+    --accent-rgb: 186, 130, 56;
     --ink-black: #e8e3d3;
     --ink-gray: #918c73;
+    --ink-brown-light: rgb(150, 118, 78);
     --ink-red: #d4a574;
     --ink-green: #8fb3a3;
     --margin-line: #d4af37;
     --hole-color: #5a4f3a;
     --coffee-stain: #8b7355;
     --yellow-tint: #2e2a20;
+    --surface-raised: #2a2a2a;
+    --shell-bg: rgba(42, 38, 32, 0.9);
+    --shell-bg-soft: rgba(42, 38, 32, 0.5);
+    --overlay-bg: rgba(42, 38, 32, 0.7);
+    --gold: #d4af37;
+    --gold-rgb: 212, 175, 55;
+    --on-accent: #1a1209;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-pill: 999px;
+    --glow: none;
+}
+
+/* TERMINAL — phosphor green on near-black, scanlines, hard corners */
+[data-theme="terminal"] {
+    --paper-bg: #0b0f0c;
+    --paper-bg-end: #050806;
+    --paper-bg-center: #0f1a12;
+    --page-bg: radial-gradient(ellipse at 50% 30%, var(--paper-bg-center) 0%, var(--paper-bg-end) 75%);
+    --grid-image: repeating-linear-gradient(0deg, rgba(74, 222, 128, 0.07) 0 1px, transparent 1px 3px);
+    --grid-size: auto;
+    --grid-opacity: 1;
+    --grid-dots: #223125;
+    --ink-brown: #4ade80;
+    --accent-rgb: 74, 222, 128;
+    --ink-black: #c8e6c9;
+    --ink-gray: #7fa284;
+    --ink-brown-light: #2f7d52;
+    --ink-red: #ff5c5c;
+    --ink-green: #4ade80;
+    --margin-line: #2f6b47;
+    --hole-color: #223125;
+    --coffee-stain: #2f6b47;
+    --yellow-tint: #12301d;
+    --surface-raised: #101a13;
+    --shell-bg: rgba(10, 18, 12, 0.92);
+    --shell-bg-soft: rgba(10, 18, 12, 0.6);
+    --overlay-bg: rgba(3, 8, 5, 0.82);
+    --gold: #a3e635;
+    --gold-rgb: 163, 230, 53;
+    --on-accent: #04130a;
+    --radius-sm: 2px;
+    --radius-md: 3px;
+    --radius-lg: 4px;
+    --radius-pill: 3px;
+    --glow: 0 0 10px rgba(74, 222, 128, 0.35);
+}
+
+/* TECH — deep navy, sky-blue accent, blueprint grid, glowing edges */
+[data-theme="tech"] {
+    --paper-bg: #060b1a;
+    --paper-bg-end: #040712;
+    --paper-bg-center: #0c1d44;
+    --page-bg:
+        radial-gradient(ellipse at 50% -10%, rgba(56, 189, 248, 0.16) 0%, transparent 55%),
+        radial-gradient(ellipse at 100% 100%, rgba(59, 130, 246, 0.14) 0%, transparent 50%),
+        linear-gradient(180deg, var(--paper-bg-center) 0%, var(--paper-bg-end) 70%);
+    --grid-image:
+        linear-gradient(rgba(56, 189, 248, 0.10) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56, 189, 248, 0.10) 1px, transparent 1px),
+        linear-gradient(rgba(56, 189, 248, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56, 189, 248, 0.05) 1px, transparent 1px);
+    --grid-size: 120px 120px, 120px 120px, 24px 24px, 24px 24px;
+    --grid-opacity: 1;
+    --grid-dots: rgba(56, 189, 248, 0.2);
+    --ink-brown: #38bdf8;
+    --accent-rgb: 56, 189, 248;
+    --ink-black: #dbeafe;
+    --ink-gray: #7d93b8;
+    --ink-brown-light: #2b6aa8;
+    --ink-red: #fb7185;
+    --ink-green: #34d399;
+    --margin-line: #1e3a6b;
+    --hole-color: #1e3a6b;
+    --coffee-stain: #1e3a6b;
+    --yellow-tint: #0f2347;
+    --surface-raised: #0d1a38;
+    --shell-bg: rgba(8, 18, 42, 0.9);
+    --shell-bg-soft: rgba(8, 18, 42, 0.55);
+    --overlay-bg: rgba(3, 7, 20, 0.8);
+    --gold: #fbbf24;
+    --gold-rgb: 251, 191, 36;
+    --on-accent: #04152b;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-pill: 999px;
+    --glow: 0 0 18px rgba(56, 189, 248, 0.28);
+}
+
+/* AURORA — white canvas, pale grid, violet / blue / pink glow */
+[data-theme="aurora"],
+[data-theme="light"],
+[data-theme="paper"],
+[data-theme="plain"] {
+    --paper-bg: #fbfbff;
+    --paper-bg-end: #f4f3ff;
+    --paper-bg-center: #ffffff;
+    --page-bg:
+        radial-gradient(ellipse 60% 50% at 8% 0%, rgba(124, 92, 255, 0.20) 0%, transparent 70%),
+        radial-gradient(ellipse 55% 45% at 95% 8%, rgba(56, 189, 248, 0.20) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 50% at 85% 100%, rgba(168, 85, 247, 0.16) 0%, transparent 70%),
+        radial-gradient(ellipse 45% 40% at 0% 95%, rgba(244, 114, 182, 0.12) 0%, transparent 70%),
+        linear-gradient(180deg, #fdfdff 0%, #f3f2ff 100%);
+    --grid-image:
+        linear-gradient(rgba(99, 102, 241, 0.075) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99, 102, 241, 0.075) 1px, transparent 1px);
+    --grid-size: 32px 32px;
+    --grid-opacity: 1;
+    --grid-dots: rgba(99, 102, 241, 0.2);
+    --ink-brown: #6d5ef0;
+    --accent-rgb: 109, 94, 240;
+    --ink-black: #1e1b4b;
+    --ink-gray: #5f6388;
+    --ink-brown-light: #a9a1f5;
+    --ink-red: #d1325a;
+    --ink-green: #0f9d6c;
+    --margin-line: #ddd9fb;
+    --hole-color: #cfcbf5;
+    --coffee-stain: #cfcbf5;
+    --yellow-tint: #ece9ff;
+    --surface-raised: rgba(255, 255, 255, 0.85);
+    --shell-bg: rgba(255, 255, 255, 0.85);
+    --shell-bg-soft: rgba(255, 255, 255, 0.7);
+    --overlay-bg: rgba(238, 236, 255, 0.85);
+    --gold: #e0a100;
+    --gold-rgb: 224, 161, 0;
+    --on-accent: #ffffff;
+    --radius-sm: 10px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+    --radius-pill: 999px;
+    --glow: 0 8px 30px rgba(109, 94, 240, 0.18);
+}
+
+/* SENSEI — washi paper, sumi ink, one vermilion seal. Quiet and spacious. */
+[data-theme="sensei"] {
+    --paper-bg: #f4efe6;
+    --paper-bg-end: #ece5d6;
+    --paper-bg-center: #f8f4ec;
+    --page-bg:
+        radial-gradient(circle at 88% 14%, transparent 0 150px, rgba(28, 27, 25, 0.06) 151px 153px, transparent 154px),
+        radial-gradient(ellipse at 50% 0%, var(--paper-bg-center) 0%, var(--paper-bg-end) 100%);
+    --grid-image: repeating-linear-gradient(90deg, rgba(60, 50, 30, 0.025) 0 1px, transparent 1px 7px);
+    --grid-size: auto;
+    --grid-opacity: 1;
+    --grid-dots: transparent;
+    --ink-brown: #c8321f;
+    --accent-rgb: 200, 50, 31;
+    --ink-black: #1c1b19;
+    --ink-gray: #756f63;
+    --ink-brown-light: #d49a8c;
+    --ink-red: #b3261e;
+    --ink-green: #55704f;
+    --margin-line: #d9d1bf;
+    --hole-color: #cfc6b0;
+    --coffee-stain: #cfc6b0;
+    --yellow-tint: #efe7d6;
+    --surface-raised: #fbf8f1;
+    --shell-bg: rgba(251, 248, 241, 0.92);
+    --shell-bg-soft: rgba(251, 248, 241, 0.7);
+    --overlay-bg: rgba(244, 239, 230, 0.9);
+    --gold: #a8812c;
+    --gold-rgb: 168, 129, 44;
+    --on-accent: #fbf8f1;
+    --radius-sm: 1px;
+    --radius-md: 2px;
+    --radius-lg: 3px;
+    --radius-pill: 2px;
+    --glow: none;
+}
+
+/* COACH — black and hazard yellow, heavy and loud */
+[data-theme="coach"] {
+    --paper-bg: #0b0b0b;
+    --paper-bg-end: #050505;
+    --paper-bg-center: #141414;
+    --page-bg: linear-gradient(180deg, var(--paper-bg-center) 0%, var(--paper-bg-end) 100%);
+    --grid-image: repeating-linear-gradient(135deg, rgba(250, 204, 21, 0.045) 0 14px, transparent 14px 28px);
+    --grid-size: auto;
+    --grid-opacity: 1;
+    --grid-dots: transparent;
+    --ink-brown: #facc15;
+    --accent-rgb: 250, 204, 21;
+    --ink-black: #f5f5f4;
+    --ink-gray: #a3a3a3;
+    --ink-brown-light: #8a7410;
+    --ink-red: #ff3b30;
+    --ink-green: #22c55e;
+    --margin-line: #3a3a3a;
+    --hole-color: #3a3a3a;
+    --coffee-stain: #3a3a3a;
+    --yellow-tint: #231f05;
+    --surface-raised: #171717;
+    --shell-bg: rgba(10, 10, 10, 0.95);
+    --shell-bg-soft: rgba(10, 10, 10, 0.7);
+    --overlay-bg: rgba(0, 0, 0, 0.85);
+    --gold: #facc15;
+    --gold-rgb: 250, 204, 21;
+    --on-accent: #0a0a0a;
+    --radius-sm: 0px;
+    --radius-md: 2px;
+    --radius-lg: 2px;
+    --radius-pill: 0px;
+    --glow: none;
+}
+
+/* GARDEN — sage, clay and sunlight; round, soft, alive */
+[data-theme="garden"] {
+    --paper-bg: #f3f7ec;
+    --paper-bg-end: #e2edd6;
+    --paper-bg-center: #fbfdf6;
+    --page-bg:
+        radial-gradient(ellipse 50% 40% at 10% 5%, rgba(255, 224, 140, 0.35) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 50% at 95% 100%, rgba(134, 190, 130, 0.30) 0%, transparent 70%),
+        linear-gradient(180deg, var(--paper-bg-center) 0%, var(--paper-bg-end) 100%);
+    --grid-image: radial-gradient(circle at center, rgba(91, 140, 90, 0.22) 1.2px, transparent 1.4px);
+    --grid-size: 28px 28px;
+    --grid-opacity: 0.7;
+    --grid-dots: rgba(91, 140, 90, 0.3);
+    --ink-brown: #4f8a4e;
+    --accent-rgb: 79, 138, 78;
+    --ink-black: #2a3826;
+    --ink-gray: #66775d;
+    --ink-brown-light: #a5c8a0;
+    --ink-red: #c9633a;
+    --ink-green: #3f8f4a;
+    --margin-line: #cfe0c4;
+    --hole-color: #c3d8b8;
+    --coffee-stain: #c3d8b8;
+    --yellow-tint: #e8f2da;
+    --surface-raised: rgba(255, 255, 255, 0.85);
+    --shell-bg: rgba(255, 255, 255, 0.88);
+    --shell-bg-soft: rgba(255, 255, 255, 0.7);
+    --overlay-bg: rgba(228, 238, 215, 0.88);
+    --gold: #d9a21b;
+    --gold-rgb: 217, 162, 27;
+    --on-accent: #ffffff;
+    --radius-sm: 12px;
+    --radius-md: 18px;
+    --radius-lg: 26px;
+    --radius-pill: 999px;
+    --glow: 0 10px 28px rgba(79, 138, 78, 0.16);
+}
+
+/* ORBIT — deep space, nebula violet, mission-control telemetry */
+[data-theme="orbit"] {
+    --paper-bg: #07060f;
+    --paper-bg-end: #04030a;
+    --paper-bg-center: #130d2b;
+    --page-bg:
+        radial-gradient(ellipse 70% 50% at 50% 115%, rgba(139, 92, 246, 0.28) 0%, transparent 70%),
+        radial-gradient(ellipse at 50% 0%, var(--paper-bg-center) 0%, var(--paper-bg-end) 75%);
+    --grid-image:
+        radial-gradient(circle at 12% 18%, rgba(255,255,255,.55) 0.7px, transparent 1.1px),
+        radial-gradient(circle at 78% 32%, rgba(255,255,255,.4) 0.7px, transparent 1.1px),
+        radial-gradient(circle at 44% 74%, rgba(255,255,255,.45) 0.7px, transparent 1.1px),
+        radial-gradient(circle at 90% 82%, rgba(255,255,255,.35) 0.7px, transparent 1.1px),
+        repeating-radial-gradient(circle at 50% 118%, transparent 0 118px, rgba(183, 148, 255, 0.07) 119px 120px);
+    --grid-size: 190px 190px, 230px 230px, 170px 170px, 260px 260px, auto;
+    --grid-opacity: 1;
+    --grid-dots: rgba(183, 148, 255, 0.2);
+    --ink-brown: #b794ff;
+    --accent-rgb: 183, 148, 255;
+    --ink-black: #ece8ff;
+    --ink-gray: #8f89b0;
+    --ink-brown-light: #5b4a99;
+    --ink-red: #ff6b8a;
+    --ink-green: #5eead4;
+    --margin-line: #2a2150;
+    --hole-color: #2a2150;
+    --coffee-stain: #2a2150;
+    --yellow-tint: #1b1340;
+    --surface-raised: #110c26;
+    --shell-bg: rgba(12, 8, 30, 0.92);
+    --shell-bg-soft: rgba(12, 8, 30, 0.6);
+    --overlay-bg: rgba(4, 3, 12, 0.85);
+    --gold: #fcd34d;
+    --gold-rgb: 252, 211, 77;
+    --on-accent: #12082b;
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-pill: 999px;
+    --glow: 0 0 22px rgba(183, 148, 255, 0.25);
+}
+
+/* QUEST — sunny sky, thick black outlines, arcade red and coin gold */
+[data-theme="quest"] {
+    --paper-bg: #8fd3ff;
+    --paper-bg-end: #bfe8ff;
+    --paper-bg-center: #6ec5ff;
+    --page-bg: linear-gradient(180deg, var(--paper-bg-center) 0%, var(--paper-bg-end) 78%, #9be07a 78%, #6fc24f 100%);
+    --grid-image:
+        linear-gradient(rgba(255, 255, 255, 0.16) 2px, transparent 2px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.16) 2px, transparent 2px);
+    --grid-size: 32px 32px;
+    --grid-opacity: 1;
+    --grid-dots: rgba(255, 255, 255, 0.3);
+    --ink-brown: #e4372c;
+    --accent-rgb: 228, 55, 44;
+    --ink-black: #1a1a2e;
+    --ink-gray: #3d4468;
+    --ink-brown-light: #1a1a2e;
+    --ink-red: #c0221a;
+    --ink-green: #1f8a3b;
+    --margin-line: #1a1a2e;
+    --hole-color: #1a1a2e;
+    --coffee-stain: #1a1a2e;
+    --yellow-tint: #fff3b0;
+    --surface-raised: #ffffff;
+    --shell-bg: #ffffff;
+    --shell-bg-soft: rgba(255, 255, 255, 0.85);
+    --overlay-bg: rgba(143, 211, 255, 0.9);
+    --gold: #fbd000;
+    --gold-rgb: 251, 208, 0;
+    --on-accent: #ffffff;
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 8px;
+    --radius-pill: 6px;
+    --glow: 4px 4px 0 #1a1a2e;
 }
 
 * {
@@ -38,7 +370,8 @@
 
 body {
     font-family: 'Lato', Tahoma, Geneva, Verdana, sans-serif;
-    background: radial-gradient(circle at center, var(--paper-bg-center) 0%, var(--paper-bg-end) 100%);
+    background: var(--page-bg);
+    background-attachment: fixed;
     color: var(--ink-black);
     min-height: 80vh;
     line-height: 1.6;
@@ -55,11 +388,11 @@ body::before {
     left: 0;
     right: 0;
     bottom: 0;
-    background-image: /* Grid dots pattern */ radial-gradient(circle at center, var(--grid-dots) 0.8px, transparent 0.8px);
-    background-size: 20px 20px;
+    background-image: var(--grid-image);
+    background-size: var(--grid-size);
     z-index: -3;
     pointer-events: none;
-    opacity: 0.6;
+    opacity: var(--grid-opacity);
 }
 
 .container-fluid {
@@ -283,7 +616,7 @@ body::before {
     background: var(--ink-brown);
     color: var(--paper-bg);
     border-color: var(--ink-brown);
-    box-shadow: 0 2px 4px rgba(74, 103, 65, 0.3);
+    box-shadow: 0 2px 4px rgba(var(--accent-rgb), 0.3);
 }
 
 .habit-day.checked::before {
@@ -413,7 +746,7 @@ body::after {
     bottom: 15px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(42, 38, 32, 0.9);
+    background: var(--shell-bg);
     backdrop-filter: blur(5px);
     padding: 8px 20px;
     border-radius: 20px;
@@ -429,11 +762,11 @@ body::after {
 }
 
 
-[data-theme="dark"] .form-control, .form-control::placeholder {
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .form-control, .form-control::placeholder {
     color: var(--ink-black);
 }
 
-[data-theme="dark"] .form-control:focus {
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .form-control:focus {
     color: var(--ink-black);
 }
 
@@ -573,7 +906,7 @@ body::after {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(220, 201, 172, 0.9);
+    background: var(--overlay-bg);
     /*background: rgba(0, 0, 0, 0.7);*/
     z-index: 9999;
     display: flex;
@@ -583,8 +916,8 @@ body::after {
     pointer-events: none;
 }
 
-[data-theme="dark"] .loader-overlay {
-    background: rgba(42, 38, 32, 0.7);
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .loader-overlay {
+    background: var(--overlay-bg);
 }
 
 .loader-container {
@@ -806,11 +1139,11 @@ body::after {
     display: inline-block;
     background: transparent;
     border: none;
-    border-bottom: 2px solid rgba(152, 117, 63, 0.6);
+    border-bottom: 2px solid rgba(var(--accent-rgb), 0.6);
     padding: 4px 8px;
     margin: 0 4px;
     font-size: 1.1em;
-    color: rgba(152, 117, 63, 1);
+    color: rgba(var(--accent-rgb), 1);
     font-weight: 500;
     min-width: 120px;
     max-width: 100%;
@@ -823,12 +1156,12 @@ body::after {
 
 .form-input:focus {
     outline: none;
-    border-bottom-color: rgba(152, 117, 63, 1);
-    background-color: rgba(152, 117, 63, 0.05);
+    border-bottom-color: rgba(var(--accent-rgb), 1);
+    background-color: rgba(var(--accent-rgb), 0.05);
 }
 
 .form-input::placeholder {
-    color: rgba(152, 117, 63, 0.5);
+    color: rgba(var(--accent-rgb), 0.5);
     font-style: italic;
 }
 
@@ -845,7 +1178,7 @@ body::after {
 }
 
 .submit-btn {
-    background: rgba(152, 117, 63, 1);
+    background: rgba(var(--accent-rgb), 1);
     color: white;
     border: none;
     padding: 7px 30px;
@@ -856,24 +1189,24 @@ body::after {
 }
 
 .submit-btn:hover {
-    background: rgba(152, 117, 63, 0.8);
+    background: rgba(var(--accent-rgb), 0.8);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(152, 117, 63, 0.3);
+    box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.3);
 }
 
 .form-label {
     display: block;
     margin-bottom: 15px;
     font-weight: 600;
-    color: rgba(152, 117, 63, 1);
+    color: rgba(var(--accent-rgb), 1);
 }
 
 .result {
     margin-top: 30px;
     padding: 20px;
-    background: rgba(152, 117, 63, 0.1);
+    background: rgba(var(--accent-rgb), 0.1);
     border-radius: 8px;
-    border-left: 4px solid rgba(152, 117, 63, 1);
+    border-left: 4px solid rgba(var(--accent-rgb), 1);
     display: none;
 }
 
@@ -904,7 +1237,7 @@ body::after {
 .hamburger-line {
     width: 20px;
     height: 2px;
-    background: rgba(152, 117, 63, 1);
+    background: rgba(var(--accent-rgb), 1);
     border-radius: 2px;
     transition: all 0.3s ease;
     transform-origin: center;
@@ -957,8 +1290,8 @@ body::after {
     background: white;
     z-index: 1000;
     border-radius: 12px;
-    box-shadow: 0 8px 25px rgba(152, 117, 63, 0.2);
-    border: 2px solid rgba(152, 117, 63, 0.1);
+    box-shadow: 0 8px 25px rgba(var(--accent-rgb), 0.2);
+    border: 2px solid rgba(var(--accent-rgb), 0.1);
     opacity: 0;
     visibility: hidden;
     transform: translateY(-10px);
@@ -973,13 +1306,13 @@ body::after {
 }
 
 /* Dark theme support */
-[data-theme="dark"] .nav-popup {
-    background: #2a2a2a;
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .nav-popup {
+    background: var(--surface-raised);
     color: white;
 }
 
-[data-theme="dark"] .hamburger-line {
-    background: rgba(152, 117, 63, 0.9);
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .hamburger-line {
+    background: rgba(var(--accent-rgb), 0.9);
 }
 
 /* Navigation Content */
@@ -991,24 +1324,24 @@ body::after {
     display: flex;
     align-items: center;
     padding: 10px 16px;
-    color: rgba(152, 117, 63, 1);
+    color: rgba(var(--accent-rgb), 1);
     text-decoration: none;
     transition: all 0.2s ease;
     font-size: 0.9em;
 }
 
 .nav-link:hover {
-    background: rgba(152, 117, 63, 0.1);
-    color: rgba(152, 117, 63, 1);
+    background: rgba(var(--accent-rgb), 0.1);
+    color: rgba(var(--accent-rgb), 1);
 }
 
-[data-theme="dark"] .nav-link {
-    color: rgba(152, 117, 63, 0.9);
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .nav-link {
+    color: rgba(var(--accent-rgb), 0.9);
 }
 
-[data-theme="dark"] .nav-link:hover {
-    background: rgba(152, 117, 63, 0.2);
-    color: rgba(152, 117, 63, 1);
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .nav-link:hover {
+    background: rgba(var(--accent-rgb), 0.2);
+    color: rgba(var(--accent-rgb), 1);
 }
 
 .nav-link i {
@@ -1023,13 +1356,13 @@ body::after {
 
 .nav-divider {
     height: 1px;
-    background: rgba(152, 117, 63, 0.2);
+    background: rgba(var(--accent-rgb), 0.2);
     margin: 8px 16px;
 }
 
 .current-habit-display {
-    background: rgba(152, 117, 63, 0.05);
-    border-left: 4px solid rgba(152, 117, 63, 1);
+    background: rgba(var(--accent-rgb), 0.05);
+    border-left: 4px solid rgba(var(--accent-rgb), 1);
     padding: 15px;
     border-radius: 8px;
 }
@@ -1037,12 +1370,12 @@ body::after {
 .habit-statement {
     font-size: 1.1em;
     line-height: 1.6;
-    color: rgba(152, 117, 63, 1);
+    color: rgba(var(--accent-rgb), 1);
     font-weight: 500;
 }
 
 .habit-statement span {
-    background: rgba(152, 117, 63, 0.1);
+    background: rgba(var(--accent-rgb), 0.1);
     padding: 2px 6px;
     border-radius: 4px;
     margin: 0 2px;
@@ -1071,7 +1404,7 @@ body::after {
 
 /* Action Buttons */
 .habit-actions {
-    border-top: 1px solid rgba(152, 117, 63, 0.2);
+    border-top: 1px solid rgba(var(--accent-rgb), 0.2);
     padding-top: 20px;
 }
 
@@ -1082,18 +1415,18 @@ body::after {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    border: 2px solid rgba(152, 117, 63, 0.3);
+    border: 2px solid rgba(var(--accent-rgb), 0.3);
     border-radius: 12px;
     transition: all 0.3s ease;
     text-align: center;
     padding: 10px;
-    color: rgba(152, 117, 63, 1);
+    color: rgba(var(--accent-rgb), 1);
 }
 
 .habit-action-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(152, 117, 63, 0.2);
-    border-color: rgba(152, 117, 63, 1);
+    box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.2);
+    border-color: rgba(var(--accent-rgb), 1);
 }
 
 .habit-action-btn i {
@@ -1116,14 +1449,14 @@ body::after {
 
 /* Partner Management Styles */
 .partner-management {
-    border: 2px solid rgba(152, 117, 63, 0.3);
+    border: 2px solid rgba(var(--accent-rgb), 0.3);
     border-radius: 8px;
     padding: 20px;
 }
 
 .current-partner-card {
     background: white;
-    border: 2px solid rgba(152, 117, 63, 0.3);
+    border: 2px solid rgba(var(--accent-rgb), 0.3);
     border-radius: 8px;
     padding: 15px;
     margin-bottom: 15px;
@@ -1168,7 +1501,7 @@ body::after {
 }
 
 .accountability-partner-info {
-    border-top: 1px solid rgba(152, 117, 63, 0.2);
+    border-top: 1px solid rgba(var(--accent-rgb), 0.2);
     padding-top: 10px;
 }
 
@@ -1181,31 +1514,31 @@ body::after {
 }
 
 .form-check-input:checked {
-    background-color: rgba(152, 117, 63, 1);
-    border-color: rgba(152, 117, 63, 1);
+    background-color: rgba(var(--accent-rgb), 1);
+    border-color: rgba(var(--accent-rgb), 1);
 }
 
 .form-check-input:focus {
-    border-color: rgba(152, 117, 63, 0.5);
-    box-shadow: 0 0 0 0.2rem rgba(152, 117, 63, 0.25);
+    border-color: rgba(var(--accent-rgb), 0.5);
+    box-shadow: 0 0 0 0.2rem rgba(var(--accent-rgb), 0.25);
 }
 
 /* Dark theme support */
-[data-theme="dark"] .current-habit-display {
-    background: rgba(152, 117, 63, 0.1);
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .current-habit-display {
+    background: rgba(var(--accent-rgb), 0.1);
 }
 
-[data-theme="dark"] .habit-action-btn {
-    background: #2a2a2a;
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .habit-action-btn {
+    background: var(--surface-raised);
     color: inherit;
 }
 
-[data-theme="dark"] .partner-management {
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .partner-management {
     background: rgba(23, 162, 184, 0.1);
 }
 
-[data-theme="dark"] .current-partner-card {
-    background: #2a2a2a;
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .current-partner-card {
+    background: var(--surface-raised);
 }
 
 .text-brown{
@@ -1215,7 +1548,7 @@ body::after {
 /* Smooth scrolling for nav popup */
 .nav-popup {
     scrollbar-width: thin;
-    scrollbar-color: rgba(152, 117, 63, 0.3) transparent;
+    scrollbar-color: rgba(var(--accent-rgb), 0.3) transparent;
 }
 
 .nav-popup::-webkit-scrollbar {
@@ -1227,12 +1560,12 @@ body::after {
 }
 
 .nav-popup::-webkit-scrollbar-thumb {
-    background: rgba(152, 117, 63, 0.3);
+    background: rgba(var(--accent-rgb), 0.3);
     border-radius: 2px;
 }
 
 .nav-popup::-webkit-scrollbar-thumb:hover {
-    background: rgba(152, 117, 63, 0.5);
+    background: rgba(var(--accent-rgb), 0.5);
 }
 
 /* Responsive */
@@ -1268,7 +1601,7 @@ body::after {
         left: 50%;
         margin: 0 auto;
         width: 300px;
-        background: rgba(42, 38, 32, 0.5);
+        background: var(--shell-bg-soft);
         align-content: center;
     }
 

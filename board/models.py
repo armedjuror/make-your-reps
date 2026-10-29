@@ -7,6 +7,19 @@ from django.db import models
 
 
 class Theme(models.TextChoices):
+    INK = 'ink'
+    TERMINAL = 'terminal'
+    TECH = 'tech'
+    AURORA = 'aurora'
+    SENSEI = 'sensei'
+    COACH = 'coach'
+    GARDEN = 'garden'
+    ORBIT = 'orbit'
+    QUEST = 'quest'
+    # Legacy names, kept so existing rows stay valid. The UI maps
+    # 'dark' to 'ink' and 'light', 'paper' and 'plain' to 'aurora'.
+    PAPER = 'paper'
+    PLAIN = 'plain'
     DARK = 'dark'
     LIGHT = 'light'
 

@@ -9,7 +9,7 @@ from django.urls import path
 from django.utils import timezone
 from django.conf import settings
 
-from main.models import AnnouncementLog, Config, EmailPreference, ErrorLog, LoginActivity, ReleaseLog
+from main.models import AnnouncementLog, Config, EmailPreference, ErrorLog, ExtensionUninstallFeedback, LoginActivity, ReleaseLog
 from main.tasks import send_release_announcement_task
 
 
@@ -222,6 +222,25 @@ class AnnouncementLogAdmin(admin.ModelAdmin):
     search_fields = ('subject', 'release__version')
     ordering = ('-sent_at',)
     readonly_fields = ('release', 'subject', 'audience', 'test_recipient', 'sent_count', 'sent_by', 'sent_at')
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+@register(ExtensionUninstallFeedback)
+class ExtensionUninstallFeedbackAdmin(admin.ModelAdmin):
+    list_display = ('submitted_at', 'reason', 'extension_version', 'ip_address', 'short_comment')
+    list_filter = ('reason',)
+    search_fields = ('comment',)
+    readonly_fields = ('submitted_at', 'reason', 'comment', 'extension_version', 'ip_address')
+    ordering = ('-submitted_at',)
+
+    def short_comment(self, obj):
+        return obj.comment[:80] + '…' if len(obj.comment) > 80 else obj.comment
+    short_comment.short_description = 'Comment'
 
     def has_add_permission(self, request):
         return False

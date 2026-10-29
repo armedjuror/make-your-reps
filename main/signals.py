@@ -60,7 +60,7 @@ def _accept_pending_invites(user):
 @receiver(user_signed_up)
 def user_signed_up_handler(sender, request, user, **kwargs):
     client_type = request.session.get('client_type')
-    if client_type == 'api':
+    if client_type in ('api', 'extension'):
         token_string, token_obj = RefreshToken.generate_token(
             user,
             request,
@@ -196,7 +196,7 @@ def user_signed_up_handler(sender, request, user, **kwargs):
 def handle_user_login(sender, request, user, **kwargs):
     client_type = request.session.get('client_type')
     token_obj = None
-    if client_type == 'api':
+    if client_type in ('api', 'extension'):
         token_string, token_obj = RefreshToken.generate_token(user, request)
         access_token = AccessToken.generate(user)
         request.session['refresh_token'] = token_string
