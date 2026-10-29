@@ -2703,8 +2703,10 @@
 /* Head: greeting + compact focus strip */
 .today-head { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; }
 .today-head .greeting-main { margin: 0; }
-.today-head .greeting-main h1 { font-size: 2rem; margin: 0; }
-.today-head .greeting-main p { margin: 2px 0 0; font-size: .9rem; }
+.today-head .greeting-main h1 { font-size: 1.35rem; font-weight: 600; margin: 0; text-transform: none; line-height: 1.35; }
+.today-head .greeting-main .greeting-link { color: inherit; text-decoration: none; }
+.today-head .greeting-main .greeting-link i { font-size: .8em; margin-left: 4px; opacity: .6; transition: transform .15s, opacity .15s; }
+.today-head .greeting-main .greeting-link:hover i { transform: translateX(3px); opacity: 1; }
 
 .today-head .pomodoro-section {
     display: flex; align-items: center; gap: 14px; margin: 0; padding: 8px 14px; max-width: none;
@@ -2741,6 +2743,7 @@
     .bookmark-strip .reading-list-grid { position: static; flex: 0 0 auto; flex-direction: row; flex-wrap: nowrap; justify-content: center; gap: 10px; }
     .bookmark-strip .reading-list-grid { gap: 8px; }
     .bookmark-strip .reading-list-item, .bookmark-strip .reading-list-add-btn { flex: 0 0 auto; width: 48px; height: 48px; padding: 0; }
+    .today-head .greeting-main h1 { font-size: 1.05rem; }
     .today-head .pomodoro-section { width: 100%; flex-wrap: wrap; justify-content: center; row-gap: 6px; }
     .today-head .pomodoro-focus-today { display: none; }
     .today-head .gami-status-bar { width: 100%; justify-content: center; }

@@ -218,31 +218,7 @@ function bindEvents() {
 const General = {
     clockInterval: null,
     updateGreeting() {
-        const now = new Date();
-        const hour = now.getHours();
-        let greeting, message = '';
-        let greetings, messages;
-        const G = AppConfig.dashboardConfig?.greetings || {};
-        const M = AppConfig.dashboardConfig?.messages || {};
-        if (hour < 4 || hour > 22) {
-            greetings = G.night;
-            messages = M.night;
-        } else if (hour < 9) {
-            greetings = G.morning;
-            messages = M.morning;
-        } else if (hour < 17) {
-            greetings = G.afternoon;
-            messages = M.afternoon;
-        } else {
-            greetings = G.evening;
-            messages = M.evening;
-        }
-
-        if (!greetings?.length || !messages?.length) return;
-        greeting = greetings[Math.floor(Math.random() * greetings.length)];
-        message = messages[Math.floor(Math.random() * messages.length)];
-        document.querySelector('.greeting-main h1').textContent = greeting;
-        document.querySelector('.greeting-main p').textContent = message;
+        if (typeof Greeting !== 'undefined') Greeting.schedule();
     },
     loadProductivityScore() {
         apiClient.get('board/api/productivity_score/').then(res => {

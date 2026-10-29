@@ -192,8 +192,7 @@
                         <!-- Greeting + focus strip -->
                         <div class="today-head">
                             <div class="greeting-main">
-                                <h1 id="greeting-text">Good Morning!</h1>
-                                <p id="greeting-sub">Let's make today amazing</p>
+                                <h1 id="greeting-text" aria-live="polite">Hello</h1>
                             </div>
                         <div class="pomodoro-section">
                             <div class="pomodoro-main">
@@ -1525,6 +1524,7 @@ Write freely here, like you're writing in your personal journal..." id="journal-
     <script src="{% static 'board/js/settings.js' %}"></script>
     <script src="{% static 'board/js/misc.js' %}"></script>
     <script src="{% static 'board/js/gamification.js' %}"></script>
+    <script src="{% static 'board/js/greeting.js' %}"></script>
     <script>
         (function () {
             const params = new URLSearchParams(window.location.search);

@@ -85,6 +85,7 @@ const Timeline = {
             this.events = this.events.concat(res.data);
             this.hasMore = res.has_more;
             this.render();
+            if (typeof Greeting !== 'undefined') Greeting.schedule();
         }
     },
 
