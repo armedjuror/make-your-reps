@@ -646,9 +646,13 @@ class HabitViewSet(AuthenticatedModelViewSet):
         try:
             pk = int(kwargs['pk'])
             habit = self.get_queryset().get(pk=pk)
+            before = (habit.notify_at, list(habit.frequency or []), habit.status)
             serializer = self.serializer_class(habit, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
+                habit.refresh_from_db()
+                if before != (habit.notify_at, list(habit.frequency or []), habit.status):
+                    self._resync_today_event(habit)
                 return Response({
                     "status": "success",
                     "data": serializer.data,
@@ -663,6 +667,25 @@ class HabitViewSet(AuthenticatedModelViewSet):
                 "status": "failed",
                 "error": "Habit not found"
             }, status=status.HTTP_404_NOT_FOUND)
+
+    def _resync_today_event(self, habit):
+        """
+        The reminder time (or schedule) changed: drop today's not-yet-answered
+        timeline event for this habit and recreate it at the new time.
+        """
+        from board.tasks import generate_timeline_for_new_item
+        TimelineEvent.objects.filter(
+            event_type=TimelineEventType.HABIT,
+            reference__model='Habit',
+            reference__id=habit.id,
+            timestamp__date=timezone.localdate(),
+            action_response__isnull=True,
+        ).delete()
+        if habit.status == HabitStatus.ACTIVE.value:
+            try:
+                generate_timeline_for_new_item('habit', habit.id)
+            except Exception:
+                pass
 
     def destroy(self, request, **kwargs):
         habit_id = int(kwargs['pk'])

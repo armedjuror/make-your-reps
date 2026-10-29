@@ -8,11 +8,13 @@ from django.db import models
 
 class Theme(models.TextChoices):
     INK = 'ink'
-    PAPER = 'paper'
     TERMINAL = 'terminal'
+    TECH = 'tech'
+    AURORA = 'aurora'
+    # Legacy names, kept so existing rows stay valid. The UI maps
+    # 'dark' to 'ink' and 'light', 'paper' and 'plain' to 'aurora'.
+    PAPER = 'paper'
     PLAIN = 'plain'
-    # Legacy names, kept so existing rows stay valid. The UI treats
-    # 'light' as 'paper' and 'dark' as 'ink'.
     DARK = 'dark'
     LIGHT = 'light'
 

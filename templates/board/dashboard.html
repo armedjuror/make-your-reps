@@ -8,7 +8,7 @@
     <script>
         // Apply the saved theme before first paint to avoid a flash.
         (function () {
-            var map = { dark: 'ink', light: 'paper' }, ok = ['ink', 'paper', 'terminal', 'plain'], t = null;
+            var map = { dark: 'ink', light: 'aurora', paper: 'aurora', plain: 'aurora' }, ok = ['ink', 'terminal', 'tech', 'aurora'], t = null;
             try { t = localStorage.getItem('mr_theme'); } catch (e) {}
             t = map[t] || t;
             if (ok.indexOf(t) < 0) t = '{{ user_detail.default_theme|default:"ink" }}';
@@ -621,9 +621,9 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                                 <label class="form-label">Theme</label>
                                 <div class="theme-swatches" role="group" aria-label="Theme">
                                     <button type="button" class="theme-swatch" data-theme-value="ink" aria-pressed="false"><span class="sw sw-ink"><i></i><i></i><i></i></span>Ink</button>
-                                    <button type="button" class="theme-swatch" data-theme-value="paper" aria-pressed="false"><span class="sw sw-paper"><i></i><i></i><i></i></span>Paper</button>
-                                    <button type="button" class="theme-swatch" data-theme-value="terminal" aria-pressed="false"><span class="sw sw-terminal"><i></i><i></i><i></i></span>Terminal</button>
-                                    <button type="button" class="theme-swatch" data-theme-value="plain" aria-pressed="false"><span class="sw sw-plain"><i></i><i></i><i></i></span>Plain</button>
+                                                                        <button type="button" class="theme-swatch" data-theme-value="terminal" aria-pressed="false"><span class="sw sw-terminal"><i></i><i></i><i></i></span>Terminal</button>
+                                    <button type="button" class="theme-swatch" data-theme-value="tech" aria-pressed="false"><span class="sw sw-tech"><i></i><i></i><i></i></span>Tech</button>
+                                    <button type="button" class="theme-swatch" data-theme-value="aurora" aria-pressed="false"><span class="sw sw-aurora"><i></i><i></i><i></i></span>Aurora</button>
                                 </div>
                             </div>
                             <div class="mb-3">
@@ -979,6 +979,11 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                             <span>Accountability Partner: </span>
                             <span id="partnerDisplay" class="ms-2 text-brown">None assigned</span>
                         </div>
+                        <div class="d-flex align-items-center mt-2">
+                            <i class="fas fa-bell me-2"></i>
+                            <span>Reminder: </span>
+                            <span id="reminderDisplay" class="ms-2 text-brown">None</span>
+                        </div>
                     </div>
                 </div>
 
@@ -1005,6 +1010,11 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                                id="editIdentity"
                                placeholder="a wise person"
                                required>
+                    </div>
+                    <div class="paragraph-form mt-2">
+                        Remind me at
+                        <input type="time" class="form-input" id="editNotify" aria-label="Reminder time">
+                        <small class="text-brown ms-1">(optional, leave empty for no reminder)</small>
                     </div>
                 </div>
 

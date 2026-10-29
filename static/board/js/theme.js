@@ -10,9 +10,9 @@
 const Theme = {
     storageKey: 'mr_theme',
     fallback: 'ink',
-    all: ['ink', 'paper', 'terminal', 'plain'],
-    // Legacy values stored before the four-theme system existed.
-    legacy: { dark: 'ink', light: 'paper' },
+    all: ['ink', 'terminal', 'tech', 'aurora'],
+    // Older theme names, mapped to the closest current one.
+    legacy: { dark: 'ink', light: 'aurora', paper: 'aurora', plain: 'aurora' },
 
     normalize(theme) {
         const t = this.legacy[theme] || theme;
