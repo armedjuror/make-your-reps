@@ -2688,9 +2688,17 @@
 .today { max-width: 860px; margin: 0 auto; padding-top: 20px; }
 .today-main { min-width: 0; }
 
-/* Bookmarks on small screens: one strip under the top bar, on every tab.
-   Desktop keeps the original bookmark block inside Today. */
-.bookmark-strip { display: none; }
+/* Bookmarks: left column on desktop, one strip under the top bar on small screens; on every tab. */
+/* Desktop: fixed left column on every tab (as in the extension); nav and content sit to its right */
+.bookmark-strip { display: block; }
+@media (min-width: 1201px) {
+    .bookmark-strip .reading-list-grid {
+        position: fixed; left: 10px; top: 30%;
+        flex-direction: column; flex-wrap: wrap; justify-content: center; gap: 10px;
+    }
+    .tab-bar { padding-left: 76px; }
+    .pane { padding-left: 86px; }
+}
 
 /* Head: greeting + compact focus strip */
 .today-head { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; }
@@ -2736,8 +2744,6 @@
     .bookmark-strip .rl-name { display: block; font-size: .78rem; white-space: nowrap; max-width: 110px; overflow: hidden; text-overflow: ellipsis; }
     .bookmark-strip .rl-edit-btn { display: none; }
     .bookmark-strip .reading-list-add-btn { white-space: nowrap; flex: 0 0 auto; }
-    /* The in-page block would duplicate the strip */
-    #pane-home .reading-list-section { display: none; }
     .today-head .pomodoro-section { width: 100%; flex-wrap: wrap; justify-content: center; row-gap: 6px; }
     .today-head .pomodoro-focus-today { display: none; }
     .today-head .gami-status-bar { width: 100%; justify-content: center; }
