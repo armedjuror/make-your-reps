@@ -8,11 +8,10 @@ const DefaultPane = {
     currentEngine: 'google',
     init() {
         this.currentEngine = AppConfig.userDetail?.default_search_engine || 'google';
-        General.updateGreeting();
+        Greeting.init();
         General.startClock();
         General.loadProductivityScore();
         this.loadSearchEngines();
-        setInterval(() => General.updateGreeting(), 600000);
     },
     async loadSearchEngines() {
         const res = await apiClient.get('board/api/search_engines/');

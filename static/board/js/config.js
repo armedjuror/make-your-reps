@@ -26,23 +26,17 @@ const AppConfig = {
 
     _applyUserDetail(d) {
         // Body attributes
-        document.body.setAttribute('data-theme', d.default_theme || 'light');
+        Theme.apply(d.default_theme || 'ink');
         document.body.setAttribute('data-font', d.font_family || 'Montserrat');
         document.body.setAttribute('data-clock', d.clock_format || '12h');
         document.body.style.fontFamily = `'${d.font_family || 'Montserrat'}', sans-serif`;
 
-        // Theme icon
-        const icon = document.getElementById('themeIcon');
-        if (icon) icon.className = d.default_theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
 
         // Settings — general
         const firstNameEl = document.getElementById('settingsFirstName');
         if (firstNameEl) firstNameEl.value = d.first_name || '';
         const lastNameEl = document.getElementById('settingsLastName');
         if (lastNameEl) lastNameEl.value = d.last_name || '';
-
-        const themeSelect = document.getElementById('themeSelect');
-        if (themeSelect) themeSelect.value = d.default_theme || 'light';
 
         const fontSelect = document.getElementById('fontSelect');
         if (fontSelect) fontSelect.value = d.font_family || 'Montserrat';

@@ -302,10 +302,26 @@ class ReadingListItemSerializer(serializers.ModelSerializer):
 
 
 class TimelineEventSerializer(serializers.ModelSerializer):
+    # Task group for todo events, so the timeline can show and filter by it
+    group = serializers.SerializerMethodField()
+
     class Meta:
         model = TimelineEvent
         exclude = ('user',)
         read_only_fields = ['created_at', 'updated_at']
+
+    def get_group(self, obj):
+        ref = obj.reference or {}
+        if obj.event_type != 'todo' or ref.get('model') != 'Task' or not ref.get('id'):
+            return None
+        from board.models import Task
+        cache = self.context.setdefault('_task_groups', {})
+        if ref['id'] not in cache:
+            row = (Task.objects.filter(pk=ref['id'], user_id=obj.user_id)
+                   .values('group_id', 'group__name').first())
+            cache[ref['id']] = ({'id': row['group_id'], 'name': row['group__name']}
+                                if row and row['group_id'] else None)
+        return cache[ref['id']]
 
 
 class SearchEngineSerializer(serializers.ModelSerializer):

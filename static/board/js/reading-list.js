@@ -45,8 +45,8 @@ const ReadingList = {
     },
 
     renderFeatured() {
-        const grid = document.getElementById('reading-list-grid');
-        if (!grid) return;
+        const grids = document.querySelectorAll('#reading-list-grid, .bookmark-strip-grid');
+        if (!grids.length) return;
 
         const itemsHtml = this.items.map(item => {
             const iconHtml = item.icon
@@ -54,8 +54,8 @@ const ReadingList = {
                 : `<div class="rl-icon-fallback">${this.generateFallbackIcon(item.name, item.url)}</div>`;
 
             return `
-                <div class="reading-list-item" title="${item.name}">
-                    <a href="${item.url}" target="_blank" class="rl-link">${iconHtml}</a>
+                <div class="reading-list-item" title="${this.escapeHtml(item.name)}">
+                    <a href="${item.url}" target="_blank" rel="noopener" class="rl-link">${iconHtml}<span class="rl-name">${this.escapeHtml(item.name)}</span></a>
                     <button class="rl-edit-btn" onclick="ReadingList.showEditModal(${item.id})" title="Edit/Delete"><i class="fas fa-pen"></i></button>
                 </div>
             `;
@@ -63,7 +63,13 @@ const ReadingList = {
 
         const addBtn = `<button class="reading-list-add-btn" onclick="ReadingList.showAddModal()" title="Add bookmark"><i class="fas fa-plus"></i></button>`;
 
-        grid.innerHTML = itemsHtml + addBtn;
+        grids.forEach(g => { g.innerHTML = itemsHtml + addBtn; });
+    },
+
+    escapeHtml(str) {
+        const d = document.createElement('div');
+        d.textContent = str == null ? '' : String(str);
+        return d.innerHTML;
     },
 
     showEditModal(id) {

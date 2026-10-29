@@ -5,11 +5,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard | Make Your Reps</title>
+    <script>
+        // Apply the saved theme before first paint to avoid a flash.
+        (function () {
+            var map = { dark: 'ink', light: 'aurora', paper: 'aurora', plain: 'aurora' }, ok = ['ink', 'terminal', 'tech', 'aurora', 'sensei', 'coach', 'garden', 'orbit', 'quest'], t = null;
+            try { t = localStorage.getItem('mr_theme'); } catch (e) {}
+            t = map[t] || t;
+            if (ok.indexOf(t) < 0) t = '{{ user_detail.default_theme|default:"ink" }}';
+            t = map[t] || t;
+            document.documentElement.setAttribute('data-theme', ok.indexOf(t) < 0 ? 'ink' : t);
+        })();
+    </script>
     <link rel="icon" type="image/x-icon" href="{% static 'images/logo.png' %}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fredericka+the+Great&family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredericka+the+Great&family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=JetBrains+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Barlow+Condensed:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=DotGothic16&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'board/css/style.css' %}">
     <link rel="stylesheet" href="{% static 'board/css/dashboard.css' %}">
     <!-- PWA -->
@@ -21,7 +32,7 @@
     <meta name="apple-mobile-web-app-title" content="Make Your Reps">
     <link rel="apple-touch-icon" href="{% static 'images/logo.png' %}">
 </head>
-<body data-theme="dark" data-font="Jetbrains Mono" data-clock="12h">
+<body data-font="Jetbrains Mono" data-clock="12h">
 
     <!-- Loader -->
     <div id="loader" class="loader-overlay hidden">
@@ -42,7 +53,7 @@
         <div class="tab-nav-group" id="tab-nav-group">
             <a class="tab-item active" data-pane="home">
                 <i class="fas fa-home"></i>
-                <span>Home</span>
+                <span>Today</span>
             </a>
             <a class="tab-item" data-pane="todos">
                 <i class="fas fa-tasks"></i>
@@ -50,35 +61,32 @@
             </a>
             <a class="tab-item" data-pane="trackers">
                 <i class="fas fa-chart-line"></i>
-                <span>Trackers</span>
+                <span>Habits</span>
             </a>
 
             <a class="tab-item" data-pane="journals">
                 <i class="fas fa-book"></i>
-                <span>Journals</span>
+                <span>Journal</span>
             </a>
             <a class="tab-item" data-pane="achievements">
                 <i class="fas fa-trophy"></i>
-                <span>Achievements</span>
+                <span>Progress</span>
             </a>
             <div class="dropdown">
                 <a class="tab-item dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="fas fa-layer-group"></i>
-                    <span>Others</span>
+                    <span>More</span>
                 </a>
                 <ul class="dropdown-menu">
                     <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); switchPane('reading-list')"><i class="fas fa-bookmark me-2"></i>Reading List</a></li>
                     <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); switchPane('friends')"><i class="fas fa-user-friends me-2"></i>Friends</a></li>
                     <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); switchPane('settings')"><i class="fas fa-cog me-2"></i>Settings</a></li>
                     <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); switchPane('help')"><i class="fas fa-question-circle me-2"></i>Help</a></li>
+                    <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); Theme.openAppearance()"><i class="fas fa-palette me-2"></i>Appearance</a></li>
                     <li><hr class="dropdown-divider"></li>
                     <li><a class="dropdown-item text-danger" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
                 </ul>
             </div>
-            <a class="tab-item" id="tab-theme-btn">
-                <i class="fas fa-moon" id="themeIcon"></i>
-                <span>Theme</span>
-            </a>
         </div>
         <!-- Score + Datetime (desktop right side) -->
         <div class="tab-meta-group">
@@ -109,19 +117,19 @@
             <button class="mobile-menu-close" id="mobile-menu-close-btn"><i class="fas fa-times"></i></button>
         </div>
         <a class="mobile-menu-item active" data-pane="home">
-            <i class="fas fa-home"></i> Home
+            <i class="fas fa-home"></i> Today
         </a>
         <a class="mobile-menu-item" data-pane="todos">
             <i class="fas fa-tasks"></i> Todos
         </a>
         <a class="mobile-menu-item" data-pane="trackers">
-            <i class="fas fa-chart-line"></i> Trackers
+            <i class="fas fa-chart-line"></i> Habits
         </a>
         <a class="mobile-menu-item" data-pane="journals">
-            <i class="fas fa-book"></i> Journals
+            <i class="fas fa-book"></i> Journal
         </a>
         <a class="mobile-menu-item" data-pane="achievements">
-            <i class="fas fa-trophy"></i> Achievements
+            <i class="fas fa-trophy"></i> Progress
         </a>
         <a class="mobile-menu-item" data-pane="reading-list">
             <i class="fas fa-bookmark"></i> Reading List
@@ -136,7 +144,7 @@
             <i class="fas fa-question-circle"></i> Help
         </a>
         <a class="mobile-menu-item" id="mobile-theme-btn">
-            <i class="fas fa-circle-half-stroke"></i> Toggle Theme
+            <i class="fas fa-palette"></i> Appearance
         </a>
         <a class="mobile-menu-item text-danger" href="{% url 'logout' %}">
             <i class="fas fa-sign-out-alt"></i> Logout
@@ -155,59 +163,17 @@
 
     </div>
 
+    <!-- Bookmarks: left column on desktop, strip on small screens; available on every tab -->
+    <aside class="bookmark-strip" aria-label="Bookmarks">
+        <div class="reading-list-grid bookmark-strip-grid"></div>
+    </aside>
+
     <!-- ═══════════════════════════════════════════ -->
     <!-- PANE: HOME (Default)                        -->
     <!-- ═══════════════════════════════════════════ -->
     <div class="pane" id="pane-home">
         <div class="container-fluid">
             <div class="default-pane-content">
-
-                <!-- Pomodoro Timer -->
-                <div class="pomodoro-section">
-                    <div class="pomodoro-main">
-                        <div class="pomodoro-controls">
-                            <div class="pomodoro-display">
-                            <span class="pomodoro-mode" id="pomodoro-mode">Focus</span>
-                            <span class="pomodoro-time" id="pomodoro-time">25:00</span>
-                        </div>
-                        <button class="btn btn-paper btn-primary btn-sm" id="pomodoro-start">
-                            <i class="fas fa-play"></i>
-                        </button>
-                        <button class="btn btn-paper btn-sm" id="pomodoro-reset">
-                            <i class="fas fa-redo"></i>
-                        </button>
-                        <button class="btn btn-paper btn-sm" id="pomodoro-toggle-mode">
-                            <i class="fas fa-coffee"></i>
-                        </button>
-                    </div>
-                        </div>
-                    <div class="pomodoro-cycles" id="pomodoro-cycles"></div>
-                    <div class="pomodoro-focus-today"><span id="pomodoro-focused-today"></span></div>
-                    <!-- Gamification Status Bar -->
-                    <div class="gami-status-bar" id="gami-status-bar">
-                        <div class="gami-stat" title="Daily streak">
-                            <i class="fas fa-fire gami-icon-streak"></i>
-                            <span id="gami-streak">0</span>
-                            <small>streak</small>
-                        </div>
-                        <div class="gami-sep">·</div>
-                        <div class="gami-stat" title="Level">
-                            <i class="fas fa-bolt gami-icon-level"></i>
-                            <span id="gami-level-name">Newcomer</span>
-                        </div>
-                        <div class="gami-sep">·</div>
-                        <div class="gami-stat" title="Total points">
-                            <i class="fas fa-star gami-icon-pts"></i>
-                            <span id="gami-points">0</span>
-                            <small>pts</small>
-                        </div>
-                        <div class="gami-xp-bar-wrap" title="XP to next level">
-                            <div class="gami-xp-bar">
-                                <div class="gami-xp-fill" id="gami-xp-fill" style="width:0%"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- Pomodoro Toast -->
                 <div id="pomodoro-toast" class="pomo-toast">
@@ -220,50 +186,103 @@
                     </div>
                 </div>
 
-                <!-- Greeting -->
-                <div class="greeting-main">
-                    <h1 id="greeting-text">Good Morning!</h1>
-                    <p id="greeting-sub">Let's make today amazing</p>
-                </div>
+                <div class="today">
 
-
-                <!-- Search Bar -->
-                <div class="search-section">
-                    <div class="search-bar">
-                        <input type="text" class="search-input" id="search-input"
-                               placeholder="Search (Ctrl+k: Search, Ctrl+;: Todo, Ctrl+h: New Habit, Ctrl+j: Journal)"
-                               autocomplete="off">
-                        <div class="search-engine-dropdown" id="search-engine-dropdown"></div>
-                        <div class="search-engine-select" id="search-engine-btn">
-                        <i class="fab fa-google" id="search-engine-icon"></i>
-                    </div>
-                    </div>
-                </div>
-
-                <!-- Timeline -->
-                <div class="timeline-section">
-                    <div class="timeline-nav">
-                        <button class="timeline-nav-btn" id="timeline-prev-btn">
-                            <i class="fas fa-chevron-left"></i>
-                        </button>
-                        <span class="timeline-date-label" id="timeline-date-label">Today</span>
-                        <button class="timeline-nav-btn" id="timeline-next-btn" disabled>
-                            <i class="fas fa-chevron-right"></i>
-                        </button>
-                    </div>
-                    <div class="timeline-container" id="timeline-container">
-                        <div class="timeline-list" id="timeline-list">
-                            <div class="timeline-loading">
+                    <div class="today-main">
+                        <!-- Greeting + focus strip -->
+                        <div class="today-head">
+                            <div class="greeting-main">
+                                <h1 id="greeting-text" aria-live="polite">Hello</h1>
+                            </div>
+                        <div class="pomodoro-section">
+                            <div class="pomodoro-main">
+                                <div class="pomodoro-controls">
+                                    <div class="pomodoro-display">
+                                    <span class="pomodoro-mode" id="pomodoro-mode">Focus</span>
+                                    <span class="pomodoro-time" id="pomodoro-time">25:00</span>
+                                </div>
+                                <button class="btn btn-paper btn-primary btn-sm" id="pomodoro-start">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                                <button class="btn btn-paper btn-sm" id="pomodoro-reset">
+                                    <i class="fas fa-redo"></i>
+                                </button>
+                                <button class="btn btn-paper btn-sm" id="pomodoro-toggle-mode">
+                                    <i class="fas fa-coffee"></i>
+                                </button>
+                            </div>
+                                </div>
+                            <div class="pomodoro-cycles" id="pomodoro-cycles"></div>
+                            <div class="pomodoro-focus-today"><span id="pomodoro-focused-today"></span></div>
+                            <!-- Gamification Status Bar -->
+                            <div class="gami-status-bar" id="gami-status-bar">
+                                <div class="gami-stat" title="Daily streak">
+                                    <i class="fas fa-fire gami-icon-streak"></i>
+                                    <span id="gami-streak">0</span>
+                                    <small>streak</small>
+                                </div>
+                                <div class="gami-sep">·</div>
+                                <div class="gami-stat" title="Level">
+                                    <i class="fas fa-bolt gami-icon-level"></i>
+                                    <span id="gami-level-name">Newcomer</span>
+                                </div>
+                                <div class="gami-sep">·</div>
+                                <div class="gami-stat" title="Total points">
+                                    <i class="fas fa-star gami-icon-pts"></i>
+                                    <span id="gami-points">0</span>
+                                    <small>pts</small>
+                                </div>
+                                <div class="gami-xp-bar-wrap" title="XP to next level">
+                                    <div class="gami-xp-bar">
+                                        <div class="gami-xp-fill" id="gami-xp-fill" style="width:0%"></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="timeline-gradient-top"></div>
-                        <div class="timeline-gradient-bottom"></div>
-                    </div>
-                </div>
+                        </div>
 
-                <!-- Reading List (Featured Bookmarks) -->
-                <div class="reading-list-section">
-                    <div class="reading-list-grid" id="reading-list-grid">
+                        <!-- Search Bar -->
+                        <div class="search-section">
+                            <div class="search-bar">
+                                <input type="text" class="search-input" id="search-input"
+                                       placeholder="Search the web, or press Ctrl+K"
+                                       autocomplete="off">
+                                <div class="search-engine-dropdown" id="search-engine-dropdown"></div>
+                                <div class="search-engine-select" id="search-engine-btn">
+                                    <i class="fab fa-google" id="search-engine-icon"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Timeline: the hero of Today -->
+                        <div class="timeline-section">
+                            <div class="timeline-bar">
+                                <div class="timeline-nav">
+                                    <button class="timeline-nav-btn" id="timeline-prev-btn" aria-label="Previous day">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </button>
+                                    <span class="timeline-date-label" id="timeline-date-label">Today</span>
+                                    <button class="timeline-nav-btn" id="timeline-next-btn" aria-label="Next day" disabled>
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                                <div class="timeline-chips" id="timeline-filters" role="group" aria-label="Filter timeline">
+                                    <button type="button" class="timeline-chip active" data-tl-filter="all">All</button>
+                                    <button type="button" class="timeline-chip" data-tl-filter="habits">Habits</button>
+                                    <button type="button" class="timeline-chip" data-tl-filter="todos">Todos</button>
+                                    <button type="button" class="timeline-chip" data-tl-filter="routine">Routine</button>
+                                    <select class="timeline-group-select" id="timeline-group-filter" aria-label="Filter by task group" hidden></select>
+                                </div>
+                            </div>
+                            <div class="timeline-container" id="timeline-container">
+                                <div class="timeline-list" id="timeline-list">
+                                    <div class="timeline-loading"></div>
+                                </div>
+                                <div class="timeline-gradient-top"></div>
+                                <div class="timeline-gradient-bottom"></div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -544,8 +563,8 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                             <button class="btn btn-paper btn-sm todo-filter" data-filter="done">Done</button>
                             <button class="btn btn-paper btn-sm todo-filter" data-filter="all">All</button>
                             <span class="todos-filter-sep"></span>
-                            <button class="btn btn-paper btn-sm todo-deadline-filter" data-deadline-filter="today">Till Today</button>
-                            <button class="btn btn-paper btn-sm todo-deadline-filter" data-deadline-filter="this-week">Till This Week</button>
+                            <button class="btn btn-paper btn-sm todo-deadline-filter" data-deadline-filter="today">Today</button>
+                            <button class="btn btn-paper btn-sm todo-deadline-filter" data-deadline-filter="this-week">This week</button>
                             <input type="date" id="todos-date-filter" class="todos-date-filter-input" title="Filter till date">
                         </div>
                         <div class="todos-add-bar">
@@ -553,6 +572,11 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                             <i class="fas fa-plus me-1"></i> Add Task
                         </button>
                     </div>
+                    </div>
+                    <div class="todos-backlog" id="todos-backlog" hidden>
+                        <i class="fas fa-box-archive"></i>
+                        <span id="todos-backlog-text"></span>
+                        <button class="btn btn-paper btn-sm" id="todos-backlog-btn" type="button">Review backlog</button>
                     </div>
                     <div class="todos-list" id="todos-pane-list">
                         <div class="mt-4 text-center">
@@ -593,12 +617,19 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                         </div>
                         <div class="settings-card">
                             <h6 class="settings-card-title"><i class="fas fa-palette me-2"></i>Preferences</h6>
-                            <div class="mb-3">
-                                <label class="form-label">Default Theme</label>
-                                <select class="form-control" id="themeSelect">
-                                    <option value="light">Light</option>
-                                    <option value="dark">Dark</option>
-                                </select>
+                            <div class="mb-3" id="theme-picker">
+                                <label class="form-label">Theme</label>
+                                <div class="theme-swatches" role="group" aria-label="Theme">
+                                    <button type="button" class="theme-swatch" data-theme-value="ink" aria-pressed="false"><span class="sw sw-ink"><i></i><i></i><i></i></span>Ink</button>
+                                                                        <button type="button" class="theme-swatch" data-theme-value="terminal" aria-pressed="false"><span class="sw sw-terminal"><i></i><i></i><i></i></span>Terminal</button>
+                                    <button type="button" class="theme-swatch" data-theme-value="tech" aria-pressed="false"><span class="sw sw-tech"><i></i><i></i><i></i></span>Tech</button>
+                                    <button type="button" class="theme-swatch" data-theme-value="aurora" aria-pressed="false"><span class="sw sw-aurora"><i></i><i></i><i></i></span>Aurora</button>
+                                    <button type="button" class="theme-swatch" data-theme-value="sensei" aria-pressed="false"><span class="sw sw-sensei"><i></i><i></i><i></i></span>Sensei</button>
+                                    <button type="button" class="theme-swatch" data-theme-value="coach" aria-pressed="false"><span class="sw sw-coach"><i></i><i></i><i></i></span>Coach</button>
+                                    <button type="button" class="theme-swatch" data-theme-value="garden" aria-pressed="false"><span class="sw sw-garden"><i></i><i></i><i></i></span>Garden</button>
+                                    <button type="button" class="theme-swatch" data-theme-value="orbit" aria-pressed="false"><span class="sw sw-orbit"><i></i><i></i><i></i></span>Orbit</button>
+                                    <button type="button" class="theme-swatch" data-theme-value="quest" aria-pressed="false"><span class="sw sw-quest"><i></i><i></i><i></i></span>Quest</button>
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Font</label>
@@ -606,6 +637,13 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                                     <option value="Montserrat">Montserrat</option>
                                     <option value="Lato">Lato</option>
                                     <option value="JetBrains Mono">JetBrains Mono</option>
+                                    <option value="Space Grotesk">Space Grotesk</option>
+                                    <option value="Plus Jakarta Sans">Plus Jakarta Sans</option>
+                                    <option value="Instrument Serif">Instrument Serif</option>
+                                    <option value="Barlow Condensed">Barlow Condensed</option>
+                                    <option value="Nunito">Nunito</option>
+                                    <option value="Space Mono">Space Mono</option>
+                                    <option value="DotGothic16">DotGothic16</option>
                                 </select>
                             </div>
                             <div class="mb-3">
@@ -953,6 +991,11 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                             <span>Accountability Partner: </span>
                             <span id="partnerDisplay" class="ms-2 text-brown">None assigned</span>
                         </div>
+                        <div class="d-flex align-items-center mt-2">
+                            <i class="fas fa-bell me-2"></i>
+                            <span>Reminder: </span>
+                            <span id="reminderDisplay" class="ms-2 text-brown">None</span>
+                        </div>
                     </div>
                 </div>
 
@@ -979,6 +1022,11 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                                id="editIdentity"
                                placeholder="a wise person"
                                required>
+                    </div>
+                    <div class="paragraph-form mt-2">
+                        Remind me at
+                        <input type="time" class="form-input" id="editNotify" aria-label="Reminder time">
+                        <small class="text-brown ms-1">(optional, leave empty for no reminder)</small>
                     </div>
                 </div>
 
@@ -1385,7 +1433,7 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                                 <div class="ob-icon"><i class="fas fa-trophy"></i></div>
                                 <h3>Earn Achievements</h3>
                                 <p>Every action earns points. Level up, maintain daily streaks, and unlock 29 achievements as you build better habits.</p>
-                                <div class="ob-hint">Check your progress anytime under <strong>Others → Achievements</strong>.</div>
+                                <div class="ob-hint">Check your progress anytime under <strong>Progress</strong>.</div>
                             </div>
                         </div>
 
@@ -1428,7 +1476,7 @@ Write freely here, like you're writing in your personal journal..." id="journal-
     <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
         <a class="mobile-bottom-nav-item active" data-pane="home">
             <i class="fas fa-home"></i>
-            <span>Home</span>
+            <span>Today</span>
         </a>
         <a class="mobile-bottom-nav-item" data-pane="todos">
             <i class="fas fa-tasks"></i>
@@ -1436,15 +1484,15 @@ Write freely here, like you're writing in your personal journal..." id="journal-
         </a>
         <a class="mobile-bottom-nav-item" data-pane="trackers">
             <i class="fas fa-chart-line"></i>
-            <span>Trackers</span>
+            <span>Habits</span>
         </a>
         <a class="mobile-bottom-nav-item" data-pane="journals">
             <i class="fas fa-book"></i>
-            <span>Journals</span>
+            <span>Journal</span>
         </a>
         <a class="mobile-bottom-nav-item" data-pane="achievements">
             <i class="fas fa-trophy"></i>
-            <span>Achievements</span>
+            <span>Progress</span>
         </a>
         <a class="mobile-bottom-nav-item" id="mobile-bottom-more-btn">
             <i class="fas fa-ellipsis-h"></i>
@@ -1484,6 +1532,7 @@ Write freely here, like you're writing in your personal journal..." id="journal-
     <script>const HOST = window.location.origin + '/';</script>
     <script src="{% static 'board/js/utils.js' %}"></script>
     <script src="{% static 'board/js/notifications.js' %}"></script>
+    <script src="{% static 'board/js/theme.js' %}"></script>
     <script src="{% static 'board/js/config.js' %}"></script>
     <script src="{% static 'board/js/habits.js' %}"></script>
     <script src="{% static 'board/js/todos.js' %}"></script>
@@ -1498,6 +1547,7 @@ Write freely here, like you're writing in your personal journal..." id="journal-
     <script src="{% static 'board/js/settings.js' %}"></script>
     <script src="{% static 'board/js/misc.js' %}"></script>
     <script src="{% static 'board/js/gamification.js' %}"></script>
+    <script src="{% static 'board/js/greeting.js' %}"></script>
     <script>
         (function () {
             const params = new URLSearchParams(window.location.search);

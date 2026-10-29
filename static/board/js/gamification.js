@@ -189,6 +189,7 @@ const Gamification = {
         if (!result) return;
         if (result.points_awarded) {
             this.showFloatingPoints(result.points_awarded);
+            if (result.points_awarded > 0 && typeof Theme !== 'undefined') Theme.celebrate(result.points_awarded);
         }
         if (result.new_achievements && result.new_achievements.length > 0) {
             this.showAchievementToasts(result.new_achievements);

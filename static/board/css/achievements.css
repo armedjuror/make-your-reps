@@ -44,7 +44,7 @@
 }
 
 .stat-card {
-    background: rgba(152, 117, 63, 0.1);
+    background: rgba(var(--accent-rgb), 0.1);
     border: 2px solid var(--ink-brown);
     border-radius: 15px;
     padding: 20px 30px;
@@ -70,7 +70,7 @@
 
 .stat-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(152, 117, 63, 0.2);
+    box-shadow: 0 8px 25px rgba(var(--accent-rgb), 0.2);
 }
 
 .stat-number {
@@ -152,7 +152,7 @@
 
 .habit-card:hover {
     transform: translateY(-3px);
-    box-shadow: 0 5px 20px rgba(152, 117, 63, 0.15);
+    box-shadow: 0 5px 20px rgba(var(--accent-rgb), 0.15);
 }
 
 .habit-header {
@@ -207,7 +207,7 @@
 }
 
 .habit-duration {
-    background: rgba(152, 117, 63, 0.1);
+    background: rgba(var(--accent-rgb), 0.1);
     padding: 4px 8px;
     border-radius: 6px;
     font-weight: 500;
@@ -251,7 +251,7 @@
 
 .badge-card.earned {
     border-color: var(--coffee-stain);
-    background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(152, 117, 63, 0.05));
+    background: linear-gradient(135deg, rgba(var(--gold-rgb), 0.1), rgba(var(--accent-rgb), 0.05));
 }
 
 .badge-card.locked {
@@ -274,7 +274,7 @@
 
 .badge-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(212, 175, 55, 0.2);
+    box-shadow: 0 8px 25px rgba(var(--gold-rgb), 0.2);
 }
 
 .badge-icon {
@@ -322,7 +322,7 @@
 }
 
 .progress-bar {
-    background: rgba(152, 117, 63, 0.2);
+    background: rgba(var(--accent-rgb), 0.2);
     height: 6px;
     border-radius: 3px;
     overflow: hidden;
@@ -542,14 +542,14 @@
 }
 
 /* Dark theme adjustments */
-[data-theme="dark"] .stat-card,
-[data-theme="dark"] .habit-card,
-[data-theme="dark"] .badge-card,
-[data-theme="dark"] .timeline-content,
-[data-theme="dark"] .share-preview {
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .stat-card,
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .habit-card,
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .badge-card,
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .timeline-content,
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .share-preview {
     background: var(--paper-bg-end);
 }
 
-[data-theme="dark"] .badge-card.earned {
-    background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(152, 117, 63, 0.1));
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .badge-card.earned {
+    background: linear-gradient(135deg, rgba(var(--gold-rgb), 0.2), rgba(var(--accent-rgb), 0.1));
 }
