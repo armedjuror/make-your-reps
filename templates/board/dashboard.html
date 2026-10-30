@@ -23,6 +23,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Fredericka+the+Great&family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=JetBrains+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Barlow+Condensed:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=DotGothic16&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'board/css/style.css' %}">
     <link rel="stylesheet" href="{% static 'board/css/dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'board/css/share-poster.css' %}">
     <!-- PWA -->
     <link rel="manifest" href="{% static 'manifest.json' %}">
     <meta name="theme-color" content="#98753f">
@@ -476,6 +477,7 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                 <div class="row mb-4">
                     <div class="col-md-4 mb-3">
                         <div class="gami-card">
+                            <button type="button" class="sp-share-btn sp-share-corner" data-share="level" title="Share my level" aria-label="Share my level"><i class="fas fa-share-nodes"></i></button>
                             <div class="gami-card-icon"><i class="fas fa-bolt"></i></div>
                             <div class="gami-card-body">
                                 <div class="gami-card-value" id="ach-level-name">Newcomer</div>
@@ -489,6 +491,7 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                     </div>
                     <div class="col-md-4 mb-3">
                         <div class="gami-card">
+                            <button type="button" class="sp-share-btn sp-share-corner" data-share="streak" title="Share my streak" aria-label="Share my streak"><i class="fas fa-share-nodes"></i></button>
                             <div class="gami-card-icon gami-icon-streak"><i class="fas fa-fire"></i></div>
                             <div class="gami-card-body">
                                 <div class="gami-card-value" id="ach-streak">0</div>
@@ -512,6 +515,7 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                 <!-- Productivity Score — Last 30 Days -->
                 <div class="mb-4">
                     <h5 class="ach-category-title">Productivity Score — Last 30 Days</h5>
+                    <div class="ach-hint"><i class="fas fa-hand-pointer"></i>Tap a bar (score 7 or more) to share that day</div>
                     <div class="ach-score-chart-wrap">
                         <canvas id="productivityScoreChart"></canvas>
                     </div>
@@ -1546,6 +1550,7 @@ Write freely here, like you're writing in your personal journal..." id="journal-
     <script src="{% static 'board/js/reading-list.js' %}"></script>
     <script src="{% static 'board/js/settings.js' %}"></script>
     <script src="{% static 'board/js/misc.js' %}"></script>
+    <script src="{% static 'board/js/share-poster.js' %}"></script>
     <script src="{% static 'board/js/gamification.js' %}"></script>
     <script src="{% static 'board/js/greeting.js' %}"></script>
     <script>

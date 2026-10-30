@@ -229,6 +229,7 @@ const General = {
                 const pct = score / 10;
 
                 document.getElementById('score-value').textContent = score;
+                if (typeof Gamification !== 'undefined') Gamification.checkPerfectDay(data);
 
                 // Animate the SVG ring
                 const circle = document.getElementById('score-circle');
