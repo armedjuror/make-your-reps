@@ -60,9 +60,21 @@ def _accept_friend_request(freq):
     )
 
 
+def _clear_partner_habit_events(habit_id):
+    """Remove every partner-facing timeline entry tied to this habit (monitor/done/etc)."""
+    ap_ids = list(AccountabilityPartner.objects.filter(habit_id=habit_id).values_list('id', flat=True))
+    if not ap_ids:
+        return
+    TimelineEvent.objects.filter(
+        event_type=TimelineEventType.ACCOUNTABILITY_HABIT,
+        reference__model='AccountabilityPartner',
+        reference__id__in=ap_ids,
+    ).delete()
+
+
 def _create_partner_habit_entry(ap, target_date):
     """Create the daily monitoring timeline entry for an accountability partner."""
-    if not ap.partner:
+    if not ap.partner or ap.habit.status != HabitStatus.ACTIVE.value:
         return
     owner_name = ap.habit.user.get_full_name() or ap.habit.user.username
     timestamp = timezone.make_aware(datetime.combine(target_date, time(8, 0)))
@@ -653,6 +665,8 @@ class HabitViewSet(AuthenticatedModelViewSet):
                 habit.refresh_from_db()
                 if before != (habit.notify_at, list(habit.frequency or []), habit.status):
                     self._resync_today_event(habit)
+                if habit.status != HabitStatus.ACTIVE.value:
+                    _clear_partner_habit_events(habit.id)
                 return Response({
                     "status": "success",
                     "data": serializer.data,
@@ -697,6 +711,7 @@ class HabitViewSet(AuthenticatedModelViewSet):
             reference__model='Habit',
             reference__id=habit_id,
         ).delete()
+        _clear_partner_habit_events(habit_id)
         return Response({
             "status": "success",
             "message": "Habit deleted successfully"
@@ -996,6 +1011,20 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
         queryset = self.get_queryset().filter(user_id=user_id).exclude(
             event_type=TimelineEventType.ROUTINE
         )
+
+        # Hide partner-monitoring entries whose habit is no longer active (deleted/archived),
+        # including rows created before habits started cleaning these up.
+        inactive_ap_ids = list(
+            AccountabilityPartner.objects.filter(partner_id=user_id)
+            .exclude(habit__status=HabitStatus.ACTIVE.value)
+            .values_list('id', flat=True)
+        )
+        if inactive_ap_ids:
+            queryset = queryset.exclude(
+                event_type=TimelineEventType.ACCOUNTABILITY_HABIT,
+                reference__model='AccountabilityPartner',
+                reference__id__in=inactive_ap_ids,
+            )
 
         parsed_date = None
         if before:
@@ -1460,7 +1489,10 @@ class AccountabilityPartnerViewSet(AuthenticatedModelViewSet):
         if habit_id:
             queryset = self.get_queryset().filter(habit__user_id=user_id, habit_id=habit_id)
         else:
-            queryset = self.get_queryset().filter(partner_id=user_id, status=AccountabilityPartnerStatus.ACTIVE)
+            queryset = self.get_queryset().filter(
+                partner_id=user_id, status=AccountabilityPartnerStatus.ACTIVE,
+                habit__status=HabitStatus.ACTIVE.value,
+            )
         return Response({'status': 'success', 'data': AccountabilityPartnerSerializer(queryset, many=True).data})
 
     @action(detail=False, methods=['get'], url_path='my_invites')
