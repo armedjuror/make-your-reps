@@ -143,7 +143,7 @@ const Timeline = {
 
     setFilter(filter) {
         this.filter = filter;
-        document.querySelectorAll('.timeline-chip').forEach(b =>
+        document.querySelectorAll('.timeline-chip[data-tl-filter]').forEach(b =>
             b.classList.toggle('active', b.dataset.tlFilter === filter));
         this.render();
     },
@@ -358,7 +358,7 @@ const Timeline = {
         if (list) list.addEventListener('change', (e) => {
             if (e.target.matches('[data-tl-date]')) this.reschedDate = e.target.value;
         });
-        document.querySelectorAll('.timeline-chip').forEach(b =>
+        document.querySelectorAll('.timeline-chip[data-tl-filter]').forEach(b =>
             b.addEventListener('click', () => this.setFilter(b.dataset.tlFilter)));
         const gsel = document.getElementById('timeline-group-filter');
         if (gsel) gsel.addEventListener('change', () => { this.groupFilter = gsel.value; this.render(); });

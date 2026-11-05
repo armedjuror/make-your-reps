@@ -17,7 +17,7 @@ const Trackers = {
         s.id = 'trackers-css';
         s.textContent = `
         .tracker-grid{display:flex;flex-wrap:wrap;gap:14px}
-        .tracker-card{flex:1 1 300px;max-width:480px;border:1px solid var(--border-color,#ccc);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+        .tracker-card{flex:1 1 300px;max-width:480px;border:1px solid rgba(var(--accent-rgb),.3);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
         .tracker-card.tr-over{border-color:#c0392b}
         .tracker-card.tr-met{border-color:#2e8b57}
         .tracker-head{display:flex;justify-content:space-between;align-items:center;gap:8px}

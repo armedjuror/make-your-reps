@@ -55,22 +55,20 @@ const Resilient = {
         if (document.getElementById('resilient-css')) return;
         const css = `
         .rs-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 10px}
-        .rs-chip{border:1px solid var(--border-color,#ccc);background:transparent;color:inherit;border-radius:999px;padding:3px 12px;font-size:.8rem;cursor:pointer}
-        .rs-chip:hover{background:rgba(127,127,127,.12)}
-        .rs-chip.rs-light{border-color:#d4a017}
-        .rs-chip.rs-disrupted{border-color:#c0392b}
-        .rs-menu{position:absolute;z-index:50;background:var(--card-bg,#fff);color:inherit;border:1px solid var(--border-color,#ccc);border-radius:10px;padding:6px;min-width:190px;box-shadow:0 6px 24px rgba(0,0,0,.18)}
+        .rs-chip{font-family:inherit}
+        .rs-menu{position:absolute;z-index:50;background:var(--surface-raised, var(--paper-bg));color:var(--ink-black);border:1px solid rgba(var(--accent-rgb),.3);border-radius:10px;padding:6px;min-width:190px;box-shadow:0 6px 24px rgba(0,0,0,.18)}
         .rs-menu h6{font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;opacity:.6;margin:6px 8px 2px}
-        .rs-menu button{display:block;width:100%;text-align:left;background:none;border:0;color:inherit;padding:5px 8px;border-radius:6px;font-size:.85rem;cursor:pointer}
-        .rs-menu button:hover{background:rgba(127,127,127,.15)}
+        .rs-menu button{display:block;width:100%;text-align:left;background:none;border:0;color:var(--ink-black);padding:5px 8px;border-radius:6px;font-size:.85rem;cursor:pointer}
+        .rs-menu button:hover{background:rgba(var(--accent-rgb),.12)}
+        .rs-menu button.on{color:var(--ink-brown)}
         .rs-menu button.on{font-weight:600}
         .rs-banner{font-size:.8rem;opacity:.85;margin:0 0 8px}
         .rs-warn{font-size:.8rem;color:#c0392b;margin:0 0 8px}
         .rs-metrics{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 10px}
-        .rs-metric{display:flex;align-items:center;gap:6px;border:1px solid var(--border-color,#ccc);border-radius:10px;padding:4px 8px;font-size:.8rem}
+        .rs-metric{display:flex;align-items:center;gap:6px;border:1px solid rgba(var(--accent-rgb),.3);border-radius:10px;padding:4px 8px;font-size:.8rem}
         .rs-metric.rs-over{border-color:#c0392b}
         .rs-metric.rs-met{border-color:#2e8b57}
-        .rs-metric button{border:1px solid var(--border-color,#ccc);background:transparent;color:inherit;border-radius:6px;padding:0 7px;font-size:.78rem;cursor:pointer}
+        .rs-metric button{border:1px solid rgba(var(--accent-rgb),.3);background:transparent;color:inherit;border-radius:6px;padding:0 7px;font-size:.78rem;cursor:pointer}
         .tl-st-done .timeline-event-text,.tl-st-skipped .timeline-event-text,.tl-st-dropped .timeline-event-text{opacity:.55}
         .tl-st-dropped .timeline-event-text{text-decoration:line-through}
         .tl-st-missed .timeline-event-text{color:#c0392b}
@@ -80,9 +78,9 @@ const Resilient = {
         .rs-steps{margin:6px 0}
         .rs-steps label{display:flex;gap:6px;align-items:center;font-size:.85rem;margin:2px 0}
         .rs-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2000;display:flex;align-items:center;justify-content:center}
-        .rs-dialog{background:var(--card-bg,#fff);color:inherit;border-radius:12px;padding:18px;width:min(92vw,360px);box-shadow:0 10px 40px rgba(0,0,0,.3)}
+        .rs-dialog{background:var(--surface-raised, var(--paper-bg));color:var(--ink-black);border-radius:12px;padding:18px;width:min(92vw,360px);box-shadow:0 10px 40px rgba(0,0,0,.3)}
         .rs-dialog h5{margin:0 0 10px;font-size:1rem}
-        .rs-dialog input,.rs-dialog select,.rs-dialog textarea{width:100%;margin:4px 0 8px;padding:6px 8px;border-radius:6px;border:1px solid var(--border-color,#ccc);background:transparent;color:inherit}
+        .rs-dialog input,.rs-dialog select,.rs-dialog textarea{width:100%;margin:4px 0 8px;padding:6px 8px;border-radius:6px;border:1px solid rgba(var(--accent-rgb),.3);background:transparent;color:inherit}
         .rs-dialog .rs-row{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}
         .rs-err{color:#c0392b;font-size:.8rem;min-height:1em}
         .rs-chips{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
@@ -126,12 +124,11 @@ const Resilient = {
 
     _mountBar() {
         if (document.getElementById('day-bar')) return;
+        const host = document.getElementById('timeline-filters');
         const row = document.querySelector('.timeline-bar');
-        if (!row) return;
-        const bar = document.createElement('div');
-        bar.id = 'day-bar';
-        bar.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;align-items:center';
-        row.appendChild(bar);
+        if (!host || !row) return;
+        // The day chips take the place of the old All/Habits/Todos/Routine filters
+        host.id = 'day-bar';
         const note = document.createElement('div');
         note.id = 'day-note';
         row.insertAdjacentElement('afterend', note);
@@ -154,12 +151,12 @@ const Resilient = {
         const editable = d.date >= this.logicalToday();
         const tpl = d.template === 'holiday' ? 'Holiday' : 'Workday';
         const mode = d.mode.charAt(0).toUpperCase() + d.mode.slice(1);
-        let html = `<button type="button" class="rs-chip rs-${this.esc(d.mode)}" data-rs="menu-day" ${editable ? '' : 'disabled'}>${tpl} &middot; ${mode} <i class="fas fa-chevron-down" style="font-size:.6rem"></i></button>`;
+        let html = `<button type="button" class="timeline-chip rs-chip ${d.mode !== 'normal' ? 'active' : ''}" data-rs="menu-day" ${editable ? '' : 'disabled'}>${tpl} &middot; ${mode} <i class="fas fa-chevron-down" style="font-size:.6rem"></i></button>`;
         if (today) {
-            html += '<button type="button" class="rs-chip" data-rs="menu-late"><i class="fas fa-person-running"></i> Running late</button>';
-            html += '<button type="button" class="rs-chip" data-rs="slip"><i class="fas fa-heart-crack"></i> I slipped</button>';
+            html += '<button type="button" class="timeline-chip rs-chip" data-rs="menu-late"><i class="fas fa-person-running"></i> Running late</button>';
+            html += '<button type="button" class="timeline-chip rs-chip" data-rs="slip"><i class="fas fa-heart-crack"></i> I slipped</button>';
         }
-        if (editable) html += '<button type="button" class="rs-chip" data-rs="travel"><i class="fas fa-plane"></i> Travelling&hellip;</button>';
+        if (editable) html += '<button type="button" class="timeline-chip rs-chip" data-rs="travel"><i class="fas fa-plane"></i> Travelling&hellip;</button>';
         bar.innerHTML = html;
         let n = '';
         if (d.banner) n += `<div class="rs-banner">${this.esc(d.banner)}</div>`;
@@ -465,7 +462,7 @@ const Resilient = {
             icon.id = 'rs-lock-icon';
             icon.type = 'button';
             icon.dataset.rs = 'lock';
-            icon.style.cssText = 'position:fixed;right:12px;bottom:12px;z-index:900;border:1px solid var(--border-color,#ccc);background:var(--card-bg,#fff);color:inherit;border-radius:50%;width:34px;height:34px;cursor:pointer;opacity:.7';
+            icon.style.cssText = 'position:fixed;right:12px;bottom:12px;z-index:900;border:1px solid rgba(var(--accent-rgb),.3);background:var(--surface-raised, var(--paper-bg));color:inherit;border-radius:50%;width:34px;height:34px;cursor:pointer;opacity:.7';
             document.body.appendChild(icon);
         }
         const open = this.privateState.unlocked;
