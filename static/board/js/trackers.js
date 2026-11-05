@@ -20,6 +20,7 @@ const Trackers = {
                 if (!b) return;
                 const id = Number(b.dataset.metric);
                 if (b.dataset.tr === 'edit') this.editor(id);
+                if (b.dataset.tr === 'journal') this.journalDialog(id);
             });
         }
         const add = document.getElementById('new-tracker-btn');
@@ -77,7 +78,10 @@ const Trackers = {
             return `<div class="tracker-card ${over ? 'tr-over' : ''} ${met ? 'tr-met' : ''}" data-metric="${m.id}">
                 <div class="tracker-head">
                     <h5>${esc(m.name)}${m.is_private ? ' <i class="fas fa-lock small"></i>' : ''}</h5>
-                    <button type="button" class="btn btn-paper btn-sm" data-tr="edit" data-metric="${m.id}" aria-label="Edit ${esc(m.name)}"><i class="fa fa-cog"></i></button>
+                    <span class="d-inline-flex gap-1">
+                        <button type="button" class="btn btn-paper btn-sm" data-tr="journal" data-metric="${m.id}" title="${esc(m.name)} journal" aria-label="${esc(m.name)} journal"><i class="fas fa-book"></i></button>
+                        <button type="button" class="btn btn-paper btn-sm" data-tr="edit" data-metric="${m.id}" aria-label="Edit ${esc(m.name)}"><i class="fa fa-cog"></i></button>
+                    </span>
                 </div>
                 <div class="tracker-value">${this._fmt(m.today)}${goal}</div>
                 <div class="tracker-actions">
@@ -334,6 +338,30 @@ const Trackers = {
         document.querySelectorAll('#rs-habit-create [data-hc]').forEach(el => { el.value = el.tagName === 'SELECT' ? el.options[0].value : ''; });
     },
 
+    /** One tracker's journal: every note logged with it, newest first. */
+    async journalDialog(metricId) {
+        const m = this.metrics.find(x => x.id === metricId);
+        const jres = await apiClient.get('board/api/journal_books/', { silent: true });
+        const book = jres.status === 'success' ? jres.data.find(j => j.metric === metricId) : null;
+        let entries = [];
+        if (book) {
+            const r = await apiClient.get(`board/api/journal_books/${book.id}/entries/?limit=200`, { silent: true });
+            entries = r.status === 'success' ? r.data : [];
+        }
+        const unit = m && m.unit ? ' ' + esc(m.unit) : '';
+        const body = entries.length
+            ? Resilient.lead(`${entries.length} note${entries.length > 1 ? 's' : ''} logged with ${esc(m ? m.name : 'this tracker')}.`) +
+              entries.map(e => {
+                  const { value, previous, ...rest } = e.metric || {};
+                  const bits = Object.entries(rest).map(([k, v]) => `${esc(k)}: ${esc(v)}`);
+                  const when = new Date(e.at).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+                  return `<div class="tracker-note mb-2"><span class="tracker-note-time">${when}</span> ${esc(e.text)}
+                      ${e.metric ? `<span class="tracker-note-meta">${esc(this._fmt(value))}${unit}${bits.length ? ' &middot; ' + bits.join(' &middot; ') : ''}</span>` : ''}</div>`;
+              }).join('')
+            : Resilient.lead(`No notes yet. When you log ${esc(m ? m.name.toLowerCase() : 'this tracker')}, add a note in the last line (&ldquo;and a note: &hellip;&rdquo;) and it lands here and in the Journal pane.`);
+        Resilient.dialog(`${m ? m.name : 'Tracker'} journal`, body, [{ label: 'Close' }], 'fa-book');
+    },
+
     // ── Journal pane: notes logged with trackers ─────────────
     /** Shown under the day's journal, grouped by tracker (each tracker has its own journal). */
     async journalNotes(dateStr) {
@@ -348,7 +376,13 @@ const Trackers = {
         }
         const res = await apiClient.get(`board/api/journal_entries/?date=${dateStr}`, { silent: true });
         const items = res.status === 'success' ? res.data : [];
-        if (!items.length) { box.innerHTML = ''; return; }
+        if (!items.length) {
+            box.innerHTML = `<h3 class="section-title mt-4 mb-2">From your trackers</h3>
+                <p class="tracker-empty">No tracker notes on this day. When you log a tracker, add a note in the last line
+                (&ldquo;and a note: &hellip;&rdquo;) and it shows up here. Each tracker&rsquo;s full journal is under the
+                <i class="fas fa-book"></i> button on its card in Habits.</p>`;
+            return;
+        }
         const groups = {};
         items.forEach(e => (groups[e.journal_name] = groups[e.journal_name] || []).push(e));
         const clock = document.body.getAttribute('data-clock') || '12h';
