@@ -243,7 +243,8 @@ def resolve_day(user, target_date, now=None, closing=False, detail=None):
         'required': len(essentials) + len(anchors),
         'required_done': ess_done + anc_done,
         'met': met,
-        'banner': 'Back from travel — light day' if source == 'ramp' else None,
+        'banner': ('Easing back in after your off day: a light day' if source == 'ramp'
+                   else f'Off day · {plan.reason}' if source == 'travel' and plan and plan.reason else None),
     }
 
 

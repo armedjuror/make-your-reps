@@ -95,8 +95,10 @@ def _clear_partner_habit_events(habit_id):
 
 
 def partner_check_time(habit):
-    """The partner's check card shows at the habit's own reminder time (08:00 if it has none)."""
-    return habit.notify_at or time(8, 0)
+    """The partner's check card shows 10 minutes after the habit's own reminder (08:00 if it has none)."""
+    if not habit.notify_at:
+        return time(8, 0)
+    return (datetime.combine(datetime(2000, 1, 1), habit.notify_at) + timedelta(minutes=10)).time()
 
 
 def _create_partner_habit_entry(ap, target_date):
@@ -265,6 +267,7 @@ class UserDetailView(APIView):
                 **UserDetailSerializer(user_detail).data,
                 'first_name': user_detail.user.first_name,
                 'last_name': user_detail.user.last_name,
+                'email': user_detail.user.email,
             }
         })
 
@@ -286,6 +289,9 @@ class UserDetailView(APIView):
         slip_metric = request.data.get('slip_metric')
         if slip_metric and not Metric.objects.filter(pk=slip_metric, user_id=user_id).exists():
             return Response({'status': 'failed', 'error': 'Metric not found'}, status=status.HTTP_404_NOT_FOUND)
+        journal_habit = request.data.get('journal_habit')
+        if journal_habit and not Habit.objects.filter(pk=journal_habit, user_id=user_id, is_system=False).exists():
+            return Response({'status': 'failed', 'error': 'Habit not found'}, status=status.HTTP_404_NOT_FOUND)
         serializer = UserDetailSerializer(user_detail, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -595,6 +601,8 @@ class DailyDataViewSet(NoDestroyViewSet):
                 mx.sync_sleep(uid, target_date, obj.sleep_hours)
             if 'journal' in request.data:
                 mx.sync_default_journal(uid, target_date, serializer.data.get('journal'))
+                if now_journal:
+                    mx.mark_journal_habit(uid, target_date)
             if not had_journal and now_journal:
                 update_daily_streak(uid)
                 gamification_result = award_points(uid, 'journal')
@@ -1210,7 +1218,7 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
             _, hidden_metrics = _hidden_ids(request, user_id)
             _mx.ensure_sleep_metric(user_id)
             for m in (Metric.objects.filter(user_id=user_id).exclude(id__in=hidden_metrics)
-                      .filter(Q(remind_at__isnull=False) | Q(is_system=True))):
+                      .filter(Q(remind_at__isnull=False) | Q(system_key='sleep'))):
                 m_time = _mx.reminder_time(m, detail)
                 if m_time is None:
                     continue
@@ -1219,8 +1227,8 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
                 data.append({
                     'id': f'metric-{m.id}-{parsed_date}',
                     'timestamp': m_ts.isoformat(),
-                    'event_type': TimelineEventType.SLEEP_TRACKER if m.is_system else TimelineEventType.TEXT,
-                    'event': 'Good morning! How did you sleep last night?' if m.is_system else f'Log {m.name}',
+                    'event_type': TimelineEventType.SLEEP_TRACKER if m.system_key == 'sleep' else TimelineEventType.TEXT,
+                    'event': 'Good morning! How did you sleep last night?' if m.system_key == 'sleep' else f'Log {m.name}',
                     'reference': {'model': 'Metric', 'id': m.id},
                     'action': None if logged else {'metric': ['log']},
                     'action_response': {'metric': 'logged'} if logged else None,

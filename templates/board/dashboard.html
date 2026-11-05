@@ -597,6 +597,7 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                 <h4 class="section-title mb-4">Settings</h4>
                 <ul class="nav nav-tabs settings-tabs mb-4" id="settingsPaneTabs">
                     <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#sp-general">General</a></li>
+                    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#sp-appearance">Appearance</a></li>
                     <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#sp-pomodoro">Pomodoro</a></li>
                     <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#sp-notifications">Notifications</a></li>
                     <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#sp-integrations" id="tab-integrations">Integrations</a></li>
@@ -608,6 +609,10 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                         <div class="settings-card mb-4">
                             <h6 class="settings-card-title"><i class="fas fa-user me-2"></i>User</h6>
                             <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <div id="settingsEmail" class="text-brown"></div>
+                            </div>
+                            <div class="mb-3">
                                 <label class="form-label">Name</label>
                                 <div class="d-flex gap-2">
                                     <input type="text" class="form-control" id="settingsFirstName" placeholder="First name">
@@ -615,9 +620,29 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                                     <button class="btn btn-paper btn-sm btn-primary" id="settings-name-save-btn" onclick="Settings.saveName()">Save</button>
                                 </div>
                             </div>
+                            <div id="rs-user-pin"></div>
                         </div>
                         <div class="settings-card">
-                            <h6 class="settings-card-title"><i class="fas fa-palette me-2"></i>Preferences</h6>
+                            <h6 class="settings-card-title"><i class="fas fa-sliders me-2"></i>Preferences</h6>
+                            
+                            
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Default Search Engine</label>
+                                <select class="form-control" id="searchEngineSelect"></select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Sleep Time</label>
+                                <input type="time" class="form-control" id="sleepTimeInput">
+                                <small class="form-text text-brown">Used for journal reminder & sleep notification</small>
+                            </div>
+                            <div id="rs-settings"></div>
+                        </div>
+                    </div>
+                    <!-- Appearance -->
+                    <div class="tab-pane fade" id="sp-appearance">
+                        <div class="settings-card">
+                            <h6 class="settings-card-title"><i class="fas fa-palette me-2"></i>Appearance</h6>
                             <div class="mb-3" id="theme-picker">
                                 <label class="form-label">Theme</label>
                                 <div class="theme-swatches" role="group" aria-label="Theme">
@@ -647,21 +672,12 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                                     <option value="DotGothic16">DotGothic16</option>
                                 </select>
                             </div>
-                            <div class="mb-3">
+                            <div class="mb-0">
                                 <label class="form-label">Clock Format</label>
                                 <select class="form-control" id="clockFormatSelect">
                                     <option value="12h">12 Hour</option>
                                     <option value="24h">24 Hour</option>
                                 </select>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Default Search Engine</label>
-                                <select class="form-control" id="searchEngineSelect"></select>
-                            </div>
-                            <div class="mb-0">
-                                <label class="form-label">Sleep Time</label>
-                                <input type="time" class="form-control" id="sleepTimeInput">
-                                <small class="form-text text-brown">Used for journal reminder & sleep notification</small>
                             </div>
                         </div>
                     </div>
@@ -1517,6 +1533,7 @@ Write freely here, like you're writing in your personal journal..." id="journal-
     <script src="{% static 'board/js/dashboard.js' %}?v={{ ASSET_VERSION }}"></script>
     <script src="{% static 'board/js/resilient.js' %}?v={{ ASSET_VERSION }}"></script>
     <script src="{% static 'board/js/trackers.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/setup.js' %}?v={{ ASSET_VERSION }}"></script>
     <script src="{% static 'board/js/timeline.js' %}?v={{ ASSET_VERSION }}"></script>
     <script src="{% static 'board/js/default-pane.js' %}?v={{ ASSET_VERSION }}"></script>
     <script src="{% static 'board/js/tracker-pane.js' %}?v={{ ASSET_VERSION }}"></script>

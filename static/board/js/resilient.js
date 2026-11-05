@@ -120,7 +120,7 @@ const Resilient = {
             html += '<button type="button" class="timeline-chip rs-chip" data-rs="menu-late"><i class="fas fa-person-running"></i> Running late</button>';
             html += '<button type="button" class="timeline-chip rs-chip" data-rs="slip"><i class="fas fa-heart-crack"></i> I slipped</button>';
         }
-        if (editable) html += '<button type="button" class="timeline-chip rs-chip" data-rs="travel"><i class="fas fa-plane"></i> Travelling&hellip;</button>';
+        if (editable) html += '<button type="button" class="timeline-chip rs-chip" data-rs="travel"><i class="fas fa-mug-hot"></i> Off day&hellip;</button>';
         bar.innerHTML = html;
         let n = '';
         if (d.banner) n += `<div class="rs-banner">${this.esc(d.banner)}</div>`;
@@ -437,7 +437,7 @@ const Resilient = {
     },
 
     slipDialog() {
-        this.dialog('I slipped', this.lead('Use this when you give in to something you&rsquo;re cutting down on, like an extra coffee or a late night on your phone. It stays private, doesn&rsquo;t break your streak, and brings up a short reset so the rest of the day still counts.') +
+        this.dialog('I slipped', this.lead('Use this when you give in to something you&rsquo;re cutting down on, like an extra coffee or a late night on your phone. It adds one to your private Slips tracker, doesn&rsquo;t break your streak, and brings up a short reset so the rest of the day still counts.') +
             this.say({ html: `What happened was <input type="text" class="form-input" id="rs-slip-note" maxlength="280" placeholder="optional, just for you">`,
                        msg: 'A word about what led to it helps you spot the pattern later. Only you can see it.' }), [
             { label: 'Cancel' },
@@ -450,23 +450,39 @@ const Resilient = {
         ], 'fa-heart-crack');
     },
 
+    /** Off day: travel, a night shift, feeling unwell… The day gets lighter instead of failing. */
     travelDialog() {
         const t = this.logicalToday();
-        this.dialog('I\u2019m travelling', this.lead('Travel days run on essentials only, then a few Light days help you ease back in.') +
-            this.say({ html: `I&rsquo;m travelling from <input type="date" class="form-input" id="rs-t-from" value="${t}" min="${t}">`, need: true,
-                       msg: 'Which day do you leave?' },
-                     { html: `until <input type="date" class="form-input" id="rs-t-to" value="${t}" min="${t}">`, need: true,
-                       msg: 'And the last day you&rsquo;re away? Light days follow it automatically.' }), [
+        const reasons = [['night_shift', 'a night shift'], ['travel', 'travel'], ['sick', 'feeling unwell'], ['family', 'family'], ['event', 'an event'], ['other', 'something else']];
+        const ov = this.dialog('Off day', this.lead('Taking a day off from your usual routine? It won&rsquo;t break your streak.') + this.say(
+            { need: true, msg: 'Which day? For a few days in a row, set the last one next.',
+              html: `I&rsquo;m off from <input type="date" class="form-input" id="rs-t-from" value="${t}" min="${t}">
+                     until <input type="date" class="form-input" id="rs-t-to" value="${t}" min="${t}">` },
+            { msg: 'The reason goes into that day&rsquo;s journal, so you can look back on it later.',
+              html: `because of ${this.pick('id="rs-t-reason"', 'night_shift', reasons)}
+                     <input type="text" class="form-input" id="rs-t-note" maxlength="120" placeholder="a few words, optional">` },
+            { msg: 'A Light day keeps your essentials and anchors. A Disrupted day keeps only essentials, and is followed by Light days to ease back in.',
+              html: `Make it ${this.pick('id="rs-t-mode"', 'light', [['light', 'a light day'], ['disrupted', 'a disrupted day']])}.` },
+        ), [
             { label: 'Cancel' },
-            { label: 'Set travel', primary: true, run: async (ov) => {
-                const start = ov.querySelector('#rs-t-from').value, end = ov.querySelector('#rs-t-to').value;
+            { label: 'Set off day', primary: true, run: async (o) => {
+                const start = o.querySelector('#rs-t-from').value, end = o.querySelector('#rs-t-to').value;
                 if (!start || !end || end < start) return 'Choose a valid date range';
-                const res = await apiClient.post('board/api/day_plans/travel/', { start, end });
-                if (res.status !== 'success') return res.error || 'Could not set travel';
+                const res = await apiClient.post('board/api/day_plans/travel/', {
+                    start, end, reason: o.querySelector('#rs-t-reason').value,
+                    note: o.querySelector('#rs-t-note').value, mode: o.querySelector('#rs-t-mode').value,
+                });
+                if (res.status !== 'success') return res.error || 'Could not set the off day';
                 await this._refresh();
+                if (typeof JournalPane !== 'undefined' && JournalPane.loadMonthData) JournalPane.loadMonthData();
                 return true;
             } },
-        ], 'fa-plane');
+        ], 'fa-mug-hot');
+        // Travel is usually a Disrupted day; the rest default to Light
+        ov.querySelector('#rs-t-reason').addEventListener('change', (e) => {
+            ov.querySelector('#rs-t-mode').value = e.target.value === 'travel' ? 'disrupted' : 'light';
+            resizeInputs(ov);
+        });
     },
 
     // ── Metrics ──────────────────────────────────────────────
@@ -496,7 +512,7 @@ const Resilient = {
         const unit = this.esc(m.unit || '');
         const name = this.esc(m.name.toLowerCase());
         const num = '<input id="rs-m-val" type="number" step="any" class="form-input" placeholder="0">';
-        const first = m.is_system ? { html: `Last night I slept ${num} hours`, need: true, msg: 'Roughly how many hours? Halves are fine, like 6.5.' }
+        const first = m.system_key === 'sleep' ? { html: `Last night I slept ${num} hours`, need: true, msg: 'Roughly how many hours? Halves are fine, like 6.5.' }
             : m.kind === 'counter' ? { html: `One more ${name}.` }
             : m.kind === 'single' ? { html: `Today my ${name} was ${num} ${unit}`, need: true, msg: `How much ${name} today?` }
             : { html: `Add ${num} ${unit} to my ${name}`, need: true, msg: `How much ${name} are you adding?` };
@@ -787,51 +803,50 @@ const Resilient = {
         }
     },
 
-    // ── Settings card ────────────────────────────────────────
+    // ── Settings: day preferences sit in Preferences, the PIN in User ──
     mountSettings() {
-        const host = document.getElementById('sp-general');
-        if (!host || document.getElementById('rs-settings')) return;
-        const card = document.createElement('div');
-        card.id = 'rs-settings';
-        card.className = 'settings-card mt-4';
-        card.innerHTML = '<h6 class="settings-card-title"><i class="fas fa-calendar-day me-2"></i>Days &amp; streaks</h6><div id="rs-settings-body"></div>';
-        host.appendChild(card);
-        card.addEventListener('change', (e) => this._saveSetting(e));
-        card.addEventListener('click', (e) => {
-            const day = e.target.closest('[data-set="weekend"]');
-            if (day) { day.classList.toggle('active'); this._saveSetting({ target: day }); }
-            if (e.target.closest('[data-rs-set="pin"]')) this.pinSetupDialog();
+        const host = document.getElementById('rs-settings');
+        if (!host || host.dataset.bound) return;
+        host.dataset.bound = '1';
+        const user = document.getElementById('rs-user-pin');
+        [host, user].filter(Boolean).forEach(el => {
+            el.addEventListener('change', (e) => this._saveSetting(e));
+            el.addEventListener('click', (e) => {
+                const day = e.target.closest('[data-set="weekend"]');
+                if (day) { day.classList.toggle('active'); this._saveSetting({ target: day }); }
+                if (e.target.closest('[data-rs-set="pin"]')) this.pinSetupDialog();
+            });
         });
         this.renderSettings();
     },
 
     async renderSettings() {
-        const body = document.getElementById('rs-settings-body');
+        const body = document.getElementById('rs-settings');
         if (!body) return;
         const d = typeof AppConfig !== 'undefined' ? AppConfig.userDetail : null;
         if (!d) return setTimeout(() => this.renderSettings(), 800);
-        const mres = await apiClient.get('board/api/metrics/', { silent: true });
-        const metrics = mres.status === 'success' ? mres.data : [];
+        const email = document.getElementById('settingsEmail');
+        if (email) email.textContent = d.email || '';
+        const hres = await apiClient.get('board/api/habits/', { silent: true });
+        const habits = hres.status === 'success' ? (hres.data.results || hres.data) : [];
         const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
         const wk = d.weekend_days || [5, 6];
         const opt = (v, l, cur) => `<option value="${v}" ${String(cur) === String(v) ? 'selected' : ''}>${l}</option>`;
-        body.innerHTML = `
-            <div class="mb-3"><label class="form-label">Weekend days</label>
-                <div class="freq-days">${names.map((n, i) => `<button type="button" class="freq-day-btn ${wk.includes(i) ? 'active' : ''}" data-set="weekend" data-day="${i}">${n}</button>`).join('')}</div>
-                <small class="form-text text-brown">These days use the Holiday routine unless you change the day.</small></div>
-            <div class="mb-3"><label class="form-label">Day starts at</label>
-                <input type="time" class="form-control" data-set="day_start" value="${this.esc((d.day_start || '04:00').slice(0, 5))}">
-                <small class="form-text text-brown">Anything before this time still counts for the previous day.</small></div>
-            <div class="mb-3"><label class="form-label">Light days after travel</label>
-                <input type="number" class="form-control" min="0" max="7" data-set="travel_ramp_days" value="${this.esc(d.travel_ramp_days ?? 2)}"></div>
-            <div class="mb-3"><label class="form-label">Streak counts</label>
-                <select class="form-control" data-set="streak_rule">${opt('activity', 'Any activity (default)', d.streak_rule || 'activity')}${opt('routine', 'Routine met (essentials and anchors)', d.streak_rule)}</select></div>
-            <div class="mb-3"><label class="form-label">When I tap &ldquo;I slipped&rdquo;, also count it on</label>
-                <select class="form-control" data-set="slip_metric">${opt('', 'No tracker', d.slip_metric ?? '')}${metrics.filter(m => m.kind !== 'single').map(m => opt(m.id, this.esc(m.name), d.slip_metric)).join('')}</select>
-                <small class="form-text text-brown">&ldquo;I slipped&rdquo; is for moments you give in to something you&rsquo;re cutting down on. Pick that tracker here (say, Coffee) and each slip adds one to it, so its chart shows how often it happens.</small></div>
-            <div class="mb-0"><label class="form-label">Private items</label>
-                <div><button type="button" class="btn btn-paper btn-sm btn-primary" data-rs-set="pin">${this.privateState.has_pin ? 'Change PIN' : 'Set a PIN'}</button></div>
-                <small class="form-text text-brown">Type /private in the search bar or press Ctrl+Shift+L to show or hide them.</small></div>`;
+        const row = (label, control, hint, last) => `<div class="${last ? 'mb-0' : 'mb-3'}"><label class="form-label">${label}</label>${control}${hint ? `<small class="form-text text-brown d-block">${hint}</small>` : ''}</div>`;
+        body.innerHTML =
+            row('Day starts at', `<input type="time" class="form-control" data-set="day_start" value="${this.esc((d.day_start || '04:00').slice(0, 5))}">`,
+                'Anything before this time still counts for the previous day. Working nights? Set it after your shift ends.') +
+            row('Weekend days', `<div class="freq-days">${names.map((n, i) => `<button type="button" class="freq-day-btn ${wk.includes(i) ? 'active' : ''}" data-set="weekend" data-day="${i}">${n}</button>`).join('')}</div>`,
+                'These days use your Holiday routine unless you change the day.') +
+            row('Light days after an off day', `<input type="number" class="form-control" min="0" max="7" data-set="travel_ramp_days" value="${this.esc(d.travel_ramp_days ?? 2)}">`,
+                'After a Disrupted off day (like travel), this many Light days help you ease back in.') +
+            row('Streak counts', `<select class="form-control" data-set="streak_rule">${opt('activity', 'Any activity (default)', d.streak_rule || 'activity')}${opt('routine', 'Routine met (essentials and anchors)', d.streak_rule)}</select>`) +
+            row('Journaling habit', `<select class="form-control" data-set="journal_habit">${opt('', 'None', d.journal_habit ?? '')}${habits.map(h => opt(h.id, this.esc(h.habit), d.journal_habit)).join('')}</select>`,
+                'Writing in your journal marks this habit done for the day.', true);
+        const pin = document.getElementById('rs-user-pin');
+        if (pin) pin.innerHTML = row('Privacy PIN',
+            `<div><button type="button" class="btn btn-paper btn-sm btn-primary" data-rs-set="pin">${this.privateState.has_pin ? 'Change PIN' : 'Set a PIN'}</button></div>`,
+            'Hides private habits, trackers and journals. Type /private in the search bar or press Ctrl+Shift+L to show or hide them.', true);
     },
 
     async _saveSetting(e) {
@@ -843,8 +858,8 @@ const Resilient = {
             payload = { weekend_days: [...document.querySelectorAll('[data-set="weekend"].active')].map(b => Number(b.dataset.day)) };
         } else if (key === 'travel_ramp_days') {
             payload = { travel_ramp_days: Number(el.value) };
-        } else if (key === 'slip_metric') {
-            payload = { slip_metric: el.value ? Number(el.value) : null };
+        } else if (key === 'journal_habit') {
+            payload = { journal_habit: el.value ? Number(el.value) : null };
         } else {
             payload = { [key]: el.value };
         }

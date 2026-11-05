@@ -2,7 +2,7 @@
 API for resilient days: day plans, block logs, running late, slips and
 resets, travel; plus metrics, habit checklists, journals and privacy mode.
 """
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from functools import wraps
 
 from django.contrib.auth.models import User
@@ -319,7 +319,7 @@ class ResetView(APIView):
 
 
 class SlipView(APIView):
-    """'I slipped': private, logs +1 on the chosen slip metric, and brings the reset card."""
+    """'I slipped': private, adds one to the Slips tracker, and brings the reset card."""
 
     @auth
     def post(self, request, user_id):
@@ -329,19 +329,17 @@ class SlipView(APIView):
         plan = _get_or_make_plan(user_id, detail, target, 'slip')
         plan.slips = [*plan.slips, {'at': timezone.now().isoformat(), 'note': note}]
         plan.save(update_fields=['slips'])
-        if detail.slip_metric_id:
-            metric = Metric.objects.filter(pk=detail.slip_metric_id, user_id=user_id).first()
-            if metric:
-                data = {k: request.data[k] for k in ('trigger', 'urge') if k in request.data}
-                try:
-                    mx.log_entry(metric, value=1, data=data, note=note)
-                except ValueError:
-                    mx.log_entry(metric, value=1, note=note)
+        # Every slip counts on the built-in private Slips tracker; the note goes to its journal
+        mx.log_entry(mx.ensure_slip_metric(user_id), value=1, note=note)
         return ok(day_payload(resolve_day(user_id, target, detail=detail)))
 
 
 class TravelView(APIView):
-    """Travel dates are Disrupted; the next ``travel_ramp_days`` are Light. Never overwrites a manual row."""
+    """
+    Off days (travel, night shift, unwell…): the dates become Light or Disrupted,
+    with the reason on the plan and in that day's journal. After a Disrupted
+    stretch, the next ``travel_ramp_days`` are Light. Never overwrites a manual row.
+    """
 
     @auth
     def post(self, request, user_id):
@@ -349,14 +347,23 @@ class TravelView(APIView):
         today = logical_today(user_id, detail=detail)
         start = parse_date(request.data.get('start')) or today
         end = parse_date(request.data.get('end')) or start
+        reason = request.data.get('reason') or 'travel'
+        if reason not in mx.OFF_REASONS:
+            return fail('Unknown reason')
+        note = str(request.data.get('note', '')).strip()[:120]
+        mode = request.data.get('mode') or (DayMode.DISRUPTED if reason == 'travel' else DayMode.LIGHT)
+        if mode not in (DayMode.LIGHT, DayMode.DISRUPTED):
+            return fail('mode must be light or disrupted')
         if end < start or start < today:
-            return fail('Travel dates must be today or later, and end after start')
+            return fail('Off days must be today or later, and end after start')
         if (end - start).days + 1 > TRAVEL_MAX_DAYS:
-            return fail(f'Travel can span at most {TRAVEL_MAX_DAYS} days')
+            return fail(f'Off days can span at most {TRAVEL_MAX_DAYS} days')
+        label = mx.OFF_REASONS[reason] + (f': {note}' if note else '')
         applied, skipped = [], []
-        dates = [(start + timedelta(days=i), DayMode.DISRUPTED, 'travel') for i in range((end - start).days + 1)]
-        dates += [(end + timedelta(days=i + 1), DayMode.LIGHT, 'ramp') for i in range(detail.travel_ramp_days)]
-        for d, mode, source in dates:
+        dates = [(start + timedelta(days=i), mode, 'travel') for i in range((end - start).days + 1)]
+        if mode == DayMode.DISRUPTED:
+            dates += [(end + timedelta(days=i + 1), DayMode.LIGHT, 'ramp') for i in range(detail.travel_ramp_days)]
+        for d, m, source in dates:
             plan = DayPlan.objects.filter(user_id=user_id, date=d).first()
             if plan and plan.source in ('manual', 'checkin'):
                 skipped.append(d.isoformat())
@@ -364,9 +371,12 @@ class TravelView(APIView):
             if plan is None:
                 plan = DayPlan(user_id=user_id, date=d, template=default_template(detail, d))
             elif source == 'ramp' and plan.source == 'travel':
-                continue  # a later trip already covers it
-            plan.mode, plan.source = mode, source
+                continue  # a later off day already covers it
+            plan.mode, plan.source = m, source
+            plan.reason = label[:160] if source == 'travel' else ''
             plan.save()
+            if source == 'travel':
+                mx.note_off_day(user_id, d, reason, note)
             applied.append(d.isoformat())
         return ok({'applied': applied, 'skipped': skipped})
 
@@ -395,6 +405,7 @@ def metric_json(metric, request=None):
         'target_light': float(metric.target_light) if metric.target_light is not None else None,
         'quick_steps': [float(x) for x in metric.quick_steps],
         'fields': metric.fields, 'is_private': metric.is_private, 'is_system': metric.is_system,
+        'system_key': metric.system_key,
         'remind_at': (lambda t: t.strftime('%H:%M') if t else None)(mx.reminder_time(metric)),
         'habit_ids': list(Habit.objects.filter(user_id=metric.user_id, metric_id=metric.id).values_list('id', flat=True)),
         'today': float(mx.day_value(metric, today)),
@@ -445,6 +456,8 @@ def apply_metric_payload(metric, data):
 class MetricsView(APIView):
     @auth
     def get(self, request, user_id):
+        mx.ensure_sleep_metric(user_id)
+        mx.ensure_slip_metric(user_id)
         _, hidden = hidden_ids(request, user_id)
         qs = Metric.objects.filter(user_id=user_id).exclude(id__in=hidden)
         return ok([metric_json(m) for m in qs])
@@ -497,7 +510,7 @@ class MetricDetailView(APIView):
         if not metric:
             return fail('Metric not found', http.HTTP_404_NOT_FOUND)
         if metric.is_system:
-            return fail('The Sleep metric cannot be deleted')
+            return fail(f'{metric.name} is built in and cannot be deleted')
         metric.delete()
         return ok(message='Metric deleted')
 
@@ -911,3 +924,78 @@ class PrivateResetConfirmView(APIView):
         privacy.set_pin(get_detail(user_id), pin)
         privacy.lock(request)
         return ok({'has_pin': True})
+
+
+# ── New-user setup ─────────────────────────────────────────
+
+SERIOUSNESS = {'trying': 'activity', 'steady': 'activity', 'all_in': 'routine'}
+
+
+def _hhmm(v, default):
+    try:
+        return datetime.strptime(str(v)[:5], '%H:%M').time()
+    except (TypeError, ValueError):
+        return default
+
+
+class OnboardingSetupView(APIView):
+    """
+    The setup questions: how serious, habits to start, things to track, and the
+    shape of a usual day. Creates them in one go and marks the user onboarded.
+    """
+
+    @auth
+    @transaction.atomic
+    def post(self, request, user_id):
+        from datetime import time as t
+        from board.models import RoutineEntry
+        data = request.data
+        detail = get_detail(user_id)
+        detail.streak_rule = SERIOUSNESS.get(data.get('seriousness'), 'activity')
+
+        habits = []
+        for h in (data.get('habits') or [])[:12]:
+            name = str(h.get('habit', '')).strip()[:120]
+            if not name:
+                continue
+            habits.append(Habit.objects.create(
+                user_id=user_id, habit=name, detail=str(h.get('detail', ''))[:200] or 'every day',
+                identity=str(h.get('identity', ''))[:120] or 'someone who shows up',
+                notify_at=_hhmm(h.get('notify_at'), None), frequency=[],
+            ))
+
+        for m in (data.get('trackers') or [])[:12]:
+            metric = Metric(user_id=user_id)
+            try:
+                apply_metric_payload(metric, m)
+                if metric.name:
+                    if metric.kind == MetricKind.COUNTER and not metric.quick_steps:
+                        metric.quick_steps = [1]
+                    metric.save()
+            except (ValueError, ArithmeticError):
+                continue
+
+        day = data.get('routine') or {}
+        wake, sleep = _hhmm(day.get('wake'), t(6, 0)), _hhmm(day.get('sleep'), t(22, 30))
+        work_from, work_to = _hhmm(day.get('work_from'), None), _hhmm(day.get('work_to'), None)
+        weekend = [d for d in (day.get('weekend_days') or [5, 6]) if isinstance(d, int) and 0 <= d <= 6]
+        detail.weekend_days = sorted(set(weekend))
+        detail.sleep_time = sleep
+        if not RoutineEntry.objects.filter(user_id=user_id).exists():
+            def add(rt, at, title, tier, minutes=None):
+                RoutineEntry.objects.get_or_create(user_id=user_id, routine_type=rt, time=at, title=title,
+                                                   defaults={'tier': tier, 'duration_min': minutes})
+            for rt in ('workday', 'holiday'):
+                add(rt, wake, 'Wake up', Tier.ESSENTIAL, 15)
+                add(rt, sleep, 'Sleep', Tier.ESSENTIAL)
+            if work_from and work_to and work_to > work_from:
+                minutes = (datetime.combine(date.today(), work_to) - datetime.combine(date.today(), work_from)).seconds // 60
+                add('workday', work_from, 'Work', Tier.ANCHOR, minutes)
+        detail.is_onboarded = True
+        detail.save()
+        if detail.journal_habit_id is None:
+            j = next((h for h in habits if 'journal' in h.habit.lower()), None)
+            if j:
+                detail.journal_habit = j
+                detail.save(update_fields=['journal_habit'])
+        return ok({'habits': len(habits)})

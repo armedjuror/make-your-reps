@@ -150,7 +150,7 @@ def log_entry(metric, *, value=None, data=None, note='', at=None):
     else:
         entry = MetricEntry.objects.create(metric=metric, date=day, at=at, value=value, data=data)
 
-    if metric.is_system:
+    if metric.system_key == 'sleep':
         # The Sleep tracker keeps the day's sleep_hours in step, like the old sleep card did
         DailyData.objects.update_or_create(user_id=user_id, date=day, defaults={'sleep_hours': entry.value})
 
@@ -173,7 +173,7 @@ def undo_last(metric, target_date):
         return False
     JournalEntry.objects.filter(metric_entry=entry).delete()
     entry.delete()
-    if metric.is_system:
+    if metric.system_key == 'sleep':
         DailyData.objects.filter(user_id=metric.user_id, date=target_date).update(sleep_hours=None)
     sync_metric_habits(metric, target_date)
     return True
@@ -246,7 +246,7 @@ def reminder_time(metric, detail=None):
     """When the tracker's reminder shows. Sleep defaults to 30 minutes after the day starts."""
     if metric.remind_at:
         return metric.remind_at
-    if metric.is_system:
+    if metric.system_key == 'sleep':
         from board.days import get_detail
         start = (detail or get_detail(metric.user_id)).day_start
         return (datetime.combine(date.today(), start) + timedelta(minutes=30)).time()
@@ -254,11 +254,22 @@ def reminder_time(metric, detail=None):
 
 
 def ensure_sleep_metric(user_id):
-    metric = Metric.objects.filter(user_id=user_id, is_system=True, name=SLEEP_METRIC_NAME).first()
+    metric = Metric.objects.filter(user_id=user_id, system_key='sleep').first()
     if not metric:
         metric = Metric.objects.create(
             user_id=user_id, name=SLEEP_METRIC_NAME, unit='h', kind=MetricKind.SINGLE,
-            direction='at_least', quick_steps=[], fields=[], is_system=True,
+            direction='at_least', quick_steps=[], fields=[], is_system=True, system_key='sleep',
+        )
+    return metric
+
+
+def ensure_slip_metric(user_id):
+    """Built-in private tracker: every "I slipped" adds one, so its chart shows how often."""
+    metric = Metric.objects.filter(user_id=user_id, system_key='slip').first()
+    if not metric:
+        metric = Metric.objects.create(
+            user_id=user_id, name='Slips', unit='', kind=MetricKind.COUNTER, direction='at_most',
+            quick_steps=[1], fields=[], is_private=True, is_system=True, system_key='slip',
         )
     return metric
 
@@ -298,6 +309,36 @@ def sync_sleep(user_id, target_date, hours):
         existing.save()
     else:
         MetricEntry.objects.create(metric=metric, date=target_date, at=at, value=Decimal(str(hours)))
+
+
+def mark_journal_habit(user_id, target_date):
+    """Writing the day's journal marks the habit chosen in Settings as done."""
+    from board.days import get_detail
+    habit_id = get_detail(user_id).journal_habit_id
+    if not habit_id:
+        return
+    log, _ = HabitLog.objects.get_or_create(habit_id=habit_id, date=target_date)
+    if not log.is_done:
+        log.is_done = True
+        log.save(update_fields=['is_done'])
+
+
+OFF_REASONS = {
+    'travel': 'Travelling', 'night_shift': 'Night shift', 'sick': 'Unwell',
+    'family': 'Family', 'event': 'An event', 'other': 'Off day',
+}
+
+
+def note_off_day(user_id, target_date, reason, note=''):
+    """Add 'Off day: Night shift. <note>' to that day's journal, once."""
+    line = f"Off day: {OFF_REASONS.get(reason, 'Off day')}" + (f'. {note}' if note else '')
+    dd, _ = DailyData.objects.get_or_create(user_id=user_id, date=target_date)
+    text = (dd.journal or '').strip()
+    if line in text:
+        return
+    dd.journal = f'{line}\n\n{text}' if text else line
+    dd.save(update_fields=['journal'])
+    sync_default_journal(user_id, target_date, dd.journal)
 
 
 def sync_default_journal(user_id, target_date, text):

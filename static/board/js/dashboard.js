@@ -343,7 +343,8 @@ const Onboarding = {
         BrowserNotify.startTimelinePoller();
 
         if (!AppConfig.userDetail?.is_onboarded) {
-            Onboarding.show();
+            // New users answer a few setup questions, then get the guided tour
+            if (typeof Setup !== 'undefined') Setup.start(); else Onboarding.show();
         }
     });
 }());

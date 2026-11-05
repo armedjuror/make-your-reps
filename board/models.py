@@ -99,6 +99,10 @@ class UserDetail(models.Model):
     slip_metric = models.ForeignKey(
         'Metric', null=True, blank=True, on_delete=models.SET_NULL, related_name='+',
     )
+    # Writing the day's journal marks this habit done
+    journal_habit = models.ForeignKey(
+        'Habit', null=True, blank=True, on_delete=models.SET_NULL, related_name='+',
+    )
 
     # Privacy mode (PIN hides private items; it is not encryption)
     private_pin_hash = models.CharField(max_length=128, blank=True, default='')
@@ -486,6 +490,7 @@ class DayPlan(models.Model):
     shifts = models.JSONField(default=list)  # running late: [{"at": iso, "minutes": 30}, ...]
     slips = models.JSONField(default=list)   # private: [{"at": iso, "note": "..."}]
     reset_done_at = models.DateTimeField(null=True, blank=True)
+    reason = models.CharField(max_length=160, blank=True, default='')  # off day: 'Night shift: ward 3'
 
     class Meta:
         unique_together = ('user', 'date')
@@ -549,7 +554,8 @@ class Metric(models.Model):
     quick_steps = ArrayField(models.DecimalField(max_digits=8, decimal_places=2), default=list)
     fields = models.JSONField(default=list)  # [{key, label, type: choice|scale|text, options?, allow_other?, max?}]
     is_private = models.BooleanField(default=False)
-    is_system = models.BooleanField(default=False)  # e.g. the Sleep metric
+    is_system = models.BooleanField(default=False)  # built-in, cannot be deleted
+    system_key = models.CharField(max_length=8, blank=True, default='')  # 'sleep' or 'slip'
     remind_at = models.TimeField(null=True, blank=True)  # daily reminder on the timeline
     created_at = models.DateTimeField(auto_now_add=True)
 

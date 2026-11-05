@@ -151,8 +151,9 @@ def _generate_accountability_partner_events(user, today):
 
     for ap in partnerships:
         owner_name = ap.habit.user.get_full_name() or ap.habit.user.username
-        # At the habit's own reminder time (08:00 if it has none)
-        timestamp = timezone.make_aware(datetime.combine(today, ap.habit.notify_at or time(8, 0)))
+        # 10 minutes after the habit's own reminder (08:00 if it has none)
+        from board.views import partner_check_time
+        timestamp = timezone.make_aware(datetime.combine(today, partner_check_time(ap.habit)))
         exists = TimelineEvent.objects.filter(
             user=user,
             event_type=TimelineEventType.ACCOUNTABILITY_HABIT,

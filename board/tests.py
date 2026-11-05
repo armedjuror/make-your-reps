@@ -235,6 +235,51 @@ class DayApiTests(Base):
         data = self.client.get('/board/api/timeline/?date=2026-11-05').json()['data']
         self.assertTrue(next(x for x in data if x['event_type'] == 'sleep_tracker')['action_response'])
 
+    def test_off_day_with_reason_sets_mode_banner_and_journal(self):
+        r = self.client.post('/board/api/day_plans/travel/', {'start': '2026-11-05', 'end': '2026-11-05',
+                             'reason': 'night_shift', 'note': 'ward 3'}, content_type='application/json')
+        self.assertEqual(r.json()['data']['applied'], ['2026-11-05'])   # Light, so no ramp after it
+        day = self.client.get('/board/api/timeline/?date=2026-11-05').json()['day']
+        self.assertEqual((day['mode'], day['banner']), ('light', 'Off day · Night shift: ward 3'))
+        dd = self.client.get('/board/api/daily_data/2026-11-05/').json()['data']
+        self.assertIn('Off day: Night shift. ward 3', dd['journal'])
+        # a Disrupted off day gets the light ramp after it
+        r = self.client.post('/board/api/day_plans/travel/', {'start': '2026-11-06', 'end': '2026-11-06',
+                             'reason': 'travel'}, content_type='application/json')
+        self.assertEqual(r.json()['data']['applied'][:2], ['2026-11-06', '2026-11-07'])
+
+    def test_slip_counts_on_the_private_slips_tracker(self):
+        self.client.post('/board/api/lapses/', {'note': 'third coffee'}, content_type='application/json')
+        slip = Metric.objects.get(user=self.user, system_key='slip')
+        self.assertTrue(slip.is_private and slip.is_system)
+        self.assertEqual(mx.day_value(slip, date(2026, 11, 5)), 1)
+        self.client.post('/board/api/private/pin/', {'pin': '4821'}, content_type='application/json')
+        self.client.post('/board/api/private/unlock/', {'pin': '4821'}, content_type='application/json')
+        self.assertEqual(self.client.delete(f'/board/api/metrics/{slip.id}/').status_code, 400)   # built in
+
+    def test_writing_the_journal_marks_the_journaling_habit_done(self):
+        h = Habit.objects.create(user=self.user, habit='Journal', detail='d', identity='i')
+        self.client.put('/board/api/user_details/', {'journal_habit': h.id}, content_type='application/json')
+        self.client.put('/board/api/daily_data/2026-11-05/', {'journal': 'Good day'}, content_type='application/json')
+        self.assertTrue(HabitLog.objects.get(habit=h, date=date(2026, 11, 5)).is_done)
+
+    def test_setup_questions_create_habits_trackers_and_a_starter_routine(self):
+        from board.models import RoutineEntry
+        r = self.client.post('/board/api/onboarding/setup/', {
+            'seriousness': 'all_in',
+            'habits': [{'habit': 'Read a page', 'notify_at': '21:00'}, {'habit': 'Write in my journal'}],
+            'trackers': [{'name': 'Water', 'unit': 'l', 'kind': 'additive', 'target': 3, 'quick_steps': [0.5]}],
+            'routine': {'wake': '05:30', 'sleep': '22:00', 'work_from': '09:00', 'work_to': '17:30', 'weekend_days': [4, 5]},
+        }, content_type='application/json')
+        self.assertEqual(r.status_code, 200)
+        self.detail.refresh_from_db()
+        self.assertTrue(self.detail.is_onboarded)
+        self.assertEqual((self.detail.streak_rule, self.detail.weekend_days), ('routine', [4, 5]))
+        self.assertEqual(self.detail.journal_habit.habit, 'Write in my journal')
+        self.assertTrue(Metric.objects.filter(user=self.user, name='Water').exists())
+        work = RoutineEntry.objects.get(user=self.user, routine_type='workday', title='Work')
+        self.assertEqual((work.tier, work.duration_min), ('anchor', 510))
+
     def test_journal_card_shows_done_once_written(self):
         card = lambda: next(x for x in self.client.get('/board/api/timeline/?date=2026-11-05').json()['data']
                             if x['id'].startswith('journal-reminder-'))
@@ -242,7 +287,7 @@ class DayApiTests(Base):
         self.client.put('/board/api/daily_data/2026-11-05/', {'journal': 'Good day'}, content_type='application/json')
         self.assertTrue(card()['action_response'])
 
-    def test_partner_check_follows_habit_reminder_and_nudges_land_15_minutes_later(self):
+    def test_partner_check_is_10_minutes_after_habit_reminder_and_nudges_land_15_minutes_later(self):
         from board.models import AccountabilityPartner, AccountabilityPartnerStatus, TimelineEvent
         from board.views import _create_partner_habit_entry
         friend = User.objects.create_user('friend', 'f@x.com', 'pw')
@@ -250,7 +295,7 @@ class DayApiTests(Base):
         ap = AccountabilityPartner.objects.create(habit=h, partner=self.user, status=AccountabilityPartnerStatus.ACTIVE)
         _create_partner_habit_entry(ap, date(2026, 11, 5))
         ev = TimelineEvent.objects.get(user=self.user, reference__type='monitor')
-        self.assertEqual(timezone.localtime(ev.timestamp).strftime('%H:%M'), '18:30')
+        self.assertEqual(timezone.localtime(ev.timestamp).strftime('%H:%M'), '18:40')
         self.client.post(f'/board/api/accountability_partners/{ap.id}/remind/')
         nudge = TimelineEvent.objects.get(user=friend, reference__type='reminder')
         self.assertEqual(nudge.timestamp, NOW + timedelta(minutes=15))
@@ -336,13 +381,10 @@ class DayApiTests(Base):
     def test_reset_with_nothing_to_reset_is_refused(self):
         self.assertEqual(self.client.put('/board/api/day_plans/2026-11-05/reset/', {}, content_type='application/json').status_code, 409)
 
-    def test_slip_on_a_chosen_metric_logs_plus_one(self):
-        m = Metric.objects.create(user=self.user, name='Coffee', kind='counter', direction='at_most',
-                                  target=3, quick_steps=[1], is_private=True)
-        self.detail.slip_metric = m
-        self.detail.save()
+    def test_each_slip_adds_one_to_the_slips_tracker(self):
         self.client.post('/board/api/lapses/', {'note': ''}, content_type='application/json')
-        self.assertEqual(MetricEntry.objects.filter(metric=m).count(), 1)
+        self.client.post('/board/api/lapses/', {'note': ''}, content_type='application/json')
+        self.assertEqual(MetricEntry.objects.filter(metric__user=self.user, metric__system_key='slip').count(), 2)
 
 
 class RoutineApiTests(Base):
@@ -723,7 +765,8 @@ class PrivacyTests(Base):
     def test_locked_hides_every_private_row_with_no_placeholder(self):
         self.client.post('/board/api/private/pin/', {'pin': '4821'}, content_type=self.j)
         self.assertEqual(self.names(), ['Read'])
-        self.assertEqual(self.client.get('/board/api/metrics/').json()['data'], [])
+        # Only the visible built-in Sleep tracker is left; the private ones are gone
+        self.assertEqual([x['name'] for x in self.client.get('/board/api/metrics/').json()['data']], ['Sleep'])
         self.assertEqual(self.client.get(f'/board/api/metrics/{self.metric.id}/').status_code, 404)
         self.assertEqual(self.client.get(f'/board/api/habits/{self.secret.id}/steps/').status_code, 404)
         self.assertEqual(self.client.put(f'/board/api/habits/{self.secret.id}/toggle/', {'date': '2026-11-05'},
@@ -736,7 +779,7 @@ class PrivacyTests(Base):
     def test_unlock_shows_them_and_lock_hides_them_again(self):
         self.assertEqual(self.unlock().status_code, 200)
         self.assertEqual(sorted(self.names()), ['Quit sugar', 'Read'])
-        self.assertEqual(len(self.client.get('/board/api/metrics/').json()['data']), 1)
+        self.assertIn(self.metric.name, [x['name'] for x in self.client.get('/board/api/metrics/').json()['data']])
         self.client.post('/board/api/private/lock/', {}, content_type=self.j)
         self.assertEqual(self.names(), ['Read'])
 

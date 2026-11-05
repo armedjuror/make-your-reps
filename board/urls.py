@@ -15,7 +15,7 @@ from board.day_views import (
     HabitStepsView, HabitStepDetailView, HabitStepLogView,
     JournalsView, JournalDetailView, JournalEntriesView, JournalEntryDetailView, JournalEntriesByDateView,
     PrivateStatusView, PrivatePinView, PrivateUnlockView, PrivateLockView,
-    PrivateResetRequestView, PrivateResetConfirmView,
+    PrivateResetRequestView, PrivateResetConfirmView, OnboardingSetupView,
 )
 from board.calendar_views import (
     CalendarAuthView, CalendarCallbackView, CalendarListView,
@@ -45,6 +45,7 @@ urlpatterns = [
     path('api/productivity_score_history/', ProductivityScoreHistoryView.as_view(), name='productivity-score-history'),
     path('api/gamification/', GamificationView.as_view(), name='gamification'),
     path('api/onboarding_complete/', OnboardingCompleteView.as_view(), name='onboarding-complete'),
+    path('api/onboarding/setup/', OnboardingSetupView.as_view(), name='onboarding-setup'),
     path('api/feedback/', FeedbackView.as_view(), name='feedback'),
     # Google Calendar integration
     path('api/calendar/auth/', CalendarAuthView.as_view(), name='calendar-auth'),

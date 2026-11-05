@@ -128,3 +128,30 @@ select.form-input option { background: var(--surface-raised, var(--paper-bg)); c
 #footer-private { background: none; border: 0; padding: 0; font: inherit; color: var(--ink-brown); cursor: pointer; }
 #footer-private:hover { text-decoration: underline; }
 #footer-private[hidden] { display: none; }
+
+/* Timeline: one fixed-width time column so every icon lines up. A 12-hour range
+   wraps after the dash rather than pushing the icon right. */
+.timeline-item .timeline-time, .timeline-now .timeline-time {
+    flex: 0 0 6.6rem; width: 6.6rem; min-width: 0; text-align: right; line-height: 1.35; white-space: normal;
+}
+body[data-clock="24h"] .timeline-item .timeline-time, body[data-clock="24h"] .timeline-now .timeline-time { flex-basis: 6.6rem; width: 6.6rem; }
+.timeline-item .timeline-icon { flex-shrink: 0; }
+@media (max-width: 600px) {
+    .timeline-item .timeline-time, .timeline-now .timeline-time { flex-basis: 4.6rem; width: 4.6rem; font-size: .72rem; }
+}
+
+/* First-run setup */
+.rs-setup-page .rs-pick { margin: 6px 0 14px; gap: 8px; }
+.rs-setup-page .rs-pick .freq-day-btn { padding: 5px 12px; font-size: .85rem; }
+.rs-setup-dots { display: inline-flex; gap: 6px; margin-right: 6px; }
+.rs-setup-dots .ob-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(var(--accent-rgb), .3); display: inline-block; }
+.rs-setup-dots .ob-dot.active { background: var(--ink-brown); }
+
+/* Guided tour */
+.rs-tour-ring { position: fixed; z-index: 2050; border-radius: var(--radius-md, 10px); pointer-events: none;
+    box-shadow: 0 0 0 3px var(--ink-brown), 0 0 0 9999px rgba(0, 0, 0, .45); transition: all .25s ease; }
+.rs-tour.search-engine-dropdown { position: fixed; z-index: 2060; right: auto; margin: 0; padding: 14px 16px; overflow: visible; }
+.rs-tour-head { font-weight: 700; color: var(--ink-brown); margin-bottom: 4px; }
+.rs-tour-text { color: var(--ink-black); font-size: .9rem; line-height: 1.5; }
+.rs-tour-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
+.rs-tour-count { font-size: .75rem; color: var(--ink-gray); }
