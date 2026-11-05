@@ -878,7 +878,20 @@ class RoutineScoreTests(Base):
 
     def test_no_routine_due_gives_full_routine_points(self):
         self.assertEqual(self.score()['routine'], 3.0)
-        self.assertEqual(self.score()['total'], 8.5)   # all but journal (1) and sleep (0.5)
+        self.assertEqual(self.score()['total'], 9.0)   # all but the journal (1)
+
+    def test_trackers_count_logged_over_due_and_slips_earn_nothing(self):
+        from board.metrics import ensure_slip_metric
+        walk = Metric.objects.create(user=self.user, name='Walk', remind_at=time(8))
+        Metric.objects.create(user=self.user, name='Water', remind_at=time(20))   # not due yet at 10:00
+        Metric.objects.filter(user=self.user).update(created_at=NOW - timedelta(days=3))
+        slip = ensure_slip_metric(self.user.id)
+        MetricEntry.objects.create(metric=slip, date=TODAY, at=NOW, value=1)
+        d = self.score()
+        self.assertEqual((d['breakdown']['trackers_done'], d['breakdown']['trackers_due']), (0, 1))
+        self.assertEqual(d['tracker'], 0.0)
+        MetricEntry.objects.create(metric=walk, date=TODAY, at=NOW, value=2)
+        self.assertEqual(self.score()['tracker'], 1.0)
 
     def test_a_done_routine_block_keeps_the_activity_streak(self):
         self.routine()

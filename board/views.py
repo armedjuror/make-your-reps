@@ -1923,20 +1923,41 @@ def _compute_productivity_score(user_id, target_date, now=None, include_private=
         user_id=user_id, is_deleted=False, deadline__isnull=True, is_done=True, updated_at__date=target_date
     ).count()
     total_todos_done = todos_done_deadline + todos_done_no_deadline
-    todo_score = (total_todos_done / max(todos_due, total_todos_done) * 1.5) if max(todos_due, total_todos_done) > 0 else 1.5
+    todo_score = (total_todos_done / max(todos_due, total_todos_done) * 1) if max(todos_due, total_todos_done) > 0 else 1.0
 
     daily_data = DailyData.objects.filter(user_id=user_id, date=target_date).first()
     journal_score = 1.0 if (daily_data and daily_data.journal and daily_data.journal.strip()) else 0.0
-    sleep_score = 0.5 if (daily_data and daily_data.sleep_hours is not None) else 0.0
+    sleep_logged = bool(daily_data and daily_data.sleep_hours is not None)
 
-    total = round(habit_score + routine_score + todo_score + journal_score + sleep_score, 1)
+    # Trackers: logged out of the ones that came due. A tracker is due once its
+    # reminder has passed (every day for past dates); one without a reminder
+    # only counts when logged. Slips never earn points.
+    from board.metrics import reminder_time
+    from board.models import Metric, MetricEntry
+    detail = UserDetail.objects.filter(user_id=user_id).first()
+    trackers = Metric.objects.filter(user_id=user_id, created_at__date__lte=target_date).exclude(system_key='slip')
+    if not include_private:
+        trackers = trackers.filter(is_private=False)
+    logged_ids = set(MetricEntry.objects.filter(metric__in=trackers, date=target_date)
+                     .values_list('metric_id', flat=True))
+    now_t = timezone.localtime(now).time() if (is_today and now) else None
+    trackers_due = 0
+    for m in trackers:
+        at = reminder_time(m, detail)
+        if at is not None and (now_t is None or at <= now_t):
+            trackers_due += 1
+    trackers_done = len(logged_ids)
+    t_den = max(trackers_due, trackers_done)
+    tracker_score = (trackers_done / t_den * 1) if t_den else 1.0
+
+    total = round(habit_score + routine_score + todo_score + tracker_score + journal_score, 1)
     return {
         'total': total,
         'habit': round(habit_score, 1),
         'routine': round(routine_score, 1),
         'todo': round(todo_score, 1),
+        'tracker': round(tracker_score, 1),
         'journal': round(journal_score, 1),
-        'sleep': round(sleep_score, 1),
         'breakdown': {
             'habits_done': habits_done,
             'habits_due': habits_due,
@@ -1944,8 +1965,10 @@ def _compute_productivity_score(user_id, target_date, now=None, include_private=
             'routine_due': routine_due,
             'todos_done': total_todos_done,
             'todos_due': todos_due,
+            'trackers_done': trackers_done,
+            'trackers_due': trackers_due,
             'journaled': bool(journal_score),
-            'sleep_logged': bool(sleep_score),
+            'sleep_logged': sleep_logged,
         }
     }
 

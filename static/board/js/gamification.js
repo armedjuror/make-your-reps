@@ -254,7 +254,7 @@ const Gamification = {
         if (b.routine_due) stats.push(`${b.routine_done}/${b.routine_due} routine`);
         if (b.todos_due || b.todos_done) stats.push(`${b.todos_done} task${b.todos_done === 1 ? '' : 's'} done`);
         if (b.journaled) stats.push('Journaled');
-        if (b.sleep_logged) stats.push('Sleep logged');
+        if (b.trackers_due || b.trackers_done) stats.push(`${b.trackers_done}/${Math.max(b.trackers_due, b.trackers_done)} trackers`);
         return {
             kind: perfect ? 'perfect_day' : 'day_score', tag: date,
             label: perfect ? 'Perfect day' : 'Productivity score',
@@ -333,7 +333,7 @@ const Gamification = {
         const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
         SharePoster.celebrate(this.daySpec(iso, score), {
             heading: 'A perfect 10/10 day!',
-            message: 'Habits, routine, tasks, journal and sleep, all done. That deserves a poster.',
+            message: 'Habits, routine, tasks, trackers and journal, all done. That deserves a poster.',
         });
     },
 
