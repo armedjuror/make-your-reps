@@ -122,10 +122,12 @@ const Theme = {
         this.syncPicker();
     },
 
-    /** Open Settings and bring the theme picker into view. */
+    /** Open Settings on its Appearance tab (theme, font, clock). */
     openAppearance() {
         switchPane('settings');
-        const target = document.getElementById('theme-picker');
-        if (target) setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 120);
+        const tab = document.querySelector('#settingsPaneTabs a[href="#sp-appearance"]');
+        if (tab && typeof bootstrap !== 'undefined') bootstrap.Tab.getOrCreateInstance(tab).show();
+        const target = document.getElementById('sp-appearance') || document.getElementById('theme-picker');
+        if (target) setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
     },
 };
