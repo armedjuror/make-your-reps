@@ -193,9 +193,11 @@ const Timeline = {
     _itemHtml(event, extraClass = '', label = '') {
         const ts = new Date(event.timestamp);
         const responded = event.action_response ? 'responded' : '';
+        const endTs = event.ends_at ? new Date(event.ends_at) : null;
+        const timeText = endTs ? `${this._fmtTime(ts)} \u2013 ${this._fmtTime(endTs)}` : this._fmtTime(ts);
         return `
             <div class="timeline-item ${this.esc('timeline-type-' + event.event_type)} ${responded} ${event.status ? this.esc('tl-st-' + event.status) : ''} ${extraClass}" data-id="${this.esc(event.id)}">
-                <div class="timeline-time">${this._fmtTime(ts)}</div>
+                <div class="timeline-time">${timeText}</div>
                 <div class="timeline-icon"><i class="${this.getTypeIcon(event.event_type)}"></i></div>
                 <div class="timeline-content">
                     ${label ? `<div class="timeline-label">${label}</div>` : ''}
@@ -235,8 +237,11 @@ const Timeline = {
         const isOverdue = e => this._isOverdue(e);
         const overdue = sorted.filter(isOverdue);
         const rest = sorted.filter(e => !isOverdue(e));
-        const past = rest.filter(e => new Date(e.timestamp) <= now);
-        const upcoming = rest.filter(e => new Date(e.timestamp) > now);
+        // A block that has started but not ended stays "current" until it ends
+        const inProgress = rest.filter(e => e.ends_at && new Date(e.timestamp) <= now && now < new Date(e.ends_at));
+        const current = inProgress.length ? inProgress[inProgress.length - 1] : null;
+        const past = rest.filter(e => e !== current && new Date(e.timestamp) <= now);
+        const upcoming = rest.filter(e => e !== current && new Date(e.timestamp) > now);
 
         let html = '';
 
@@ -283,12 +288,17 @@ const Timeline = {
                 <div class="timeline-now-line"></div>
             </div>`;
 
+        if (current) {
+            const left = this._until(new Date(current.ends_at), now);
+            html += this._itemHtml(current, 'timeline-current', this.esc(`IN PROGRESS \u00b7 ${left} left`));
+        }
+
         upcoming.forEach((e, i) => {
             html += i === 0
                 ? this._itemHtml(e, 'timeline-next', this.esc(Theme.text('next', this._until(new Date(e.timestamp), now).toUpperCase())))
                 : this._itemHtml(e);
         });
-        if (!upcoming.length) html += '<div class="timeline-empty">Nothing else today.</div>';
+        if (!upcoming.length && !current) html += '<div class="timeline-empty">Nothing else today.</div>';
 
         list.innerHTML = html;
 

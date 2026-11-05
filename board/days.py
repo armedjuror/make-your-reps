@@ -259,6 +259,7 @@ def block_event(block, target_date):
         'timestamp': ts,
         'event_type': 'routine',
         'event': block['title'],
+        'ends_at': block['end'].isoformat() if block.get('end') else None,
         'reference': {'model': 'RoutineEntry', 'id': block['entry_id']},
         'action': {'block': ['done', 'skipped']} if pending and block['entry_id'] else None,
         'action_response': {'block': block['status']} if block['status'] in ('done', 'skipped') else None,

@@ -200,6 +200,7 @@ class DayApiTests(Base):
         item = next(x for x in r['data'] if x['id'] == f'routine-{e.id}')
         self.assertEqual((item['tier'], item['status']), ('essential', 'missed'))
         self.assertEqual(item['action'], {'block': ['done', 'skipped']})
+        self.assertTrue(item['ends_at'])  # blocks run until the next one starts
         self.assertTrue(any(x['id'] == 'day-checkin-2026-11-05' for x in r['data']))
 
     def test_checkin_disappears_once_a_day_is_chosen(self):
