@@ -58,6 +58,18 @@ def _aware(target_date, t):
     return timezone.make_aware(datetime.combine(target_date, t))
 
 
+def _block_at(target_date, t, day_start=None):
+    """
+    When a routine block happens. A block earlier than ``day_start`` belongs to
+    the night after the day (01:00 on a day that starts at 04:00 is the next
+    calendar date), which is what night shifts need.
+    """
+    at = _aware(target_date, t)
+    if day_start is not None and t < day_start:
+        at += timedelta(days=1)
+    return at
+
+
 def _add_minutes(target_date, t, minutes):
     return _aware(target_date, t) + timedelta(minutes=minutes)
 
@@ -77,7 +89,7 @@ def needs_checkin(plan):
     return plan is None or plan.source in SYSTEM_SOURCES
 
 
-def _effective_blocks(entries, shifts, target_date, mode):
+def _effective_blocks(entries, shifts, target_date, mode, day_start=None):
     """
     Apply running-late shifts. Returns a list of dicts in time order:
     ``{entry, eff (aware dt), shifted_from (time|None), dropped (bool)}``.
@@ -88,9 +100,10 @@ def _effective_blocks(entries, shifts, target_date, mode):
     fixed block is dropped as well, never stacked on top of it.
     """
     blocks = [
-        {'entry': e, 'eff': _aware(target_date, e.time), 'shifted_from': None, 'dropped': False}
+        {'entry': e, 'eff': _block_at(target_date, e.time, day_start), 'shifted_from': None, 'dropped': False}
         for e in entries
     ]
+    blocks.sort(key=lambda b: (b['eff'], b['entry'].id))   # after-midnight blocks come last
 
     def is_fixed(b):
         return b['entry'].tier == Tier.ESSENTIAL or b['entry'].fixed_time
@@ -152,7 +165,7 @@ def resolve_day(user, target_date, now=None, closing=False, detail=None):
     else:
         visible_entries = [e for e in entries if e.tier in visible]
 
-    blocks = _effective_blocks(visible_entries, plan.shifts if plan else [], target_date, mode)
+    blocks = _effective_blocks(visible_entries, plan.shifts if plan else [], target_date, mode, detail.day_start)
 
     is_past = closing or target_date < today
     out = []
@@ -165,7 +178,7 @@ def resolve_day(user, target_date, now=None, closing=False, detail=None):
             end = blocks[i + 1]['eff']
         else:
             end = b['eff'] + timedelta(minutes=DEFAULT_BLOCK_MIN)
-        added_late = timezone.localtime(e.created_at) > _aware(target_date, e.time)
+        added_late = timezone.localtime(e.created_at) > _block_at(target_date, e.time, detail.day_start)
 
         if log:
             status = log.status
@@ -201,8 +214,8 @@ def resolve_day(user, target_date, now=None, closing=False, detail=None):
         if l.tier in visible:
             out.append({
                 'entry_id': None, 'id': f'routine-log-{l.id}', 'title': l.title,
-                'time': l.scheduled_time, 'timestamp': _aware(target_date, l.scheduled_time),
-                'end': _aware(target_date, l.scheduled_time), 'tier': l.tier,
+                'time': l.scheduled_time, 'timestamp': _block_at(target_date, l.scheduled_time, detail.day_start),
+                'end': _block_at(target_date, l.scheduled_time, detail.day_start), 'tier': l.tier,
                 'fixed_time': False, 'shifted_from': None, 'status': l.status,
                 'reason': l.reason, 'orphan': True,
             })

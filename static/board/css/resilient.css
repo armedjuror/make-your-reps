@@ -122,3 +122,9 @@ select.form-input option { background: var(--surface-raised, var(--paper-bg)); c
 /* Tracker questions builder */
 [data-questions] .rs-q { padding: 2px 0; }
 [data-questions] .rs-q [hidden] { display: none; }
+
+/* Private mode notice in the footer bar (replaces the copyright while on) */
+#footer-bar.rs-private #footer-copyright { display: none !important; }
+#footer-private { background: none; border: 0; padding: 0; font: inherit; color: var(--ink-brown); cursor: pointer; }
+#footer-private:hover { text-decoration: underline; }
+#footer-private[hidden] { display: none; }

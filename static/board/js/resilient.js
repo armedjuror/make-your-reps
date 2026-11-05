@@ -437,7 +437,7 @@ const Resilient = {
     },
 
     slipDialog() {
-        this.dialog('I slipped', this.lead('That&rsquo;s okay. One slip doesn&rsquo;t undo your progress, and this stays private.') +
+        this.dialog('I slipped', this.lead('Use this when you give in to something you&rsquo;re cutting down on, like an extra coffee or a late night on your phone. It stays private, doesn&rsquo;t break your streak, and brings up a short reset so the rest of the day still counts.') +
             this.say({ html: `What happened was <input type="text" class="form-input" id="rs-slip-note" maxlength="280" placeholder="optional, just for you">`,
                        msg: 'A word about what led to it helps you spot the pattern later. Only you can see it.' }), [
             { label: 'Cancel' },
@@ -496,7 +496,8 @@ const Resilient = {
         const unit = this.esc(m.unit || '');
         const name = this.esc(m.name.toLowerCase());
         const num = '<input id="rs-m-val" type="number" step="any" class="form-input" placeholder="0">';
-        const first = m.kind === 'counter' ? { html: `One more ${name}.` }
+        const first = m.is_system ? { html: `Last night I slept ${num} hours`, need: true, msg: 'Roughly how many hours? Halves are fine, like 6.5.' }
+            : m.kind === 'counter' ? { html: `One more ${name}.` }
             : m.kind === 'single' ? { html: `Today my ${name} was ${num} ${unit}`, need: true, msg: `How much ${name} today?` }
             : { html: `Add ${num} ${unit} to my ${name}`, need: true, msg: `How much ${name} are you adding?` };
         const fields = (m.fields || []).map((f, i) => {
@@ -545,8 +546,9 @@ const Resilient = {
     },
 
     _renderLockIcon() {
+        this._renderFooter();
         let icon = document.getElementById('rs-lock-icon');
-        if (!this.privateState.has_pin) { if (icon) icon.remove(); return; }
+        if (!this.privateState.has_pin || this.privateState.unlocked) { if (icon) icon.remove(); return; }
         if (!icon) {
             icon = document.createElement('button');
             icon.id = 'rs-lock-icon';
@@ -560,11 +562,38 @@ const Resilient = {
         icon.title = open ? 'Private items visible. Click to lock' : 'Private items hidden. Click to unlock';
     },
 
+    /** While private items are shown, the footer bar says so; clicking it hides them again. */
+    _renderFooter() {
+        const bar = document.getElementById('footer-bar');
+        if (!bar) return;
+        let tag = document.getElementById('footer-private');
+        if (!tag) {
+            tag = document.createElement('button');
+            tag.type = 'button';
+            tag.id = 'footer-private';
+            tag.dataset.rs = 'lock';
+            tag.title = 'Hide private items';
+            bar.insertBefore(tag, bar.firstChild);
+        }
+        const on = !!(this.privateState.has_pin && this.privateState.unlocked);
+        bar.classList.toggle('rs-private', on);
+        tag.hidden = !on;
+        tag.innerHTML = '<i class="fas fa-lock-open me-1"></i> Private mode is on &middot; tap to turn it off';
+    },
+
     async _afterPrivacyChange() {
         await this.loadPrivateStatus();
         await this.loadMetrics();
         await this._refresh();
-        if (typeof Habits !== 'undefined' && Habits.init) Habits.init();
+        if (typeof loadHabits === 'function') loadHabits();
+        if (typeof JournalPane !== 'undefined' && JournalPane.loadMonthData) {
+            JournalPane.loadMonthData();
+            const ed = document.getElementById('journal-editor');
+            if (typeof Trackers !== 'undefined') Trackers.journalNotes((ed && ed.getAttribute('data-date')) || getDate(new Date()));
+        }
+        if (typeof TodosPane !== 'undefined' && typeof panesLoaded !== 'undefined' && panesLoaded.todos && TodosPane.loadTodos) TodosPane.loadTodos();
+        if (typeof General !== 'undefined' && General.loadProductivityScore) General.loadProductivityScore();
+        if (document.getElementById('rs-settings')) this.renderSettings();
     },
 
     /** Typed in the search bar as /private (the command itself is never put in the field). */
@@ -797,8 +826,9 @@ const Resilient = {
                 <input type="number" class="form-control" min="0" max="7" data-set="travel_ramp_days" value="${this.esc(d.travel_ramp_days ?? 2)}"></div>
             <div class="mb-3"><label class="form-label">Streak counts</label>
                 <select class="form-control" data-set="streak_rule">${opt('activity', 'Any activity (default)', d.streak_rule || 'activity')}${opt('routine', 'Routine met (essentials and anchors)', d.streak_rule)}</select></div>
-            <div class="mb-3"><label class="form-label">&ldquo;I slipped&rdquo; adds one to</label>
-                <select class="form-control" data-set="slip_metric">${opt('', 'Nothing (just opens the reset)', d.slip_metric ?? '')}${metrics.filter(m => m.kind !== 'single').map(m => opt(m.id, this.esc(m.name), d.slip_metric)).join('')}</select></div>
+            <div class="mb-3"><label class="form-label">When I tap &ldquo;I slipped&rdquo;, also count it on</label>
+                <select class="form-control" data-set="slip_metric">${opt('', 'No tracker', d.slip_metric ?? '')}${metrics.filter(m => m.kind !== 'single').map(m => opt(m.id, this.esc(m.name), d.slip_metric)).join('')}</select>
+                <small class="form-text text-brown">&ldquo;I slipped&rdquo; is for moments you give in to something you&rsquo;re cutting down on. Pick that tracker here (say, Coffee) and each slip adds one to it, so its chart shows how often it happens.</small></div>
             <div class="mb-0"><label class="form-label">Private items</label>
                 <div><button type="button" class="btn btn-paper btn-sm btn-primary" data-rs-set="pin">${this.privateState.has_pin ? 'Change PIN' : 'Set a PIN'}</button></div>
                 <small class="form-text text-brown">Type /private in the search bar or press Ctrl+Shift+L to show or hide them.</small></div>`;

@@ -3,7 +3,7 @@ Metrics (any number, with fields), their day values, the habit link, and the
 journals that hang off them.
 """
 from collections import Counter
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from django.db.models import Sum
@@ -150,6 +150,10 @@ def log_entry(metric, *, value=None, data=None, note='', at=None):
     else:
         entry = MetricEntry.objects.create(metric=metric, date=day, at=at, value=value, data=data)
 
+    if metric.is_system:
+        # The Sleep tracker keeps the day's sleep_hours in step, like the old sleep card did
+        DailyData.objects.update_or_create(user_id=user_id, date=day, defaults={'sleep_hours': entry.value})
+
     note = (note or '').strip()
     answers = {k: v for k, v in (entry.data or {}).items() if k != 'previous'}
     # A note or an answer to one of the tracker's questions goes in its journal
@@ -169,6 +173,8 @@ def undo_last(metric, target_date):
         return False
     JournalEntry.objects.filter(metric_entry=entry).delete()
     entry.delete()
+    if metric.is_system:
+        DailyData.objects.filter(user_id=metric.user_id, date=target_date).update(sleep_hours=None)
     sync_metric_habits(metric, target_date)
     return True
 
@@ -235,6 +241,17 @@ def _f(v):
 
 
 # ── Sleep metric and journals ──────────────────────────────
+
+def reminder_time(metric, detail=None):
+    """When the tracker's reminder shows. Sleep defaults to 30 minutes after the day starts."""
+    if metric.remind_at:
+        return metric.remind_at
+    if metric.is_system:
+        from board.days import get_detail
+        start = (detail or get_detail(metric.user_id)).day_start
+        return (datetime.combine(date.today(), start) + timedelta(minutes=30)).time()
+    return None
+
 
 def ensure_sleep_metric(user_id):
     metric = Metric.objects.filter(user_id=user_id, is_system=True, name=SLEEP_METRIC_NAME).first()

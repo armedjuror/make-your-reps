@@ -68,6 +68,17 @@ class ResolveDayTests(Base):
         sat = resolve_day(self.user, date(2026, 11, 7), now=NOW)
         self.assertEqual(sat['template'], 'holiday')
 
+    def test_night_shift_blocks_after_midnight_belong_to_the_same_day(self):
+        from datetime import time as t
+        self.detail.day_start = t(14, 0)   # a night-duty day: 14:00 to 14:00
+        self.detail.save()
+        self.entry('Start shift', 22)
+        self.entry('Break', 2)
+        self.entry('End shift', 6)
+        blocks = resolve_day(self.user, TODAY, now=NOW)['blocks']
+        self.assertEqual([b['title'] for b in blocks], ['Start shift', 'Break', 'End shift'])
+        self.assertEqual(blocks[1]['timestamp'].date(), date(2026, 11, 6))
+
     def test_weekend_days_are_a_user_setting(self):
         self.detail.weekend_days = [4, 5]
         self.detail.save()
@@ -213,24 +224,36 @@ class DayApiTests(Base):
         self.assertIn(f'routine-{h.id}', ids())
         self.assertNotIn(f'routine-{w.id}', ids())
 
-    def test_sleep_reminder_is_the_second_item_of_the_day(self):
-        self.entry('Wake', 5, tier=Tier.ESSENTIAL)
-        self.entry('Office', 9)
+    def test_sleep_card_is_the_sleep_tracker_reminder_half_an_hour_after_day_start(self):
         data = self.client.get('/board/api/timeline/?date=2026-11-05').json()['data']
-        order = [x['id'] for x in sorted(data, key=lambda x: x['timestamp'])]
-        first_two = order[:3]
-        self.assertTrue(any(i.startswith('sleep-tracker-') for i in first_two[1:3]))
-        self.assertLess(order.index('sleep-tracker-2026-11-05'), 3)
+        self.assertFalse(any(x['id'].startswith('sleep-tracker-') for x in data))
+        card = next(x for x in data if x['event_type'] == 'sleep_tracker')
+        self.assertTrue(card['id'].startswith('metric-'))
+        self.assertEqual(timezone.localtime(datetime.fromisoformat(card['timestamp'])).strftime('%H:%M'), '04:30')
+        self.assertIsNone(card['action_response'])
+        self.client.put('/board/api/daily_data/2026-11-05/', {'sleep_hours': 7}, content_type='application/json')
+        data = self.client.get('/board/api/timeline/?date=2026-11-05').json()['data']
+        self.assertTrue(next(x for x in data if x['event_type'] == 'sleep_tracker')['action_response'])
 
-    def test_sleep_and_journal_cards_show_done_once_logged(self):
-        card = lambda prefix: next(x for x in self.client.get('/board/api/timeline/?date=2026-11-05').json()['data']
-                                   if x['id'].startswith(prefix))
-        self.assertIsNone(card('sleep-tracker-')['action_response'])
-        self.assertIsNone(card('journal-reminder-')['action_response'])
-        self.client.put('/board/api/daily_data/2026-11-05/', {'journal': 'Good day', 'sleep_hours': 7},
-                        content_type='application/json')
-        self.assertTrue(card('sleep-tracker-')['action_response'])
-        self.assertTrue(card('journal-reminder-')['action_response'])
+    def test_journal_card_shows_done_once_written(self):
+        card = lambda: next(x for x in self.client.get('/board/api/timeline/?date=2026-11-05').json()['data']
+                            if x['id'].startswith('journal-reminder-'))
+        self.assertIsNone(card()['action_response'])
+        self.client.put('/board/api/daily_data/2026-11-05/', {'journal': 'Good day'}, content_type='application/json')
+        self.assertTrue(card()['action_response'])
+
+    def test_partner_check_follows_habit_reminder_and_nudges_land_15_minutes_later(self):
+        from board.models import AccountabilityPartner, AccountabilityPartnerStatus, TimelineEvent
+        from board.views import _create_partner_habit_entry
+        friend = User.objects.create_user('friend', 'f@x.com', 'pw')
+        h = Habit.objects.create(user=friend, habit='Run', detail='d', identity='i', notify_at=time(18, 30))
+        ap = AccountabilityPartner.objects.create(habit=h, partner=self.user, status=AccountabilityPartnerStatus.ACTIVE)
+        _create_partner_habit_entry(ap, date(2026, 11, 5))
+        ev = TimelineEvent.objects.get(user=self.user, reference__type='monitor')
+        self.assertEqual(timezone.localtime(ev.timestamp).strftime('%H:%M'), '18:30')
+        self.client.post(f'/board/api/accountability_partners/{ap.id}/remind/')
+        nudge = TimelineEvent.objects.get(user=friend, reference__type='reminder')
+        self.assertEqual(nudge.timestamp, NOW + timedelta(minutes=15))
 
     def test_answers_without_a_note_still_reach_the_journal_and_undo_removes_them(self):
         m = self.client.post('/board/api/metrics/', {'name': 'Water', 'kind': 'additive',

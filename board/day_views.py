@@ -395,7 +395,7 @@ def metric_json(metric, request=None):
         'target_light': float(metric.target_light) if metric.target_light is not None else None,
         'quick_steps': [float(x) for x in metric.quick_steps],
         'fields': metric.fields, 'is_private': metric.is_private, 'is_system': metric.is_system,
-        'remind_at': metric.remind_at.strftime('%H:%M') if metric.remind_at else None,
+        'remind_at': (lambda t: t.strftime('%H:%M') if t else None)(mx.reminder_time(metric)),
         'habit_ids': list(Habit.objects.filter(user_id=metric.user_id, metric_id=metric.id).values_list('id', flat=True)),
         'today': float(mx.day_value(metric, today)),
         'today_target': float(target) if target is not None else None,

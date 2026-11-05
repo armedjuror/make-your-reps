@@ -21,10 +21,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredericka+the+Great&family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=JetBrains+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Barlow+Condensed:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=DotGothic16&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'board/css/style.css' %}">
-    <link rel="stylesheet" href="{% static 'board/css/dashboard.css' %}">
-    <link rel="stylesheet" href="{% static 'board/css/share-poster.css' %}">
-    <link rel="stylesheet" href="{% static 'board/css/resilient.css' %}">
+    <link rel="stylesheet" href="{% static 'board/css/style.css' %}?v={{ ASSET_VERSION }}">
+    <link rel="stylesheet" href="{% static 'board/css/dashboard.css' %}?v={{ ASSET_VERSION }}">
+    <link rel="stylesheet" href="{% static 'board/css/share-poster.css' %}?v={{ ASSET_VERSION }}">
+    <link rel="stylesheet" href="{% static 'board/css/resilient.css' %}?v={{ ASSET_VERSION }}">
     <!-- PWA -->
     <link rel="manifest" href="{% static 'manifest.json' %}">
     <meta name="theme-color" content="#98753f">
@@ -1507,27 +1507,27 @@ Write freely here, like you're writing in your personal journal..." id="journal-
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>const HOST = window.location.origin + '/';</script>
-    <script src="{% static 'board/js/utils.js' %}"></script>
-    <script src="{% static 'board/js/notifications.js' %}"></script>
-    <script src="{% static 'board/js/theme.js' %}"></script>
-    <script src="{% static 'board/js/config.js' %}"></script>
-    <script src="{% static 'board/js/habits.js' %}"></script>
-    <script src="{% static 'board/js/todos.js' %}"></script>
-    <script src="{% static 'board/js/pomodoro.js' %}"></script>
-    <script src="{% static 'board/js/dashboard.js' %}"></script>
-    <script src="{% static 'board/js/resilient.js' %}"></script>
-    <script src="{% static 'board/js/trackers.js' %}"></script>
-    <script src="{% static 'board/js/timeline.js' %}"></script>
-    <script src="{% static 'board/js/default-pane.js' %}"></script>
-    <script src="{% static 'board/js/tracker-pane.js' %}"></script>
-    <script src="{% static 'board/js/todos-pane.js' %}"></script>
-    <script src="{% static 'board/js/journals-pane.js' %}"></script>
-    <script src="{% static 'board/js/reading-list.js' %}"></script>
-    <script src="{% static 'board/js/settings.js' %}"></script>
-    <script src="{% static 'board/js/misc.js' %}"></script>
-    <script src="{% static 'board/js/share-poster.js' %}"></script>
-    <script src="{% static 'board/js/gamification.js' %}"></script>
-    <script src="{% static 'board/js/greeting.js' %}"></script>
+    <script src="{% static 'board/js/utils.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/notifications.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/theme.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/config.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/habits.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/todos.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/pomodoro.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/dashboard.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/resilient.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/trackers.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/timeline.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/default-pane.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/tracker-pane.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/todos-pane.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/journals-pane.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/reading-list.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/settings.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/misc.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/share-poster.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/gamification.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/greeting.js' %}?v={{ ASSET_VERSION }}"></script>
     <script>
         (function () {
             const params = new URLSearchParams(window.location.search);
@@ -1556,7 +1556,16 @@ Write freely here, like you're writing in your personal journal..." id="journal-
         // ── Register Service Worker ──
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js', { scope: '/board/' }).catch(() => {});
+                navigator.serviceWorker.register('/sw.js?v={{ ASSET_VERSION }}', { scope: '/board/' })
+                    .then(reg => reg.update()).catch(() => {});
+                // When a new worker takes over, reload once so this page stops using files the old one cached
+                let reloaded = false;
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (reloaded || sessionStorage.getItem('mr_sw_reloaded') === '{{ ASSET_VERSION }}') return;
+                    reloaded = true;
+                    sessionStorage.setItem('mr_sw_reloaded', '{{ ASSET_VERSION }}');
+                    location.reload();
+                });
             });
         }
 

@@ -65,6 +65,23 @@ def _accept_friend_request(freq):
     )
 
 
+def _move_partner_checks(habit):
+    """The habit's reminder moved: move partners' unanswered check cards from today on."""
+    ap_ids = list(AccountabilityPartner.objects.filter(habit=habit).values_list('id', flat=True))
+    if not ap_ids:
+        return
+    events = TimelineEvent.objects.filter(
+        event_type=TimelineEventType.ACCOUNTABILITY_HABIT, reference__model='AccountabilityPartner',
+        reference__id__in=ap_ids, reference__type='monitor', action_response__isnull=True,
+        timestamp__date__gte=timezone.localdate(),
+    )
+    at = partner_check_time(habit)
+    for ev in events:
+        local = timezone.localtime(ev.timestamp)
+        ev.timestamp = timezone.make_aware(datetime.combine(local.date(), at))
+        ev.save(update_fields=['timestamp'])
+
+
 def _clear_partner_habit_events(habit_id):
     """Remove every partner-facing timeline entry tied to this habit (monitor/done/etc)."""
     ap_ids = list(AccountabilityPartner.objects.filter(habit_id=habit_id).values_list('id', flat=True))
@@ -77,12 +94,17 @@ def _clear_partner_habit_events(habit_id):
     ).delete()
 
 
+def partner_check_time(habit):
+    """The partner's check card shows at the habit's own reminder time (08:00 if it has none)."""
+    return habit.notify_at or time(8, 0)
+
+
 def _create_partner_habit_entry(ap, target_date):
     """Create the daily monitoring timeline entry for an accountability partner."""
     if not ap.partner or ap.habit.status != HabitStatus.ACTIVE.value:
         return
     owner_name = ap.habit.user.get_full_name() or ap.habit.user.username
-    timestamp = timezone.make_aware(datetime.combine(target_date, time(8, 0)))
+    timestamp = timezone.make_aware(datetime.combine(target_date, partner_check_time(ap.habit)))
     exists = TimelineEvent.objects.filter(
         user=ap.partner,
         event_type=TimelineEventType.ACCOUNTABILITY_HABIT,
@@ -711,6 +733,8 @@ class HabitViewSet(AuthenticatedModelViewSet):
                 habit.refresh_from_db()
                 if before != (habit.notify_at, list(habit.frequency or []), habit.status):
                     self._resync_today_event(habit)
+                if before[0] != habit.notify_at:
+                    _move_partner_checks(habit)
                 if habit.is_private:
                     # Going private ends any sharing: partners never see private habits.
                     AccountabilityPartner.objects.filter(habit=habit).delete()
@@ -1184,41 +1208,28 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
             from board.day_views import hidden_ids as _hidden_ids
             from board import metrics as _mx
             _, hidden_metrics = _hidden_ids(request, user_id)
-            for m in Metric.objects.filter(user_id=user_id, remind_at__isnull=False, is_system=False).exclude(id__in=hidden_metrics):
-                m_ts = timezone.make_aware(datetime.combine(parsed_date, m.remind_at))
+            _mx.ensure_sleep_metric(user_id)
+            for m in (Metric.objects.filter(user_id=user_id).exclude(id__in=hidden_metrics)
+                      .filter(Q(remind_at__isnull=False) | Q(is_system=True))):
+                m_time = _mx.reminder_time(m, detail)
+                if m_time is None:
+                    continue
+                m_ts = timezone.make_aware(datetime.combine(parsed_date, m_time))
                 logged = _mx.day_value(m, parsed_date) > 0
                 data.append({
                     'id': f'metric-{m.id}-{parsed_date}',
                     'timestamp': m_ts.isoformat(),
-                    'event_type': TimelineEventType.TEXT,
-                    'event': f'Log {m.name}',
+                    'event_type': TimelineEventType.SLEEP_TRACKER if m.is_system else TimelineEventType.TEXT,
+                    'event': 'Good morning! How did you sleep last night?' if m.is_system else f'Log {m.name}',
                     'reference': {'model': 'Metric', 'id': m.id},
                     'action': None if logged else {'metric': ['log']},
                     'action_response': {'metric': 'logged'} if logged else None,
                     'created_at': m_ts.isoformat(), 'updated_at': m_ts.isoformat(),
                 })
 
-            # Inject the sleep tracker reminder
-            # Placed right after the day's first item (second item of the day); 07:00 on an empty day
-            from django.utils.dateparse import parse_datetime
-            _stamps = sorted(t for t in (parse_datetime(str(d['timestamp'])) for d in data) if t)
-            sleep_track_ts = (_stamps[0] + timedelta(seconds=1)) if _stamps \
-                else timezone.make_aware(datetime.combine(parsed_date, time(7, 0)))
-            # Already logged? Then the card shows as done (sleep for a day is logged that morning)
+            # Journal card is done once the day has a journal entry
             _dd = DailyData.objects.filter(user_id=user_id, date=parsed_date).first()
-            _slept = bool(_dd and _dd.sleep_hours) or _mx.day_value(_mx.ensure_sleep_metric(user_id), parsed_date) > 0
             _journaled = bool(_dd and (_dd.journal or '').strip())
-            data.append({
-                'id': f'sleep-tracker-{parsed_date}',
-                'timestamp': sleep_track_ts.isoformat(),
-                'event_type': TimelineEventType.SLEEP_TRACKER,
-                'event': "Good morning! How many hours did you sleep last night?",
-                'reference': None,
-                'action': {'log_sleep': [True, False]},
-                'action_response': {'log_sleep': True} if _slept else None,
-                'created_at': sleep_track_ts.isoformat(),
-                'updated_at': sleep_track_ts.isoformat(),
-            })
 
             # Inject system reminders computed from user settings
             user_detail = UserDetail.objects.filter(user_id=user_id).first()
@@ -1786,7 +1797,8 @@ class AccountabilityPartnerViewSet(AuthenticatedModelViewSet):
         partner_name = partner.get_full_name() or partner.username
         TimelineEvent.objects.create(
             user=ap.habit.user,
-            timestamp=timezone.now(),
+            # Shows 15 minutes after the partner taps Remind
+            timestamp=timezone.now() + timedelta(minutes=15),
             event_type=TimelineEventType.ACCOUNTABILITY_HABIT,
             event=f"{partner_name} reminded you to: {ap.habit.habit}",
             reference={'model': 'AccountabilityPartner', 'id': ap.id, 'type': 'reminder'},
