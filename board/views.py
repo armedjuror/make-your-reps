@@ -1198,8 +1198,12 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
                     'created_at': m_ts.isoformat(), 'updated_at': m_ts.isoformat(),
                 })
 
-            # Inject sleep tracker reminder at 7:00 AM
-            sleep_track_ts = timezone.make_aware(datetime.combine(parsed_date, time(7, 0)))
+            # Inject the sleep tracker reminder
+            # Placed right after the day's first item (second item of the day); 07:00 on an empty day
+            from django.utils.dateparse import parse_datetime
+            _stamps = sorted(t for t in (parse_datetime(str(d['timestamp'])) for d in data) if t)
+            sleep_track_ts = (_stamps[0] + timedelta(seconds=1)) if _stamps \
+                else timezone.make_aware(datetime.combine(parsed_date, time(7, 0)))
             data.append({
                 'id': f'sleep-tracker-{parsed_date}',
                 'timestamp': sleep_track_ts.isoformat(),

@@ -213,6 +213,15 @@ class DayApiTests(Base):
         self.assertIn(f'routine-{h.id}', ids())
         self.assertNotIn(f'routine-{w.id}', ids())
 
+    def test_sleep_reminder_is_the_second_item_of_the_day(self):
+        self.entry('Wake', 5, tier=Tier.ESSENTIAL)
+        self.entry('Office', 9)
+        data = self.client.get('/board/api/timeline/?date=2026-11-05').json()['data']
+        order = [x['id'] for x in sorted(data, key=lambda x: x['timestamp'])]
+        first_two = order[:3]
+        self.assertTrue(any(i.startswith('sleep-tracker-') for i in first_two[1:3]))
+        self.assertLess(order.index('sleep-tracker-2026-11-05'), 3)
+
     def test_checkin_disappears_once_a_day_is_chosen(self):
         self.client.put('/board/api/day_plans/2026-11-05/', {'mode': 'normal', 'source': 'checkin'},
                         content_type='application/json')
