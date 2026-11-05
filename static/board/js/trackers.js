@@ -79,7 +79,6 @@ const Trackers = {
                 <div class="tracker-head">
                     <h5>${esc(m.name)}${m.is_private ? ' <i class="fas fa-lock small"></i>' : ''}</h5>
                     <span class="d-inline-flex gap-1">
-                        <button type="button" class="btn btn-paper btn-sm" data-tr="journal" data-metric="${m.id}" title="${esc(m.name)} journal" aria-label="${esc(m.name)} journal"><i class="fas fa-book"></i></button>
                         <button type="button" class="btn btn-paper btn-sm" data-tr="edit" data-metric="${m.id}" aria-label="Edit ${esc(m.name)}"><i class="fa fa-cog"></i></button>
                     </span>
                 </div>
@@ -379,8 +378,7 @@ const Trackers = {
         if (!items.length) {
             box.innerHTML = `<h3 class="section-title mt-4 mb-2">From your trackers</h3>
                 <p class="tracker-empty">Nothing from your trackers on this day. When you log a tracker, answer its questions or add a note
-                and it shows up here. Each tracker&rsquo;s full journal is under the
-                <i class="fas fa-book"></i> button on its card in Habits.</p>`;
+                and it shows up here.</p>`;
             return;
         }
         const groups = {};

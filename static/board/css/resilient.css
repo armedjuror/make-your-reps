@@ -48,7 +48,7 @@ select.form-control option { background: var(--surface-raised, var(--paper-bg));
 .rs-scroll { max-height: 140px; overflow: auto; padding-right: 4px; }
 
 /* ── Trackers grid ── */
-.tracker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.tracker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: 16px; }
 .tracker-card {
     border: 1px solid rgba(var(--accent-rgb), .45); border-radius: var(--radius-md, 10px);
     padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; color: var(--ink-black);
@@ -65,7 +65,9 @@ select.form-control option { background: var(--surface-raised, var(--paper-bg));
 .tracker-empty { color: var(--ink-gray); font-size: .9rem; padding: 8px 0; }
 
 /* ── Lock button ── */
-#rs-lock-icon { position: fixed; right: 14px; bottom: 14px; z-index: 900; width: 36px; height: 36px; padding: 0; border-radius: 50%; }
+/* Above the page's fades and the footer pill, below Bootstrap modals (1050) */
+#rs-lock-icon { position: fixed; right: 14px; bottom: 14px; z-index: 1045; width: 36px; height: 36px; padding: 0; border-radius: 50%;
+    background: var(--surface-raised, var(--paper-bg)); }
 
 /* ── Settings: weekend picker reuses .freq-day-btn ── */
 #rs-settings .freq-days { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -140,11 +142,7 @@ select.form-input option { background: var(--surface-raised, var(--paper-bg)); c
 .timeline-item .timeline-time, .timeline-now .timeline-time {
     flex: 0 0 6.6rem; width: 6.6rem; min-width: 0; text-align: right; line-height: 1.35; white-space: normal;
 }
-body[data-clock="24h"] .timeline-item .timeline-time, body[data-clock="24h"] .timeline-now .timeline-time { flex-basis: 6.6rem; width: 6.6rem; }
 .timeline-item .timeline-icon { flex-shrink: 0; }
-@media (max-width: 600px) {
-    .timeline-item .timeline-time, .timeline-now .timeline-time { flex-basis: 4.6rem; width: 4.6rem; font-size: .72rem; }
-}
 
 /* First-run setup */
 .rs-setup-page .rs-pick { margin: 6px 0 14px; gap: 8px; }
@@ -168,3 +166,25 @@ body[data-clock="24h"] .timeline-item .timeline-time, body[data-clock="24h"] .ti
 /* Row content fills the line (the extension's dashboard.css has this rule commented
    out), so actions sit at the right end and the highlighted card spans the row. */
 .timeline-item .timeline-content { flex: 1 1 auto; min-width: 0; }
+
+
+/* ── Phones and tablets ── */
+@media (max-width: 1200px) {
+    /* Day chips centred under the date */
+    #day-bar { justify-content: center; }
+    .timeline-bar { justify-content: center; }
+    /* Bookmarks on Today are for opening; adding and editing live on the Reading list page */
+    .bookmark-strip .rl-edit-btn, .bookmark-strip .reading-list-add-btn { display: none !important; }
+    /* Clear the bottom tab bar */
+    #rs-lock-icon { bottom: 72px; }
+    /* Trackers use the full width (the pane was capped at 80% with 40px section margins) */
+    #pane-trackers > .container-fluid { max-width: 100%; padding-left: 4px; padding-right: 14px; }
+    #pane-trackers .section { margin-left: 0; margin-right: 0; }
+}
+@media (max-width: 600px) {
+    /* A narrower time column (a range wraps after the dash) leaves the room for the text */
+    .timeline-item .timeline-time, .timeline-now .timeline-time { flex-basis: 3.7rem; width: 3.7rem; font-size: .7rem; }
+    .timeline-item { gap: 8px; padding-left: 0; padding-right: 0; }
+    .timeline-item .timeline-icon { width: 24px; height: 24px; }
+    .tl-line { gap: 4px 8px; }
+}

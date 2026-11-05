@@ -530,7 +530,7 @@ const Resilient = {
         const ov = this.dialog(`Log ${m.name}`,
             this.lead(m.kind === 'counter' ? `Logging one more ${name}.` : `Let&rsquo;s log your ${name}.`) +
             this.say(first, ...fields, { html: `and a note: <input id="rs-m-note" type="text" maxlength="280" class="form-input" placeholder="optional">`,
-                                         msg: `Notes and answers go to your ${this.esc(m.name)} journal: the book button on its card, or the Journal pane.` }), [
+                                         msg: `Notes and answers go to your ${this.esc(m.name)} journal, in the Journal pane.` }), [
             { label: 'Cancel' },
             { label: 'Log', primary: true, run: async (o) => {
                 const data = {};
@@ -935,3 +935,12 @@ document.addEventListener('shown.bs.modal', (e) => {
         Resilient.convo(f, { revealAll: f.dataset.rsReveal === 'filled' && Resilient._textInputs(f).some(i => i.value.trim()) });
     });
 });
+
+// On phones and tablets the body is overflow:hidden and each pane scrolls on its
+// own. scrollIntoView() and focusing a field can still scroll the body itself,
+// which pushed everything (bookmarks, greeting) under the top bar until a reload.
+// Put it back whenever that happens.
+window.addEventListener('scroll', () => {
+    const root = document.scrollingElement;
+    if (root && root.scrollTop && getComputedStyle(document.body).overflowY === 'hidden') root.scrollTop = 0;
+}, { passive: true });

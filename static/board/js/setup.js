@@ -161,7 +161,7 @@ const Tour = {
         { pane: 'home', sel: '[data-rs="slip"]', title: 'Slipped up?', text: 'Tap this when you give in to something you&rsquo;re cutting down on. It stays private and brings up a short reset, so the day still counts.' },
         { pane: 'home', sel: '[data-rs="travel"]', title: 'Off days', text: 'Night shift, travel, feeling unwell? Mark it as an off day. Your streak stays safe and the reason goes in your journal.' },
         { pane: 'trackers', sel: '#habitTracker', title: 'Your habits', text: 'Tap a day to tick it off. The cog opens steps, reminders, hard-day rules and accountability partners.' },
-        { pane: 'trackers', sel: '#trackerGrid', title: 'Trackers', text: 'Keep count of things like water or coffee and see the trend. Sleep and Slips are built in; the book button shows each tracker&rsquo;s notes.' },
+        { pane: 'trackers', sel: '#trackerGrid', title: 'Trackers', text: 'Keep count of things like water or coffee and see the trend. Sleep and Slips are built in, and notes you log show up in your journal.' },
         { pane: 'journals', sel: '.journal-editor-section', title: 'Journal', text: 'Write a few lines each day. Notes from your trackers and off days show up here too.' },
         { pane: 'home', sel: '#search-input', title: 'Private items', text: 'Type /private here (or press Ctrl+Shift+L) to show or hide private habits, trackers and journals.' },
         { pane: 'home', sel: null, title: 'That&rsquo;s it', text: 'Settings are under More. You can replay this tour from Help any time.' },
@@ -199,7 +199,7 @@ const Tour = {
         const target = s.sel ? document.querySelector(s.sel) : null;
         if (s.sel && (!target || !target.offsetParent)) return this.go(i + 1);   // not on this page: skip it
         this.target = target;
-        if (target) target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        if (target) this._scrollTo(target);
         const last = i === this.STEPS.length - 1;
         this.box.innerHTML = `<div class="rs-tour-head">${s.title}</div><div class="rs-tour-text">${s.text}</div>
             <div class="rs-tour-foot"><span class="rs-tour-count">${i + 1} of ${this.STEPS.length}</span>
@@ -208,6 +208,23 @@ const Tour = {
                 <button type="button" class="btn btn-paper btn-sm btn-primary" data-tour="${last ? 'end' : 'next'}">${last ? 'Done' : 'Next'}</button></span></div>`;
         setTimeout(() => this.place(), 320);
         this.place();
+    },
+
+    /** Bring the target into view by scrolling its own scroller (the pane), not the page. */
+    _scrollTo(el) {
+        let sc = el.parentElement;
+        while (sc && sc !== document.body) {
+            const oy = getComputedStyle(sc).overflowY;
+            if ((oy === 'auto' || oy === 'scroll') && sc.scrollHeight > sc.clientHeight) break;
+            sc = sc.parentElement;
+        }
+        const r = el.getBoundingClientRect();
+        if (sc && sc !== document.body) {
+            const top = sc.scrollTop + r.top - sc.getBoundingClientRect().top - sc.clientHeight / 3;
+            sc.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+        } else {
+            window.scrollTo({ top: Math.max(0, window.scrollY + r.top - window.innerHeight / 3), behavior: 'smooth' });
+        }
     },
 
     place() {

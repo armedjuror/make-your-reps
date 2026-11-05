@@ -127,7 +127,9 @@ const Theme = {
         switchPane('settings');
         const tab = document.querySelector('#settingsPaneTabs a[href="#sp-appearance"]');
         if (tab && typeof bootstrap !== 'undefined') bootstrap.Tab.getOrCreateInstance(tab).show();
-        const target = document.getElementById('sp-appearance') || document.getElementById('theme-picker');
-        if (target) setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+        // Scroll the settings pane, never the page: scrollIntoView also scrolled the
+        // overflow:hidden body on phones and left everything under the top bar.
+        const pane = document.getElementById('pane-settings');
+        if (pane) pane.scrollTop = 0;
     },
 };
