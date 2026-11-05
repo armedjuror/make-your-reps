@@ -604,8 +604,7 @@ class DailyDataViewSet(NoDestroyViewSet):
                 mx.sync_sleep(uid, target_date, obj.sleep_hours)
             if 'journal' in request.data:
                 mx.sync_default_journal(uid, target_date, serializer.data.get('journal'))
-                if now_journal:
-                    mx.mark_journal_habit(uid, target_date)
+                mx.sync_journal_habit(uid, target_date, serializer.data.get('journal'))
             if not had_journal and now_journal:
                 update_daily_streak(uid)
                 gamification_result = award_points(uid, 'journal')
@@ -1254,6 +1253,11 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
                 journal_ts = timezone.make_aware(datetime.combine(parsed_date, time(21, 0)))
                 sleep_ts = None
 
+            # The journaling habit's own reminder time wins over the default
+            _jh = user_detail.journal_habit if user_detail and user_detail.journal_habit_id else None
+            if _jh and _jh.notify_at:
+                journal_ts = timezone.make_aware(datetime.combine(parsed_date, _jh.notify_at))
+            _journaled = bool(_dd and _mx.personal_journal_text(_dd.journal))
             data.append({
                 'id': f'journal-reminder-{parsed_date}',
                 'timestamp': journal_ts.isoformat(),

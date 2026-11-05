@@ -594,7 +594,7 @@ const Resilient = {
         const on = !!(this.privateState.has_pin && this.privateState.unlocked);
         bar.classList.toggle('rs-private', on);
         tag.hidden = !on;
-        tag.innerHTML = '<i class="fas fa-lock-open me-1"></i> Private mode is on &middot; tap to turn it off';
+        tag.innerHTML = '<i class="fas fa-lock-open"></i><span class="rs-fp-text">Private mode is on &middot; tap to turn it off</span>';
     },
 
     async _afterPrivacyChange() {
@@ -690,6 +690,12 @@ const Resilient = {
         if (!modal || modal.dataset.rsBound) return;
         modal.dataset.rsBound = '1';
         modal.addEventListener('shown.bs.modal', () => this.renderHabitOptions());
+        // Partner section: pick from your friends instead of typing an email
+        const partners = document.getElementById('partnerSection');
+        if (partners && typeof MutationObserver !== 'undefined') {
+            new MutationObserver(() => { if (partners.style.display !== 'none') this.renderFriendPicker(); })
+                .observe(partners, { attributes: true, attributeFilter: ['style'] });
+        }
         modal.addEventListener('change', (e) => {
             const el = e.target.closest('[data-hopt]');
             if (el) this._saveHabitOption(el);
@@ -748,6 +754,33 @@ const Resilient = {
         resizeInputs(box);
         const input = box.querySelector('#rs-new-step');
         input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); box.querySelector('[data-hstep="add"]').click(); } });
+    },
+
+    async renderFriendPicker() {
+        const section = document.getElementById('partnerSection');
+        const assign = section && section.querySelector('.assign-partner');
+        if (!assign) return;
+        let box = document.getElementById('rs-friend-pick');
+        if (!box) {
+            box = document.createElement('div');
+            box.id = 'rs-friend-pick';
+            box.className = 'mb-3';
+            assign.parentElement.insertBefore(box, assign);
+            box.addEventListener('click', (e) => {
+                const b = e.target.closest('[data-friend-email]');
+                if (!b || typeof assignPartner !== 'function') return;
+                document.getElementById('partnerEmail').value = b.dataset.friendEmail;
+                assignPartner();
+            });
+            const label = assign.querySelector('.form-label');
+            if (label) label.textContent = 'Or invite someone by email:';
+        }
+        const res = await apiClient.get('board/api/friends/', { silent: true });
+        const friends = res.status === 'success' ? res.data : [];
+        box.innerHTML = friends.length
+            ? `<label class="form-label">Pick a friend:</label>
+               <div class="freq-days">${friends.map(f => `<button type="button" class="freq-day-btn" data-friend-email="${this.esc(f.friend_email)}" title="${this.esc(f.friend_email)}">${this.esc(f.friend_name || f.friend_username || f.friend_email)}</button>`).join('')}</div>`
+            : '<div class="form-text">No friends yet. Add friends from More &rarr; Friends, or invite someone by email below.</div>';
     },
 
     async _toggleHabitDay(btn) {

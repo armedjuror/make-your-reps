@@ -125,7 +125,13 @@ select.form-input option { background: var(--surface-raised, var(--paper-bg)); c
 
 /* Private mode notice in the footer bar (replaces the copyright while on) */
 #footer-bar.rs-private #footer-copyright { display: none !important; }
-#footer-private { background: none; border: 0; padding: 0; font: inherit; color: var(--ink-brown); cursor: pointer; }
+#footer-bar.rs-private { align-items: center; gap: 10px; }
+#footer-private { display: inline-flex; align-items: center; gap: 6px; background: none; border: 0; padding: 0;
+    font: inherit; color: var(--ink-brown); cursor: pointer; white-space: nowrap; }
+/* With the focus timer showing too, the notice shrinks to a lock icon beside it */
+#footer-bar.rs-private:has(#footer-pomodoro:not([style*="none"])) #footer-private .rs-fp-text { display: none; }
+#footer-bar.rs-private:has(#footer-pomodoro:not([style*="none"])) #footer-private {
+    padding-right: 10px; border-right: 1px solid rgba(var(--accent-rgb), .35); }
 #footer-private:hover { text-decoration: underline; }
 #footer-private[hidden] { display: none; }
 

@@ -311,16 +311,30 @@ def sync_sleep(user_id, target_date, hours):
         MetricEntry.objects.create(metric=metric, date=target_date, at=at, value=Decimal(str(hours)))
 
 
-def mark_journal_habit(user_id, target_date):
-    """Writing the day's journal marks the habit chosen in Settings as done."""
+def personal_journal_text(text):
+    """The journal minus the lines the app adds itself (off days), i.e. what you wrote."""
+    return '\n'.join(l for l in (text or '').splitlines() if not l.startswith('Off day:')).strip()
+
+
+def sync_journal_habit(user_id, target_date, text):
+    """
+    The habit chosen in Settings follows your own journal for the day: done once
+    you've written something, undone if you clear it again.
+    """
     from board.days import get_detail
     habit_id = get_detail(user_id).journal_habit_id
     if not habit_id:
-        return
-    log, _ = HabitLog.objects.get_or_create(habit_id=habit_id, date=target_date)
-    if not log.is_done:
+        return None
+    wrote = bool(personal_journal_text(text))
+    log = HabitLog.objects.filter(habit_id=habit_id, date=target_date).first()
+    if wrote and not (log and log.is_done):
+        log = log or HabitLog(habit_id=habit_id, date=target_date)
         log.is_done = True
+        log.save()
+    elif not wrote and log and log.is_done:
+        log.is_done = False
         log.save(update_fields=['is_done'])
+    return wrote
 
 
 OFF_REASONS = {

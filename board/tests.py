@@ -257,11 +257,20 @@ class DayApiTests(Base):
         self.client.post('/board/api/private/unlock/', {'pin': '4821'}, content_type='application/json')
         self.assertEqual(self.client.delete(f'/board/api/metrics/{slip.id}/').status_code, 400)   # built in
 
-    def test_writing_the_journal_marks_the_journaling_habit_done(self):
-        h = Habit.objects.create(user=self.user, habit='Journal', detail='d', identity='i')
+    def test_journaling_habit_follows_your_own_journal_and_sets_the_reminder_time(self):
+        h = Habit.objects.create(user=self.user, habit='Journal', detail='d', identity='i', notify_at=time(21, 45))
         self.client.put('/board/api/user_details/', {'journal_habit': h.id}, content_type='application/json')
-        self.client.put('/board/api/daily_data/2026-11-05/', {'journal': 'Good day'}, content_type='application/json')
-        self.assertTrue(HabitLog.objects.get(habit=h, date=date(2026, 11, 5)).is_done)
+        put = lambda text: self.client.put('/board/api/daily_data/2026-11-05/', {'journal': text}, content_type='application/json')
+        done = lambda: HabitLog.objects.filter(habit=h, date=date(2026, 11, 5), is_done=True).exists()
+        put('Off day: Night shift')          # only the line the app adds: not your journal yet
+        self.assertFalse(done())
+        put('Off day: Night shift\n\nQuiet shift, read a lot.')
+        self.assertTrue(done())
+        put('')                              # cleared again: the habit is undone
+        self.assertFalse(done())
+        card = next(x for x in self.client.get('/board/api/timeline/?date=2026-11-05').json()['data']
+                    if x['id'].startswith('journal-reminder-'))
+        self.assertEqual(timezone.localtime(datetime.fromisoformat(card['timestamp'])).strftime('%H:%M'), '21:45')
 
     def test_setup_questions_create_habits_trackers_and_a_starter_routine(self):
         from board.models import RoutineEntry

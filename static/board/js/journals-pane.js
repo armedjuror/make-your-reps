@@ -181,6 +181,11 @@ function updateJournal() {
             JournalPane.renderCalendar();
             General.loadProductivityScore();
             if (typeof Resilient !== 'undefined') Resilient.refreshSoon();
+            // The journaling habit follows the journal, so its tick may have changed
+            if (AppConfig.userDetail && AppConfig.userDetail.journal_habit && typeof loadHabits === 'function') {
+                clearTimeout(JournalPane._habitsSoon);
+                JournalPane._habitsSoon = setTimeout(loadHabits, 1500);
+            }
             if (statusEl) {
                 statusEl.textContent = 'Saved';
                 statusEl.className = 'journal-save-status saved';
