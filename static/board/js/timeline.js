@@ -267,7 +267,7 @@ const Timeline = {
         const latest = past.length ? past[past.length - 1] : null;
         const folded = past.slice(0, -1);
         if (folded.length) {
-            const pending = folded.filter(e => e.action && !e.action_response).length;
+            const pending = folded.filter(e => this._isUndone(e)).length;
             const names = folded.slice(-6).map(e => this.esc(e.event)).join(' &middot; ');
             html += `
                 <div class="tl-earlier ${this.showEarlier ? 'open' : ''}">
@@ -398,6 +398,19 @@ const Timeline = {
         this.reschedTarget = null;
         this.render();
         if (typeof TodosPane !== 'undefined' && panesLoaded?.todos) TodosPane.loadTodos();
+    },
+
+    /**
+     * Something you could have marked done and didn't: a routine block, a habit,
+     * a task, the journal, a tracker log or the reset card. Meetings, partner
+     * check-ins, invites and info cards have buttons but nothing to complete.
+     */
+    _isUndone(e) {
+        if (e.action_response) return false;
+        if (e.event_type === 'routine') return e.status === 'pending' || e.status === 'missed';
+        const id = String(e.id);
+        if (id.startsWith('reset-') || /^metric-\d+-/.test(id)) return !!e.action;
+        return ['habit', 'todo', 'journal'].includes(e.event_type) && !!e.action;
     },
 
     _isOverdue(e) {
