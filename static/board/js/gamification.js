@@ -31,12 +31,14 @@ const Gamification = {
         const res = await apiClient.get('board/api/habits/?status=completed');
         if (res.status !== 'success') { el.innerHTML = '<p class="text-muted small">Could not load.</p>'; return; }
         const habits = res.data;
+        this._hallmarks = habits;
         if (habits.length === 0) {
             el.innerHTML = '<p class="small" style="color:var(--ink-gray);opacity:0.6;">No hallmarked habits yet. Keep building!</p>';
             return;
         }
         el.innerHTML = `<div class="hallmark-chips">${habits.map(h => `
             <div class="hallmark-chip">
+                <button type="button" class="sp-share-btn sp-share-corner" data-share="hallmark" data-habit-id="${h.id}" title="Share this habit" aria-label="Share this habit"><i class="fas fa-share-nodes"></i></button>
                 <i class="fas fa-award hallmark-chip-icon"></i>
                 <div class="hallmark-chip-body">
                     <div class="hallmark-chip-name">Your habit to <h6>${h.habit}</h6> inorder to become <h6>${h.identity}</h6> if formed!</div>
@@ -74,6 +76,8 @@ const Gamification = {
     renderProductivityChart(history) {
         const canvas = document.getElementById('productivityScoreChart');
         if (!canvas) return;
+        this._history = history;
+        const shareable = (i) => history[i] && history[i].score >= 7;
 
         const labels = history.map(d => {
             const dt = new Date(d.date + 'T00:00:00');
@@ -105,6 +109,13 @@ const Gamification = {
                 responsive: true,
                 animation: { duration: 400 },
                 maintainAspectRatio: false,
+                onHover: (evt, els) => {
+                    const on = els.length > 0 && shareable(els[0].index);
+                    if (evt.native && evt.native.target) evt.native.target.style.cursor = on ? 'pointer' : 'default';
+                },
+                onClick: (evt, els) => {
+                    if (els.length && shareable(els[0].index)) this.shareDay(history[els[0].index]);
+                },
                 plugins: {
                     legend: { display: false },
                     tooltip: {
@@ -177,6 +188,7 @@ const Gamification = {
         const dateStr = a.unlocked_at ? new Date(a.unlocked_at).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'}) : '';
         return `
             <div class="${cls}" title="${a.description}">
+                ${a.unlocked ? `<button type="button" class="sp-share-btn sp-share-corner" data-share="achievement" data-key="${a.key}" title="Share this badge" aria-label="Share this badge"><i class="fas fa-share-nodes"></i></button>` : ''}
                 <div class="ach-badge-icon"><i class="${a.icon}"></i></div>
                 <div class="ach-badge-name">${a.name}</div>
                 <div class="ach-badge-desc">${a.description}</div>
@@ -198,6 +210,135 @@ const Gamification = {
         this.load();
     },
 
+    // ───────────── Share the victory ─────────────
+
+    _dateLabel(iso) {
+        const d = iso ? new Date(iso.length <= 10 ? iso + 'T00:00:00' : iso) : new Date();
+        return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    },
+
+    achievementSpec(a) {
+        return {
+            kind: 'achievement', tag: a.key,
+            label: 'Achievement unlocked', title: a.name, subtitle: a.description, icon: a.icon,
+            stats: this.data ? [`Level ${this.data.level}`, `${this.data.current_streak}-day streak`] : [],
+            dateLabel: this._dateLabel(a.unlocked_at),
+            shareText: `I just unlocked "${a.name}" on Make Your Reps.`,
+        };
+    },
+
+    daySpec(date, d) {
+        const b = d.breakdown || {};
+        const perfect = d.total >= 10;
+        const stats = [];
+        if (b.habits_due || b.habits_done) stats.push(`${b.habits_done}/${Math.max(b.habits_due, b.habits_done)} habits`);
+        if (b.todos_due || b.todos_done) stats.push(`${b.todos_done} task${b.todos_done === 1 ? '' : 's'} done`);
+        if (b.journaled) stats.push('Journaled');
+        if (b.sleep_logged) stats.push('Sleep logged');
+        return {
+            kind: perfect ? 'perfect_day' : 'day_score', tag: date,
+            label: perfect ? 'Perfect day' : 'Productivity score',
+            title: `${d.total}/10`,
+            subtitle: perfect ? 'Every rep counted today.' : 'Another day of showing up.',
+            icon: perfect ? 'fas fa-crown' : 'fas fa-chart-line',
+            stats, dateLabel: this._dateLabel(date),
+            shareText: perfect ? 'A perfect 10/10 day on Make Your Reps.' : `Scored ${d.total}/10 today on Make Your Reps.`,
+        };
+    },
+
+    async dayData(date) {
+        const res = await apiClient.get(`board/api/productivity_score/?date=${date}`, { silent: true });
+        return res && res.status === 'success' ? res.data : null;
+    },
+
+    async shareDay(point) {
+        if (typeof SharePoster === 'undefined' || !point) return;
+        const d = await this.dayData(point.date);
+        SharePoster.open(this.daySpec(point.date, d || { total: point.score, breakdown: {} }));
+    },
+
+    streakSpec() {
+        const d = this.data;
+        return {
+            kind: 'streak', tag: String(d.current_streak),
+            label: 'Day streak', title: String(d.current_streak),
+            subtitle: d.current_streak === 1 ? 'day in a row, and counting.' : 'days in a row, and counting.',
+            icon: 'fas fa-fire', stats: [`Best: ${d.longest_streak} days`, `Level ${d.level}`],
+            shareText: `${d.current_streak}-day streak on Make Your Reps.`,
+        };
+    },
+
+    levelSpec() {
+        const d = this.data;
+        return {
+            kind: 'level', tag: String(d.level),
+            label: `Level ${d.level}`, title: d.level_name,
+            subtitle: `${d.total_points.toLocaleString()} points earned`,
+            icon: 'fas fa-bolt', stats: [`${d.unlocked_count}/${d.total_count} badges`, `${d.current_streak}-day streak`],
+            shareText: `I'm a "${d.level_name}" (level ${d.level}) on Make Your Reps.`,
+        };
+    },
+
+    hallmarkSpec(h) {
+        const st = h.stats || {};
+        return {
+            kind: 'hallmark', tag: String(h.id),
+            label: 'Habit formed', title: h.habit,
+            subtitle: h.identity ? `Becoming ${h.identity}` : '',
+            icon: 'fas fa-award',
+            stats: [`${st.total_reps || 0} reps`, `Best streak ${st.max_streak || 0}`],
+            shareText: `I formed a habit on Make Your Reps: ${h.habit}.`,
+        };
+    },
+
+    async celebrateAchievements(list) {
+        await this.load();                       // refresh so descriptions and level are current
+        for (const a of list) {
+            const full = (this.data && this.data.achievements || []).find(x => x.key === a.key) || a;
+            SharePoster.celebrate(this.achievementSpec({ ...full, unlocked_at: new Date().toISOString() }), {
+                heading: 'Achievement unlocked!',
+                message: `You earned "${a.name}"${a.points ? ` (+${a.points} pts)` : ''}. Show it off?`,
+            });
+        }
+    },
+
+    /** Called with today's score: congratulate (once per day) on a real 10/10. */
+    checkPerfectDay(score) {
+        if (typeof SharePoster === 'undefined' || !score || score.total < 10) return;
+        const b = score.breakdown || {};
+        if (!(b.habits_done > 0 || b.todos_done > 0)) return;   // a 10 earned by doing nothing isn't a win
+        const today = new Date();
+        const key = `mr_perfect_day_${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+        try { if (localStorage.getItem(key)) return; localStorage.setItem(key, '1'); } catch (e) { /* show anyway */ }
+        const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        SharePoster.celebrate(this.daySpec(iso, score), {
+            heading: 'A perfect 10/10 day!',
+            message: 'Habits, tasks, journal and sleep, all done. That deserves a poster.',
+        });
+    },
+
+    bindShareClicks() {
+        if (this._shareBound) return;
+        this._shareBound = true;
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-share]');
+            if (!btn || typeof SharePoster === 'undefined') return;
+            e.preventDefault(); e.stopPropagation();
+            const kind = btn.dataset.share;
+            if (kind === 'achievement') {
+                const a = (this.data && this.data.achievements || []).find(x => x.key === btn.dataset.key);
+                if (a) SharePoster.open(this.achievementSpec(a));
+            } else if (kind === 'streak' && this.data) {
+                SharePoster.open(this.streakSpec());
+            } else if (kind === 'level' && this.data) {
+                SharePoster.open(this.levelSpec());
+            } else if (kind === 'hallmark') {
+                const h = (this._hallmarks || []).find(x => String(x.id) === btn.dataset.habitId);
+                if (h) SharePoster.open(this.hallmarkSpec(h));
+            }
+        });
+    },
+
     showFloatingPoints(pts) {
         const container = document.getElementById('gami-float-container');
         const el = document.createElement('div');
@@ -211,6 +352,7 @@ const Gamification = {
     },
 
     showAchievementToasts(achievements) {
+        if (typeof SharePoster !== 'undefined') { this.celebrateAchievements(achievements); return; }
         let delay = 0;
         for (const a of achievements) {
             setTimeout(() => this._showOneToast(a), delay);
@@ -238,6 +380,7 @@ const Gamification = {
     document.addEventListener('gamification', (e) => {
         Gamification.handleResult(e.detail);
     });
+    Gamification.bindShareClicks();
 })();
 
 // Initialize on DOMContentLoaded (after AppConfig loads)

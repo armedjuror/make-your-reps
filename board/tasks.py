@@ -145,6 +145,7 @@ def _generate_accountability_partner_events(user, today):
     partnerships = AccountabilityPartner.objects.filter(
         partner=user,
         status=AccountabilityPartnerStatus.ACTIVE,
+        habit__status=HabitStatus.ACTIVE.value,
     ).select_related('habit__user')
 
     for ap in partnerships:
