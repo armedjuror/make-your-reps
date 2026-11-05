@@ -106,6 +106,8 @@ const RoutineEditor = {
             if (res.status === 'success') {
                 bootstrap.Modal.getInstance(document.getElementById('routineModal')).hide();
                 loadRoutines();
+                // The timeline is built from the routine, so show the new blocks right away
+                if (typeof Resilient !== 'undefined') Resilient._refresh();
                 showSuccess(res.message || 'Routine saved!');
             } else {
                 showError(res.error);
