@@ -801,9 +801,11 @@ class PrivacyTests(Base):
         self.assertEqual(self.names(), ['Read'])
 
     def test_unlock_expires_after_the_window(self):
+        import time as _time
         self.unlock()
-        later = NOW + timedelta(minutes=11)
-        with mock.patch('time.time', return_value=later.timestamp()):
+        # The unlock window runs on the real clock, so check against it (not the frozen NOW)
+        later = _time.time() + 11 * 60
+        with mock.patch('time.time', return_value=later):
             self.assertEqual(self.names(), ['Read'])
 
     def test_five_wrong_pins_lock_unlocking_for_fifteen_minutes(self):
