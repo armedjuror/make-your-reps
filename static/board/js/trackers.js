@@ -136,23 +136,64 @@ const Trackers = {
         return label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 30) || 'field';
     },
 
-    _fieldsToText(fields) {
-        return (fields || []).map(f => f.type === 'choice' ? `${f.label}: ${(f.options || []).join(', ')}`
-            : f.type === 'scale' ? `${f.label}: scale ${f.max || 10}` : f.label).join('; ');
+    /**
+     * "Each time I log, also ask me…" as plain questions instead of a syntax:
+     * Ask me [where I was], answered [from a list ▾] like [home, office].
+     */
+    _questionHtml(f = {}) {
+        const R = Resilient;
+        const type = f.type || 'choice';
+        return `<div class="rs-q"${f.key ? ` data-key="${esc(f.key)}"` : ''}>
+            Ask me <input type="text" class="form-input" data-q="label" maxlength="40" value="${esc(f.label || '')}" placeholder="where I was">,
+            answered ${R.pick('data-q="type"', type, [['choice', 'by picking from a list'], ['scale', 'with a rating out of 5'], ['text', 'in my own words']])}
+            <span data-q-opts ${type === 'choice' ? '' : 'hidden'}>like <input type="text" class="form-input" data-q="options" value="${esc((f.options || []).join(', '))}" placeholder="home, office, outside"></span>
+            <button type="button" class="tl-link ms-1" data-q-remove>remove</button>
+        </div>`;
     },
 
-    _textToFields(text) {
-        const seen = new Set();
-        return text.split(/[;\n]/).map(l => l.trim()).filter(Boolean).map(line => {
-            const [label, rest] = line.split(/:(.*)/s).map(x => x && x.trim());
-            let key = this._slug(label), n = 2;
-            while (seen.has(key)) key = `${this._slug(label)}_${n++}`;
-            seen.add(key);
-            if (!rest) return { key, label, type: 'text' };
-            const sc = rest.match(/^scale\s*(\d+)?$/i);
-            if (sc) return { key, label, type: 'scale', max: Number(sc[1] || 10) };
-            return { key, label, type: 'choice', options: rest.split(',').map(x => x.trim()).filter(Boolean), allow_other: true };
+    _bindQuestions(root) {
+        const list = root.querySelector('[data-questions]');
+        if (!list) return;
+        root.addEventListener('click', (e) => {
+            if (e.target.closest('[data-q-add]')) {
+                list.insertAdjacentHTML('beforeend', this._questionHtml());
+                const inputs = list.querySelectorAll('[data-q="label"]');
+                inputs[inputs.length - 1].focus();
+                resizeInputs(list);
+            }
+            const rm = e.target.closest('[data-q-remove]');
+            if (rm) rm.closest('.rs-q').remove();
         });
+        root.addEventListener('change', (e) => {
+            const t = e.target.closest('[data-q="type"]');
+            if (t) t.closest('.rs-q').querySelector('[data-q-opts]').hidden = t.value !== 'choice';
+        });
+    },
+
+    _readQuestions(root) {
+        const rows = [...root.querySelectorAll('.rs-q')];
+        // Existing questions keep their key, so answers logged earlier stay linked
+        const seen = new Set(rows.map(q => q.dataset.key).filter(Boolean));
+        return rows.map(q => {
+            const label = q.querySelector('[data-q="label"]').value.trim();
+            if (!label) return null;
+            if (q.dataset.key) return this._question(q, q.dataset.key, label);
+            const base = label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 30) || 'note';
+            let key = base, n = 2;
+            while (seen.has(key)) key = `${base}_${n++}`;
+            seen.add(key);
+            return this._question(q, key, label);
+        }).filter(Boolean);
+    },
+
+    _question(q, key, label) {
+            const type = q.querySelector('[data-q="type"]').value;
+            if (type === 'scale') return { key, label, type, max: 5 };
+            if (type === 'choice') {
+                const options = q.querySelector('[data-q="options"]').value.split(',').map(x => x.trim()).filter(Boolean);
+                return { key, label, type, options, allow_other: true };
+            }
+            return { key, label, type: 'text' };
     },
 
     async editor(id) {
@@ -178,8 +219,10 @@ const Trackers = {
             { msg: 'A reminder puts a &ldquo;Log&rdquo; card on your timeline at that time. Or link it to a habit you already have.',
               html: `Remind me at <input data-f="remind_at" type="time" class="form-input" value="${v(m && m.remind_at)}"> every day,
                      and link it to ${R.pick('data-f="habit"', linked, [['', 'no habit'], ...habits.map(h => [h.id, esc(h.habit)])])}.` },
-            { msg: 'Want to note a detail each time you log, like where you were or how you felt? Write it as &ldquo;where: home, office; mood: scale 5&rdquo;. Each one becomes a quick question when you log.',
-              html: `Each time I log, I also want to note <input data-f="fields" class="form-input" value="${v(this._fieldsToText(m && m.fields))}" placeholder="where: home, office">` },
+            { msg: 'Optional. Want to note something each time you log, like where you were or how you felt? Add a question and I&rsquo;ll ask it every time. Your answers help spot patterns.',
+              html: `Each time I log, also ask me:
+                     <div data-questions>${((m && m.fields) || []).map(f => this._questionHtml(f)).join('')}</div>
+                     <button type="button" class="btn btn-paper btn-sm" data-q-add><i class="fas fa-plus me-1"></i>Add a question</button>` },
             { msg: 'Private trackers stay hidden until you unlock them with your PIN.',
               html: `Keep it ${R.pick('data-f="is_private"', m && m.is_private ? 'true' : 'false', [['false', 'visible'], ['true', 'private until I unlock']])}.` },
         );
@@ -201,7 +244,7 @@ const Trackers = {
                 target: g('target').value === '' ? null : Number(g('target').value),
                 target_light: g('target_light').value === '' ? null : Number(g('target_light').value),
                 quick_steps: steps, remind_at: g('remind_at').value || null,
-                fields: this._textToFields(g('fields').value), is_private: g('is_private').value === 'true',
+                fields: this._readQuestions(ov), is_private: g('is_private').value === 'true',
             };
             const res = m ? await apiClient.put(`board/api/metrics/${m.id}/`, payload)
                           : await apiClient.post('board/api/metrics/', payload);
@@ -216,7 +259,8 @@ const Trackers = {
             if (typeof Resilient._refresh === 'function') Resilient._refresh();
             return true;
         } });
-        Resilient.dialog(m ? `Edit ${m.name}` : 'New tracker', body, buttons, 'fa-chart-line', { revealAll: !!m });
+        const dlg = Resilient.dialog(m ? `Edit ${m.name}` : 'New tracker', body, buttons, 'fa-chart-line', { revealAll: !!m });
+        this._bindQuestions(dlg);
     },
 
     // ── Habit checklist ──────────────────────────────────────

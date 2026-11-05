@@ -506,9 +506,9 @@ const Resilient = {
             const chips = ((m.chips || {})[key] || []).slice(0, 6);
             const pick = chips.length ? ` <span class="freq-days">${chips.map(c => `<button type="button" class="freq-day-btn" data-chip="${i}" data-v="${this.esc(c)}">${this.esc(c)}</button>`).join('')}</span>` : '';
             const input = f.type === 'scale'
-                ? `<input data-field="${this.esc(key)}" type="number" min="1" max="${f.max || 10}" class="form-input" placeholder="1&ndash;${f.max || 10}">`
+                ? `<input data-field="${this.esc(key)}" type="number" min="1" max="${f.max || 10}" class="form-input" placeholder="1 to ${f.max || 10}">`
                 : `<input data-field="${this.esc(key)}" type="text" maxlength="64" class="form-input" placeholder="${f.type === 'choice' && f.options ? this.esc(f.options.slice(0, 2).join(', ')) : ''}">`;
-            return { html: `${label}? ${input}${pick}`, msg: chips.length ? 'Tap one of your usual answers, or type a new one. Tab to skip.' : 'Optional. Press Tab to skip.' };
+            return { html: `${label}: ${input}${pick}`, msg: chips.length ? 'Tap one of your usual answers, or type a new one. Tab to skip.' : 'Optional. Press Tab to skip.' };
         });
         const ov = this.dialog(`Log ${m.name}`,
             this.lead(m.kind === 'counter' ? `Logging one more ${name}.` : `Let&rsquo;s log your ${name}.`) +

@@ -118,3 +118,7 @@ select.form-input option { background: var(--surface-raised, var(--paper-bg)); c
 .tracker-note { color: var(--ink-black); line-height: 1.6; }
 .tracker-note-time { color: var(--ink-gray); font-size: .8rem; margin-right: 6px; }
 .tracker-note-meta { color: var(--ink-gray); font-size: .8rem; margin-left: 6px; }
+
+/* Tracker questions builder */
+[data-questions] .rs-q { padding: 2px 0; }
+[data-questions] .rs-q [hidden] { display: none; }
