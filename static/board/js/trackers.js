@@ -11,29 +11,7 @@ const Trackers = {
     charts: {},
     DAYS: 30,
 
-    _css() {
-        if (document.getElementById('trackers-css')) return;
-        const s = document.createElement('style');
-        s.id = 'trackers-css';
-        s.textContent = `
-        .tracker-grid{display:flex;flex-wrap:wrap;gap:14px}
-        .tracker-card{flex:1 1 300px;max-width:480px;border:1px solid rgba(var(--accent-rgb),.3);border-radius:var(--radius-md,12px);background:var(--surface-raised, transparent);color:var(--ink-black);padding:12px 14px;display:flex;flex-direction:column;gap:6px}
-        .tracker-card.tr-over{border-color:#c0392b}
-        .tracker-card.tr-met{border-color:var(--ink-brown)}
-        .tracker-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
-        .tracker-head h5{margin:0;font-size:1rem}
-        .tracker-value{font-size:1.4rem;font-weight:600}
-        .tracker-value small{font-size:.8rem;font-weight:400;opacity:.7}
-        .tracker-actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-        .tracker-meta{font-size:.75rem;opacity:.7}
-        .tracker-chart{position:relative;height:130px}
-        .tracker-empty{opacity:.7;font-size:.9rem;padding:8px 0}
-        `;
-        document.head.appendChild(s);
-    },
-
     init() {
-        this._css();
         const grid = document.getElementById('trackerGrid');
         if (grid && !grid.dataset.bound) {
             grid.dataset.bound = '1';
@@ -58,6 +36,10 @@ const Trackers = {
                 if (b) this.stepsDialog(Number(b.dataset.habit), b.dataset.name || 'Checklist');
             });
         }
+        if (!this._themeObs && typeof MutationObserver !== 'undefined') {
+            this._themeObs = new MutationObserver(() => { if (this.metrics.length) this.render(); });
+            this._themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        }
         Resilient.loadMetrics();
     },
 
@@ -70,7 +52,6 @@ const Trackers = {
     _fmt(n) { return Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100); },
 
     render() {
-        this._css();
         const grid = document.getElementById('trackerGrid');
         if (!grid) return;
         Object.values(this.charts).forEach(c => c.destroy());
@@ -95,7 +76,7 @@ const Trackers = {
             if (!meta.length) meta.push('No reminder or habit attached');
             return `<div class="tracker-card ${over ? 'tr-over' : ''} ${met ? 'tr-met' : ''}" data-metric="${m.id}">
                 <div class="tracker-head">
-                    <h5>${esc(m.name)}${m.is_private ? ' <i class="fas fa-lock" style="font-size:.7em"></i>' : ''}</h5>
+                    <h5>${esc(m.name)}${m.is_private ? ' <i class="fas fa-lock small"></i>' : ''}</h5>
                     <button type="button" class="btn btn-paper btn-sm" data-tr="edit" data-metric="${m.id}" aria-label="Edit ${esc(m.name)}"><i class="fa fa-cog"></i></button>
                 </div>
                 <div class="tracker-value">${this._fmt(m.today)}${goal}</div>
@@ -119,6 +100,9 @@ const Trackers = {
         const css = getComputedStyle(document.body);
         const brown = css.getPropertyValue('--ink-brown').trim() || 'rgb(142,110,58)';
         const light = css.getPropertyValue('--ink-brown-light').trim() || 'rgba(184,156,125,0.25)';
+        const gray = css.getPropertyValue('--ink-gray').trim() || '#888';
+        const accent = css.getPropertyValue('--accent-rgb').trim();
+        const grid = accent ? `rgba(${accent}, .12)` : 'rgba(127,127,127,.15)';
         const hasTarget = daily.some(d => d.target != null);
         const datasets = [{
             type: m.kind === 'single' ? 'line' : 'bar',
@@ -129,7 +113,7 @@ const Trackers = {
         }];
         if (hasTarget) {
             datasets.push({
-                type: 'line', data: daily.map(d => d.target), borderColor: css.getPropertyValue('--ink-gray').trim() || '#888',
+                type: 'line', data: daily.map(d => d.target), borderColor: gray,
                 borderDash: [5, 4], borderWidth: 1.5, pointRadius: 0, fill: false,
             });
         }
@@ -139,7 +123,10 @@ const Trackers = {
             options: {
                 responsive: true, maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
-                scales: { x: { ticks: { maxTicksLimit: 6 } }, y: { beginAtZero: true } },
+                scales: {
+                    x: { ticks: { maxTicksLimit: 6, color: gray }, grid: { color: grid } },
+                    y: { beginAtZero: true, ticks: { color: gray, maxTicksLimit: 4 }, grid: { color: grid } },
+                },
             },
         });
     },
@@ -174,25 +161,24 @@ const Trackers = {
         const habits = hres.status === 'success' ? (hres.data.results || hres.data) : [];
         const attached = new Set(m ? m.habit_ids : []);
         const v = (x, d = '') => esc(x == null ? d : x);
+        const F = (l, c, h) => Resilient.field(l, c, h);
         const sel = (name, val, opts) => `<select data-f="${name}">${opts.map(([a, b]) =>
             `<option value="${a}" ${String(val) === a ? 'selected' : ''}>${b}</option>`).join('')}</select>`;
-        const body = `
-            <label>Name</label><input data-f="name" maxlength="64" value="${v(m && m.name)}" placeholder="Water, Walk, Coffee">
-            <label>Unit</label><input data-f="unit" maxlength="16" value="${v(m && m.unit)}" placeholder="l, min, count">
-            <label>What are you tracking?</label>
-            ${sel('kind', m ? m.kind : 'additive', [['counter', 'A count (+1 each time)'], ['additive', 'An amount that adds up through the day'], ['single', 'One value per day (like sleep)']])}
-            <label>Goal</label>
-            ${sel('direction', m ? m.direction : 'at_least', [['at_least', 'At least'], ['at_most', 'At most']])}
-            <input data-f="target" type="number" step="any" value="${v(m && m.target)}" placeholder="Daily target (optional)">
-            <input data-f="target_light" type="number" step="any" value="${v(m && m.target_light)}" placeholder="Target on Light days (optional)">
-            <label>Quick-add buttons (comma separated)</label><input data-f="quick_steps" value="${v(m && (m.quick_steps || []).join(', '))}" placeholder="1, 5, 10">
-            <label>Daily reminder time</label><input data-f="remind_at" type="time" value="${v(m && m.remind_at)}">
-            <label>Or attach to habits</label>
-            <div style="max-height:110px;overflow:auto;margin-bottom:6px">${habits.length ? habits.map(h =>
-                `<label style="display:block;font-size:.85rem"><input type="checkbox" data-habit="${h.id}" ${attached.has(h.id) ? 'checked' : ''}> ${esc(h.habit)}</label>`).join('') : '<small>No habits yet</small>'}</div>
-            <label>Extra details to capture (one per line)</label>
-            <textarea data-f="fields" rows="3" placeholder="Trigger: after meal, stress, boredom&#10;Urge: scale 5&#10;Note">${v(this._fieldsToText(m && m.fields))}</textarea>
-            <label style="font-size:.85rem"><input type="checkbox" data-f="is_private" ${m && m.is_private ? 'checked' : ''}> Private (hidden until unlocked)</label>`;
+        const body =
+            F('Name', `<input data-f="name" maxlength="64" value="${v(m && m.name)}" placeholder="Water, Walk, Coffee">`) +
+            F('Unit', `<input data-f="unit" maxlength="16" value="${v(m && m.unit)}" placeholder="l, min, cups">`) +
+            F('What are you tracking?', sel('kind', m ? m.kind : 'additive', [['counter', 'A count (+1 each time)'], ['additive', 'An amount that adds up through the day'], ['single', 'One value per day (like sleep)']])) +
+            F('Goal', sel('direction', m ? m.direction : 'at_least', [['at_least', 'At least'], ['at_most', 'At most']])) +
+            F('Daily target', `<input data-f="target" type="number" step="any" value="${v(m && m.target)}" placeholder="Optional">`) +
+            F('Target on Light days', `<input data-f="target_light" type="number" step="any" value="${v(m && m.target_light)}" placeholder="Optional">`) +
+            F('Quick-add buttons', `<input data-f="quick_steps" value="${v(m && (m.quick_steps || []).join(', '))}" placeholder="1, 5, 10">`, 'Comma separated') +
+            F('Daily reminder', `<input data-f="remind_at" type="time" value="${v(m && m.remind_at)}">`, 'Adds a &ldquo;Log&rdquo; card to the timeline at this time') +
+            `<label class="form-label">Or attach to habits</label><div class="rs-scroll">${habits.length
+                ? habits.map(h => Resilient.check(`data-habit="${h.id}"`, esc(h.habit), attached.has(h.id))).join('')
+                : '<div class="form-text">No habits yet</div>'}</div>` +
+            F('Extra details to capture', `<textarea data-f="fields" rows="3" placeholder="Where: home, office, outside&#10;Mood: scale 5&#10;Note">${v(this._fieldsToText(m && m.fields))}</textarea>`,
+              'One per line. &ldquo;Label: a, b, c&rdquo; gives choices; &ldquo;Label: scale 5&rdquo; gives a 1&ndash;5 rating.') +
+            `<div class="mt-3">${Resilient.check('data-f="is_private"', 'Private (hidden until unlocked)', m && m.is_private)}</div>`;
         const buttons = [{ label: 'Cancel' }];
         if (m && !m.is_system) buttons.unshift({ label: 'Delete', run: async () => {
             const r = await apiClient.delete(`board/api/metrics/${m.id}/`);
@@ -227,8 +213,7 @@ const Trackers = {
             if (typeof Resilient._refresh === 'function') Resilient._refresh();
             return true;
         } });
-        const ov = Resilient.dialog(m ? `Edit ${m.name}` : 'New tracker', body, buttons);
-        
+        Resilient.dialog(m ? `Edit ${m.name}` : 'New tracker', body, buttons, 'fa-chart-line');
     },
 
     // ── Habit checklist ──────────────────────────────────────
@@ -237,14 +222,15 @@ const Trackers = {
         if (res.status !== 'success') return;
         const steps = res.data.steps.filter(s => s.visible);
         const body = steps.length ? `<div class="rs-steps">${steps.map(s => `
-            <label><input type="checkbox" data-step="${s.id}" ${s.done ? 'checked' : ''}> ${esc(s.name)}${s.target ? ` <small>(${esc(s.target)})</small>` : ''}</label>
-            ${s.how_to ? `<small style="opacity:.65;margin-left:22px">${esc(s.how_to)}</small>` : ''}`).join('')}</div>`
+            <div class="form-check"><input class="form-check-input" type="checkbox" id="rs-st-${s.id}" data-step="${s.id}" ${s.done ? 'checked' : ''}>
+            <label class="form-check-label" for="rs-st-${s.id}">${esc(s.name)}${s.target ? ` <small class="text-brown">(${esc(s.target)})</small>` : ''}</label>
+            ${s.how_to ? `<div class="form-text">${esc(s.how_to)}</div>` : ''}</div>`).join('')}</div>`
             : '<p>No steps yet. Add them from the habit settings.</p>';
         const ov = Resilient.dialog(name, body, [{ label: 'Close', run: async () => {
             if (typeof loadHabits === 'function') loadHabits();
             Resilient._refresh();
             return true;
-        } }]);
+        } }], 'fa-list-check');
         ov.addEventListener('change', async (e) => {
             const cb = e.target.closest('[data-step]');
             if (!cb) return;
@@ -263,15 +249,15 @@ const Trackers = {
         const box = document.createElement('details');
         box.id = 'rs-habit-create';
         box.className = 'mt-3';
-        box.innerHTML = `<summary style="cursor:pointer">More options</summary>
-            <div class="small mt-2">On Light days
-                <select data-hc="on_light" class="form-control form-control-sm d-inline-block" style="width:auto"><option value="required">still required</option><option value="excused">excused</option></select></div>
-            <div class="small mt-1">On Disrupted days
-                <select data-hc="on_disrupted" class="form-control form-control-sm d-inline-block" style="width:auto"><option value="excused">excused</option><option value="required">still required</option></select></div>
-            <label class="small d-block mt-1"><input type="checkbox" data-hc="is_private"> Private (hidden until you unlock)</label>
-            <label class="small d-block"><input type="checkbox" data-hc="private_reminder"> Show a plain &ldquo;Reminder&rdquo; while locked</label>
-            <label class="small d-block mt-2">Checklist steps, one per line (optional)</label>
-            <textarea data-hc="steps" class="form-control form-control-sm" rows="3" placeholder="Glute bridges&#10;Plank&#10;Bird dog"></textarea>`;
+        const sel = (k, opts) => `<select data-hc="${k}" class="form-control">${opts.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select>`;
+        box.innerHTML = `<summary class="text-brown">More options</summary>
+            <div class="mt-2">
+                ${Resilient.field('On Light days', sel('on_light', [['required', 'Still required'], ['excused', 'Excused']]))}
+                ${Resilient.field('On Disrupted days', sel('on_disrupted', [['excused', 'Excused'], ['required', 'Still required']]))}
+                <div class="mt-3">${Resilient.check('data-hc="is_private"', 'Private (hidden until you unlock)')}
+                ${Resilient.check('data-hc="private_reminder"', 'Show a plain &ldquo;Reminder&rdquo; while locked')}</div>
+                ${Resilient.field('Checklist steps', '<textarea data-hc="steps" class="form-control" rows="3" placeholder="Glute bridges&#10;Plank&#10;Bird dog"></textarea>', 'One per line, optional')}
+            </div>`;
         body.appendChild(box);
     },
 

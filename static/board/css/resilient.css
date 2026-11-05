@@ -1,0 +1,94 @@
+/* ══════════════════════════════════════════════════════════════
+   Resilient days, trackers and privacy.
+   Only theme tokens from style.css are used here (--ink-*, --paper-bg,
+   --surface-raised, --accent-rgb, --radius-*), so every theme styles these
+   the same way it styles the rest of the app.
+   ══════════════════════════════════════════════════════════════ */
+
+/* Native controls (select popups, time pickers, checkboxes) follow the theme */
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) { color-scheme: dark; }
+:is([data-theme="aurora"], [data-theme="sensei"], [data-theme="garden"], [data-theme="quest"]) { color-scheme: light; }
+select.form-control option { background: var(--surface-raised, var(--paper-bg)); color: var(--ink-black); }
+
+/* ── Day chips (sit in the timeline bar, styled as .timeline-chip) ── */
+#day-bar { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin: 0; }
+#day-bar .timeline-chip i { margin-right: 4px; }
+#day-bar .timeline-chip .fa-chevron-down { font-size: .6rem; margin: 0 0 0 4px; }
+#day-bar .timeline-chip:disabled { opacity: .5; cursor: default; }
+#day-note:empty { display: none; }
+#day-note { margin: -6px 0 12px; }
+.rs-banner { font-size: .8rem; color: var(--ink-gray); margin: 0 0 4px; }
+.rs-warn { font-size: .8rem; color: var(--ink-red); margin: 0 0 4px; }
+
+/* ── Dropdown menus: reuse .search-engine-dropdown / .search-engine-option ── */
+.rs-menu.search-engine-dropdown { position: absolute; top: auto; right: auto; z-index: 1060; min-width: 230px; }
+.rs-menu-head { padding: 8px 14px 2px; font-size: .68rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-brown); opacity: .7; }
+.rs-menu .search-engine-option { width: 100%; border: 0; background: none; text-align: left; font: inherit; font-size: .88rem; padding: 8px 14px; }
+.rs-menu .search-engine-option small { color: var(--ink-gray); margin-left: auto; }
+
+/* ── Timeline block states ── */
+.tl-st-done .timeline-event-text, .tl-st-skipped .timeline-event-text, .tl-st-dropped .timeline-event-text { opacity: .55; }
+.tl-st-dropped .timeline-event-text { text-decoration: line-through; }
+.tl-st-missed .timeline-event-text { color: var(--ink-red); }
+.rs-note { font-size: .72rem; color: var(--ink-gray); margin-left: 6px; }
+.rs-link { background: none; border: 0; padding: 0 4px; font: inherit; font-size: .75rem; color: var(--ink-brown); text-decoration: underline; cursor: pointer; }
+.rs-link:hover { color: var(--ink-black); }
+.rs-steps { margin: 6px 0; }
+.rs-steps .form-check { margin: 2px 0; }
+
+/* ── Dialogs (real Bootstrap modals, so .modal-content from style.css applies) ── */
+.rs-modal .modal-body { padding: 24px 30px; }
+.rs-modal .form-label { font-size: .85rem; margin: 10px 0 2px; color: var(--ink-brown); }
+.rs-modal .form-label:first-child { margin-top: 0; }
+.rs-modal .form-text { color: var(--ink-gray); font-size: .78rem; }
+.rs-modal textarea.form-control { resize: vertical; }
+.rs-err { color: var(--ink-red); font-size: .82rem; min-height: 1.2em; margin-top: 8px; }
+.rs-pick { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 6px; }
+.rs-scroll { max-height: 140px; overflow: auto; padding-right: 4px; }
+
+/* ── Trackers grid ── */
+.tracker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.tracker-card {
+    border: 1px solid rgba(var(--accent-rgb), .45); border-radius: var(--radius-md, 10px);
+    padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; color: var(--ink-black);
+}
+.tracker-card.tr-over { border-color: var(--ink-red); }
+.tracker-card.tr-met { border-color: var(--ink-green); }
+.tracker-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.tracker-head h5 { margin: 0; font-size: 1rem; font-weight: 700; color: var(--ink-brown); }
+.tracker-value { font-size: 1.5rem; font-weight: 700; line-height: 1.1; }
+.tracker-value small { font-size: .8rem; font-weight: 400; color: var(--ink-gray); }
+.tracker-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tracker-meta { font-size: .75rem; color: var(--ink-gray); }
+.tracker-chart { position: relative; height: 140px; }
+.tracker-empty { color: var(--ink-gray); font-size: .9rem; padding: 8px 0; }
+
+/* ── Lock button ── */
+#rs-lock-icon { position: fixed; right: 14px; bottom: 14px; z-index: 900; width: 36px; height: 36px; padding: 0; border-radius: 50%; }
+
+/* ── Settings: weekend picker reuses .freq-day-btn ── */
+#rs-settings .freq-days { display: flex; flex-wrap: wrap; gap: 6px; }
+#rs-settings .freq-day-btn { padding: 4px 10px; }
+
+/* ── Timeline rows: actions sit on the same line as the text, on its left ── */
+.tl-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
+.tl-line .timeline-actions { order: -1; margin: 0; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tl-line .timeline-actions .ms-1 { margin-left: 0 !important; }
+.tl-line .tl-resched { flex-basis: 100%; order: 2; }
+.tl-line .timeline-event-text { flex: 1 1 200px; min-width: 0; }
+
+/* In progress is highlighted (it reuses .timeline-next, so every theme's styling applies);
+   the item after it is shown in bold */
+.timeline-upnext .timeline-event-text { font-weight: 700; }
+.timeline-upnext .timeline-label { opacity: .75; }
+
+/* Tier tag in the routine list (Habits pane) */
+.rs-tier { font-size: .65rem; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-gray); margin-left: 6px; }
+
+/* App-wide fixes found while theming:
+   1. style.css gives placeholders the same colour as typed text, so hints read like values.
+   2. The modal close icon is a dark glyph, invisible on dark themes. */
+.form-control::placeholder { color: var(--ink-gray); opacity: .75; }
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .btn-close {
+    filter: invert(1) sepia(100%) hue-rotate(5deg) saturate(150%);
+}

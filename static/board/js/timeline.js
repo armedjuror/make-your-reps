@@ -201,8 +201,10 @@ const Timeline = {
                 <div class="timeline-icon"><i class="${this.getTypeIcon(event.event_type)}"></i></div>
                 <div class="timeline-content">
                     ${label ? `<div class="timeline-label">${label}</div>` : ''}
-                    <div class="timeline-event-text">${this.esc(event.event)}${Resilient.note(event)}${event.group ? ` <span class="timeline-group">${this.esc(event.group.name)}</span>` : ''}</div>
-                    ${this._actionsFor(event, extraClass)}
+                    <div class="tl-line">
+                        <div class="timeline-event-text">${this.esc(event.event)}${Resilient.note(event)}${event.group ? ` <span class="timeline-group">${this.esc(event.group.name)}</span>` : ''}</div>
+                        ${this._actionsFor(event, extraClass)}
+                    </div>
                 </div>
             </div>`;
     },
@@ -290,12 +292,13 @@ const Timeline = {
 
         if (current) {
             const left = this._until(new Date(current.ends_at), now);
-            html += this._itemHtml(current, 'timeline-current', this.esc(`IN PROGRESS \u00b7 ${left} left`));
+            // The block you are in now gets the highlight; the next one is shown in bold
+            html += this._itemHtml(current, 'timeline-next timeline-current', this.esc(`IN PROGRESS \u00b7 ${left} left`));
         }
 
         upcoming.forEach((e, i) => {
             html += i === 0
-                ? this._itemHtml(e, 'timeline-next', this.esc(Theme.text('next', this._until(new Date(e.timestamp), now).toUpperCase())))
+                ? this._itemHtml(e, current ? 'timeline-upnext' : 'timeline-next', this.esc(Theme.text('next', this._until(new Date(e.timestamp), now).toUpperCase())))
                 : this._itemHtml(e);
         });
         if (!upcoming.length && !current) html += '<div class="timeline-empty">Nothing else today.</div>';

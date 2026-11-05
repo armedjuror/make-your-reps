@@ -50,50 +50,8 @@ const Resilient = {
         if (typeof Gamification !== 'undefined' && Gamification.load) Gamification.load();
     },
 
-    // ── Styles ───────────────────────────────────────────────
-    _injectStyles() {
-        if (document.getElementById('resilient-css')) return;
-        const css = `
-        .rs-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 10px}
-        .rs-chip{font-family:inherit}
-        .rs-menu{position:absolute;z-index:50;background:var(--surface-raised, var(--paper-bg));color:var(--ink-black);border:1px solid rgba(var(--accent-rgb),.3);border-radius:10px;padding:6px;min-width:190px;box-shadow:0 6px 24px rgba(0,0,0,.18)}
-        .rs-menu h6{font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;opacity:.6;margin:6px 8px 2px}
-        .rs-menu button{display:block;width:100%;text-align:left;background:none;border:0;color:var(--ink-black);padding:5px 8px;border-radius:6px;font-size:.85rem;cursor:pointer}
-        .rs-menu button:hover{background:rgba(var(--accent-rgb),.12)}
-        .rs-menu button.on{color:var(--ink-brown)}
-        .rs-menu button.on{font-weight:600}
-        .rs-banner{font-size:.8rem;opacity:.85;margin:0 0 8px}
-        .rs-warn{font-size:.8rem;color:#c0392b;margin:0 0 8px}
-        .rs-metrics{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 10px}
-        .rs-metric{display:flex;align-items:center;gap:6px;border:1px solid rgba(var(--accent-rgb),.3);border-radius:10px;padding:4px 8px;font-size:.8rem}
-        .rs-metric.rs-over{border-color:#c0392b}
-        .rs-metric.rs-met{border-color:#2e8b57}
-        .rs-metric button{border:1px solid rgba(var(--accent-rgb),.3);background:transparent;color:inherit;border-radius:6px;padding:0 7px;font-size:.78rem;cursor:pointer}
-        .tl-st-done .timeline-event-text,.tl-st-skipped .timeline-event-text,.tl-st-dropped .timeline-event-text{opacity:.55}
-        .tl-st-dropped .timeline-event-text{text-decoration:line-through}
-        .tl-st-missed .timeline-event-text{color:#c0392b}
-        .rs-tier{font-size:.65rem;text-transform:uppercase;letter-spacing:.05em;opacity:.55;margin-left:6px}
-        .rs-note{font-size:.72rem;opacity:.65;margin-left:6px}
-        .rs-link{background:none;border:0;color:inherit;opacity:.65;font-size:.75rem;text-decoration:underline;cursor:pointer;padding:0 4px}
-        .rs-steps{margin:6px 0}
-        .rs-steps label{display:flex;gap:6px;align-items:center;font-size:.85rem;margin:2px 0}
-        .rs-overlay{overflow:auto;z-index:2000}
-        .rs-backdrop{position:fixed;inset:0;z-index:1990;background:rgba(0,0,0,.5)}
-        .rs-dialog .modal-body{padding:18px}
-        .rs-dialog .form-control,.rs-dialog .form-select{margin:4px 0 8px}
-        .rs-dialog label{font-size:.85rem}
-        .rs-err{color:#c0392b;font-size:.8rem;min-height:1em}
-        .rs-chips{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
-        `;
-        const style = document.createElement('style');
-        style.id = 'resilient-css';
-        style.textContent = css;
-        document.head.appendChild(style);
-    },
-
     // ── Boot ─────────────────────────────────────────────────
     init() {
-        this._injectStyles();
         if (!this._boundDoc) {
             this._boundDoc = true;
             document.addEventListener('click', (e) => this._onClick(e));
@@ -151,7 +109,7 @@ const Resilient = {
         const editable = d.date >= this.logicalToday();
         const tpl = d.template === 'holiday' ? 'Holiday' : 'Workday';
         const mode = d.mode.charAt(0).toUpperCase() + d.mode.slice(1);
-        let html = `<button type="button" class="timeline-chip rs-chip ${d.mode !== 'normal' ? 'active' : ''}" data-rs="menu-day" ${editable ? '' : 'disabled'}>${tpl} &middot; ${mode} <i class="fas fa-chevron-down" style="font-size:.6rem"></i></button>`;
+        let html = `<button type="button" class="timeline-chip rs-chip ${d.mode !== 'normal' ? 'active' : ''}" data-rs="menu-day" ${editable ? '' : 'disabled'}>${tpl} &middot; ${mode}<i class="fas fa-chevron-down"></i></button>`;
         if (today) {
             html += '<button type="button" class="timeline-chip rs-chip" data-rs="menu-late"><i class="fas fa-person-running"></i> Running late</button>';
             html += '<button type="button" class="timeline-chip rs-chip" data-rs="slip"><i class="fas fa-heart-crack"></i> I slipped</button>';
@@ -173,28 +131,35 @@ const Resilient = {
     _menu(anchor, html) {
         this._closeMenus();
         const m = document.createElement('div');
-        m.className = 'rs-menu';
+        m.className = 'rs-menu search-engine-dropdown show';
+        m.setAttribute('role', 'menu');
         m.innerHTML = html;
-        const r = anchor.getBoundingClientRect();
-        m.style.top = `${window.scrollY + r.bottom + 4}px`;
-        m.style.left = `${Math.max(8, window.scrollX + r.left)}px`;
         document.body.appendChild(m);
+        const r = anchor.getBoundingClientRect();
+        const left = Math.min(window.scrollX + r.left, window.scrollX + document.documentElement.clientWidth - m.offsetWidth - 8);
+        m.style.top = `${window.scrollY + r.bottom + 6}px`;
+        m.style.left = `${Math.max(8, left)}px`;
+    },
+
+    _opt(rs, val, label, cur, hint) {
+        return `<button type="button" role="menuitem" class="search-engine-option ${cur === val ? 'active' : ''}" data-rs="${rs}" data-val="${val}">${label}${hint ? `<small>${hint}</small>` : ''}</button>`;
     },
 
     _dayMenu(anchor) {
         const d = this.day;
-        const opt = (rs, val, label, cur) =>
-            `<button type="button" data-rs="${rs}" data-val="${val}" class="${cur === val ? 'on' : ''}">${label}</button>`;
         this._menu(anchor,
-            '<h6>Day type</h6>' + opt('set-template', 'workday', 'Workday', d.template) + opt('set-template', 'holiday', 'Holiday', d.template) +
-            '<h6>Mode</h6>' + opt('set-mode', 'normal', 'Normal &mdash; everything', d.mode) +
-            opt('set-mode', 'light', 'Light &mdash; essentials + anchors', d.mode) +
-            opt('set-mode', 'disrupted', 'Disrupted &mdash; essentials only', d.mode));
+            '<div class="rs-menu-head">Day type</div>' +
+            this._opt('set-template', 'workday', 'Workday', d.template) +
+            this._opt('set-template', 'holiday', 'Holiday', d.template) +
+            '<div class="rs-menu-head">Mode</div>' +
+            this._opt('set-mode', 'normal', 'Normal', d.mode, 'everything') +
+            this._opt('set-mode', 'light', 'Light', d.mode, 'essentials + anchors') +
+            this._opt('set-mode', 'disrupted', 'Disrupted', d.mode, 'essentials only'));
     },
 
     _lateMenu(anchor) {
-        this._menu(anchor, '<h6>Running late by</h6>' +
-            [15, 30, 60].map(m => `<button type="button" data-rs="late" data-val="${m}">${m} minutes</button>`).join(''));
+        this._menu(anchor, '<div class="rs-menu-head">Running late by</div>' +
+            [15, 30, 60].map(m => this._opt('late', String(m), `${m} minutes`)).join(''));
     },
 
     async setDayPlan(patch) {
@@ -251,7 +216,7 @@ const Resilient = {
         if (event.action_response) return '<div class="timeline-actions"><span class="badge-done"><i class="fas fa-check"></i> Reset</span></div>';
         const steps = (event.reset && event.reset.steps) || [];
         const list = steps.length
-            ? `<div class="rs-steps">${steps.map(s => `<label><input type="checkbox" data-rs="reset-step" data-step="${this.esc(s.id)}" ${s.done ? 'checked' : ''}> ${this.esc(s.name)}</label>`).join('')}</div>`
+            ? `<div class="rs-steps">${steps.map(s => `<div class="form-check"><input class="form-check-input" type="checkbox" id="rs-rst-${this.esc(s.id)}" data-rs="reset-step" data-step="${this.esc(s.id)}" ${s.done ? 'checked' : ''}><label class="form-check-label" for="rs-rst-${this.esc(s.id)}">${this.esc(s.name)}</label></div>`).join('')}</div>`
             : '';
         return `${list}<div class="timeline-actions">
             <button type="button" class="btn btn-paper btn-sm btn-primary" data-rs="reset-done">I&rsquo;ve reset</button>
@@ -331,58 +296,70 @@ const Resilient = {
     },
 
     // ── Dialogs ──────────────────────────────────────────────
-    /** Themed modal: same markup the rest of the app's modals use, so every theme styles it. */
-    dialog(title, bodyHtml, buttons) {
-        const ov = document.createElement('div');
-        ov.className = 'modal show rs-overlay';
-        ov.style.display = 'block';
-        ov.innerHTML = `<div class="modal-dialog modal-dialog-centered"><div class="modal-content rs-dialog" role="dialog" aria-modal="true">
-            <div class="modal-header"><h5 class="modal-title">${this.esc(title)}</h5><button type="button" class="btn-close" data-close="1" aria-label="Close"></button></div>
-            <div class="modal-body">${bodyHtml}<div class="rs-err"></div></div>
-            <div class="modal-footer">${buttons.map((b, i) => `<button type="button" class="btn btn-paper btn-sm ${b.primary ? 'btn-primary' : ''}" data-idx="${i}">${this.esc(b.label)}</button>`).join('')}</div>
+    /** Markup helpers: the same field classes the rest of the app uses. */
+    field(label, control, hint) {
+        return `<label class="form-label">${label}</label>${control}${hint ? `<div class="form-text">${hint}</div>` : ''}`;
+    },
+    check(attrs, label, checked) {
+        const id = 'rs-c-' + Math.random().toString(36).slice(2, 8);
+        return `<div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="${id}" ${attrs} ${checked ? 'checked' : ''}><label class="form-check-label" for="${id}">${label}</label></div>`;
+    },
+
+    /**
+     * A real Bootstrap modal built like the app's own (modal-content, modal-icon,
+     * btn-paper, form-control), so style.css themes it. Removed when hidden.
+     */
+    dialog(title, bodyHtml, buttons, icon = 'fa-pen') {
+        const el = document.createElement('div');
+        el.className = 'modal fade rs-modal';
+        el.tabIndex = -1;
+        el.innerHTML = `<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title"><div class="modal-icon info"><i class="fas ${icon}"></i></div> ${this.esc(title)}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body">${bodyHtml}<div class="rs-err" role="alert"></div></div>
+            <div class="modal-footer">${buttons.map((b, i) => `<button type="button" class="btn btn-paper ${b.primary ? 'btn-primary' : ''}" data-idx="${i}">${this.esc(b.label)}</button>`).join('')}</div>
         </div></div>`;
-        ov.querySelectorAll('input:not([type=checkbox]):not([type=radio]), textarea').forEach(el => el.classList.add('form-control'));
-        ov.querySelectorAll('select').forEach(el => el.classList.add('form-select'));
-        const backdrop = document.createElement('div');
-        backdrop.className = 'rs-backdrop';
-        const close = () => { ov.remove(); backdrop.remove(); };
-        ov.addEventListener('click', async (ev) => {
-            if (ev.target === ov || ev.target.closest('[data-close]')) return close();
+        el.querySelectorAll('input:not([type=checkbox]):not([type=radio]), textarea, select').forEach(x => x.classList.add('form-control'));
+        document.body.appendChild(el);
+        const modal = new bootstrap.Modal(el);
+        el.addEventListener('hidden.bs.modal', () => { modal.dispose(); el.remove(); });
+        el.addEventListener('shown.bs.modal', () => { const f = el.querySelector('.modal-body input:not([type=checkbox]),.modal-body select,.modal-body textarea'); if (f) f.focus(); });
+        el.addEventListener('click', async (ev) => {
             const btn = ev.target.closest('button[data-idx]');
             if (!btn) return;
             const spec = buttons[Number(btn.dataset.idx)];
-            const err = ov.querySelector('.rs-err');
+            const err = el.querySelector('.rs-err');
             err.textContent = '';
-            if (!spec.run) return close();
-            const out = await spec.run(ov);
-            if (out === true) close();
+            if (!spec.run) return modal.hide();
+            btn.disabled = true;
+            const out = await spec.run(el);
+            btn.disabled = false;
+            if (out === true) modal.hide();
             else if (typeof out === 'string') err.textContent = out;
         });
-        document.body.appendChild(backdrop);
-        document.body.appendChild(ov);
-        const first = ov.querySelector('input,select,textarea');
-        if (first) first.focus();
-        return ov;
+        modal.show();
+        return el;
     },
 
     slipDialog() {
-        this.dialog('I slipped', '<p style="font-size:.85rem;margin:0 0 6px">That is okay. This stays private. Want to note what happened?</p><textarea rows="2" maxlength="280" placeholder="Optional note"></textarea>', [
+        this.dialog('I slipped', `<p>That&rsquo;s okay. This stays private, and the reset card will help you get back on track.</p>
+            ${this.field('What happened? (optional)', '<textarea rows="2" maxlength="280"></textarea>')}`, [
             { label: 'Cancel' },
             { label: 'Log it', primary: true, run: async (ov) => {
-                const note = ov.querySelector('textarea').value;
-                const res = await apiClient.post('board/api/lapses/', { note });
+                const res = await apiClient.post('board/api/lapses/', { note: ov.querySelector('textarea').value });
                 if (res.status !== 'success') return res.error || 'Could not log that';
                 await this._refresh();
                 return true;
             } },
-        ]);
+        ], 'fa-heart-crack');
     },
 
     travelDialog() {
         const t = this.logicalToday();
-        this.dialog('I’m travelling', `<label style="font-size:.8rem">From</label><input type="date" id="rs-t-from" value="${t}" min="${t}">
-            <label style="font-size:.8rem">To</label><input type="date" id="rs-t-to" value="${t}" min="${t}">
-            <p style="font-size:.78rem;opacity:.7;margin:0">Those days become Disrupted, followed by a few Light days to ease back in.</p>`, [
+        this.dialog('I\u2019m travelling',
+            this.field('From', `<input type="date" id="rs-t-from" value="${t}" min="${t}">`) +
+            this.field('To', `<input type="date" id="rs-t-to" value="${t}" min="${t}">`,
+                'Those days become Disrupted, followed by a few Light days to ease back in.'), [
             { label: 'Cancel' },
             { label: 'Set travel', primary: true, run: async (ov) => {
                 const start = ov.querySelector('#rs-t-from').value, end = ov.querySelector('#rs-t-to').value;
@@ -392,7 +369,7 @@ const Resilient = {
                 await this._refresh();
                 return true;
             } },
-        ]);
+        ], 'fa-plane');
     },
 
     // ── Metrics ──────────────────────────────────────────────
@@ -420,16 +397,18 @@ const Resilient = {
         const m = this.metrics.find(x => x.id === id);
         if (!m) return;
         const fields = (m.fields || []).map((f, i) => {
-            const label = this.esc(f.label || f.name || f.key);
-            const chips = ((m.chips || {})[f.key || f.name] || []).slice(0, 6);
-            return `<label style="font-size:.8rem">${label}</label>
-                <div class="rs-chips">${chips.map(c => `<button type="button" class="rs-chip" data-chip="${i}" data-v="${this.esc(c)}">${this.esc(c)}</button>`).join('')}</div>
-                <input data-field="${this.esc(f.key || f.name)}" type="text" maxlength="64">`;
+            const key = f.key || f.name;
+            const chips = ((m.chips || {})[key] || []).slice(0, 6);
+            const pick = chips.length ? `<div class="rs-pick">${chips.map(c => `<button type="button" class="freq-day-btn" data-chip="${i}" data-v="${this.esc(c)}">${this.esc(c)}</button>`).join('')}</div>` : '';
+            const input = f.type === 'scale'
+                ? `<input data-field="${this.esc(key)}" type="number" min="1" max="${f.max || 10}" placeholder="1 to ${f.max || 10}">`
+                : `<input data-field="${this.esc(key)}" type="text" maxlength="64">`;
+            return this.field(this.esc(f.label || key), pick + input);
         }).join('');
         const needValue = m.kind !== 'counter';
         const ov = this.dialog(`Log ${m.name}`,
-            `${needValue ? `<label style="font-size:.8rem">Value ${this.esc(m.unit ? '(' + m.unit + ')' : '')}</label><input id="rs-m-val" type="number" step="any">` : ''}
-             ${fields}<label style="font-size:.8rem">Note</label><input id="rs-m-note" type="text" maxlength="280">`, [
+            (needValue ? this.field(`Value${m.unit ? ' (' + this.esc(m.unit) + ')' : ''}`, '<input id="rs-m-val" type="number" step="any">') : '') +
+            fields + this.field('Note (optional)', '<input id="rs-m-note" type="text" maxlength="280">'), [
             { label: 'Cancel' },
             { label: 'Log', primary: true, run: async (o) => {
                 const data = {};
@@ -437,19 +416,16 @@ const Resilient = {
                 const valEl = o.querySelector('#rs-m-val');
                 const value = valEl ? Number(valEl.value) : 1;
                 if (valEl && (valEl.value === '' || Number.isNaN(value))) return 'Enter a value';
-                const res = await apiClient.post(`board/api/metrics/${id}/log/`, {
-                    value, data, note: o.querySelector('#rs-m-note').value,
-                });
+                const res = await apiClient.post(`board/api/metrics/${id}/log/`, { value, data, note: o.querySelector('#rs-m-note').value });
                 if (res.status !== 'success') return res.error || 'Could not log that';
                 await this.loadMetrics(); await this._refresh();
                 return true;
             } },
-        ]);
+        ], 'fa-chart-line');
         ov.addEventListener('click', (ev) => {
             const chip = ev.target.closest('[data-chip]');
             if (!chip) return;
-            const inputs = ov.querySelectorAll('[data-field]');
-            const input = inputs[Number(chip.dataset.chip)];
+            const input = ov.querySelectorAll('[data-field]')[Number(chip.dataset.chip)];
             if (input) input.value = chip.dataset.v;
         });
     },
@@ -471,7 +447,7 @@ const Resilient = {
             icon.id = 'rs-lock-icon';
             icon.type = 'button';
             icon.dataset.rs = 'lock';
-            icon.style.cssText = 'position:fixed;right:12px;bottom:12px;z-index:900;border:1px solid rgba(var(--accent-rgb),.3);background:var(--surface-raised, var(--paper-bg));color:var(--ink-black);border-radius:50%;width:34px;height:34px;cursor:pointer;opacity:.7';
+            icon.className = 'btn btn-paper';
             document.body.appendChild(icon);
         }
         const open = this.privateState.unlocked;
@@ -503,7 +479,7 @@ const Resilient = {
     },
 
     unlockDialog() {
-        this.dialog('Unlock private items', '<input id="rs-pin" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN">', [
+        this.dialog('Unlock private items', this.field('PIN', '<input id="rs-pin" type="password" inputmode="numeric" autocomplete="off">'), [
             { label: 'Forgot PIN', run: async () => { this.resetPinDialog(); return true; } },
             { label: 'Unlock', primary: true, run: async (o) => {
                 const res = await apiClient.post('board/api/private/unlock/', { pin: o.querySelector('#rs-pin').value });
@@ -511,13 +487,15 @@ const Resilient = {
                 await this._afterPrivacyChange();
                 return true;
             } },
-        ]).querySelector('#rs-pin').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') e.target.closest('.rs-dialog').querySelector('.btn-primary').click();
+        ], 'fa-lock').querySelector('#rs-pin').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') e.target.closest('.modal-content').querySelector('.btn-primary').click();
         });
     },
 
     pinSetupDialog() {
-        this.dialog('Set a PIN for private items', '<input id="rs-pin" type="password" inputmode="numeric" autocomplete="off" placeholder="New PIN (4 to 12 digits)"><input id="rs-pin2" type="password" inputmode="numeric" autocomplete="off" placeholder="Repeat PIN">', [
+        this.dialog('Set a PIN for private items',
+            this.field('New PIN', '<input id="rs-pin" type="password" inputmode="numeric" autocomplete="off">', '4 to 12 digits') +
+            this.field('Repeat PIN', '<input id="rs-pin2" type="password" inputmode="numeric" autocomplete="off">'), [
             { label: 'Cancel' },
             { label: 'Save PIN', primary: true, run: async (o) => {
                 const pin = o.querySelector('#rs-pin').value;
@@ -525,13 +503,16 @@ const Resilient = {
                 const res = await apiClient.post('board/api/private/pin/', { pin });
                 if (res.status !== 'success') return res.error || 'Could not set PIN';
                 await this._afterPrivacyChange();
+                if (document.getElementById('rs-settings')) this.renderSettings();
                 return true;
             } },
-        ]);
+        ], 'fa-lock');
     },
 
     resetPinDialog() {
-        this.dialog('Reset PIN', '<p style="font-size:.85rem;margin:0 0 6px">We will email you a code.</p><input id="rs-code" type="text" placeholder="Code from email"><input id="rs-pin" type="password" inputmode="numeric" autocomplete="off" placeholder="New PIN">', [
+        this.dialog('Reset PIN', '<p>We&rsquo;ll email you a code.</p>' +
+            this.field('Code from email', '<input id="rs-code" type="text" autocomplete="one-time-code">') +
+            this.field('New PIN', '<input id="rs-pin" type="password" inputmode="numeric" autocomplete="off">'), [
             { label: 'Send code', run: async (o) => {
                 const res = await apiClient.post('board/api/private/reset/request/', {});
                 return res.status === 'success' ? 'Code sent. Check your email.' : (res.error || 'Could not send a code');
@@ -582,19 +563,23 @@ const Resilient = {
         ]);
         const h = hres.status === 'success' ? hres.data : {};
         const steps = sres.status === 'success' ? sres.data.steps : [];
-        const sel = (key, val, opts) => `<select data-hopt="${key}" class="form-control form-control-sm d-inline-block" style="width:auto">${
+        const sel = (key, val, opts) => `<select data-hopt="${key}" class="form-control">${
             opts.map(([v, l]) => `<option value="${v}" ${val === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
         box.dataset.habit = habit.id;
         box.innerHTML = `
-            <h6>Hard days</h6>
-            <div class="small mb-1">On Light days ${sel('on_light', h.on_light || 'required', [['required', 'still required'], ['excused', 'excused']])}</div>
-            <div class="small mb-2">On Disrupted days ${sel('on_disrupted', h.on_disrupted || 'excused', [['required', 'still required'], ['excused', 'excused']])}</div>
-            <label class="small d-block"><input type="checkbox" data-hopt="is_private" ${h.is_private ? 'checked' : ''}> Private (hidden until you unlock)</label>
-            <label class="small d-block mb-2"><input type="checkbox" data-hopt="private_reminder" ${h.private_reminder ? 'checked' : ''}> Show a plain &ldquo;Reminder&rdquo; while locked</label>
-            <h6>Checklist</h6>
-            <div class="small mb-1">Complete when ${sel('complete_when', h.complete_when || 'all', [['all', 'all steps are done'], ['any', 'any step is done'], ['final', 'the last step is done']])}</div>
-            <div id="rs-steps-list">${steps.map(st => `<div class="d-flex align-items-center gap-2 small mb-1"><span class="flex-grow-1">${this.esc(st.name)}</span><button type="button" class="rs-link" data-hstep="del" data-id="${st.id}">Remove</button></div>`).join('')}</div>
-            <div class="d-flex gap-2 mt-1"><input type="text" id="rs-new-step" class="form-control form-control-sm" maxlength="80" placeholder="Add a step"><button type="button" class="btn btn-paper btn-sm" data-hstep="add">Add</button></div>`;
+            <div class="settings-card mt-3">
+                <h6 class="settings-card-title"><i class="fas fa-cloud-sun-rain me-2"></i>Hard days</h6>
+                ${this.field('On Light days', sel('on_light', h.on_light || 'required', [['required', 'Still required'], ['excused', 'Excused']]))}
+                ${this.field('On Disrupted days', sel('on_disrupted', h.on_disrupted || 'excused', [['required', 'Still required'], ['excused', 'Excused']]))}
+                <div class="mt-3">${this.check('data-hopt="is_private"', 'Private (hidden until you unlock)', h.is_private)}
+                ${this.check('data-hopt="private_reminder"', 'Show a plain &ldquo;Reminder&rdquo; while locked', h.private_reminder)}</div>
+            </div>
+            <div class="settings-card mt-3">
+                <h6 class="settings-card-title"><i class="fas fa-list-check me-2"></i>Checklist</h6>
+                ${this.field('Complete when', sel('complete_when', h.complete_when || 'all', [['all', 'All steps are done'], ['any', 'Any step is done'], ['final', 'The last step is done']]))}
+                <div id="rs-steps-list" class="mt-2">${steps.map(st => `<div class="d-flex align-items-center gap-2 py-1"><span class="flex-grow-1">${this.esc(st.name)}</span><button type="button" class="rs-link" data-hstep="del" data-id="${st.id}">Remove</button></div>`).join('') || '<div class="form-text">No steps yet.</div>'}</div>
+                <div class="d-flex gap-2 mt-2 align-items-end"><input type="text" id="rs-new-step" class="form-control" maxlength="80" placeholder="Add a step"><button type="button" class="btn btn-paper btn-sm" data-hstep="add">Add</button></div>
+            </div>`;
     },
 
     async _saveHabitOption(el) {
@@ -625,9 +610,15 @@ const Resilient = {
         if (!host || document.getElementById('rs-settings')) return;
         const card = document.createElement('div');
         card.id = 'rs-settings';
-        card.className = 'mt-4';
-        card.innerHTML = '<h6>Days &amp; streaks</h6><div id="rs-settings-body" style="font-size:.85rem"></div>';
+        card.className = 'settings-card mt-4';
+        card.innerHTML = '<h6 class="settings-card-title"><i class="fas fa-calendar-day me-2"></i>Days &amp; streaks</h6><div id="rs-settings-body"></div>';
         host.appendChild(card);
+        card.addEventListener('change', (e) => this._saveSetting(e));
+        card.addEventListener('click', (e) => {
+            const day = e.target.closest('[data-set="weekend"]');
+            if (day) { day.classList.toggle('active'); this._saveSetting({ target: day }); }
+            if (e.target.closest('[data-rs-set="pin"]')) this.pinSetupDialog();
+        });
         this.renderSettings();
     },
 
@@ -640,25 +631,23 @@ const Resilient = {
         const metrics = mres.status === 'success' ? mres.data : [];
         const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
         const wk = d.weekend_days || [5, 6];
+        const opt = (v, l, cur) => `<option value="${v}" ${String(cur) === String(v) ? 'selected' : ''}>${l}</option>`;
         body.innerHTML = `
-            <div class="mb-2">Weekend days<div class="rs-chips">${names.map((n, i) =>
-                `<label style="margin-right:8px"><input type="checkbox" data-set="weekend" value="${i}" ${wk.includes(i) ? 'checked' : ''}> ${n}</label>`).join('')}</div></div>
-            <label>Day starts at <input type="time" data-set="day_start" value="${this.esc((d.day_start || '04:00').slice(0, 5))}"></label>
-            <label class="d-block mt-2">Travel ramp (Light days after travel) <input type="number" min="0" max="7" data-set="travel_ramp_days" value="${this.esc(d.travel_ramp_days ?? 2)}"></label>
-            <label class="d-block mt-2">Streak counts
-                <select data-set="streak_rule">
-                    <option value="activity" ${d.streak_rule !== 'routine' ? 'selected' : ''}>Any activity (default)</option>
-                    <option value="routine" ${d.streak_rule === 'routine' ? 'selected' : ''}>Routine met (essentials + anchors)</option>
-                </select></label>
-            <label class="d-block mt-2">&ldquo;I slipped&rdquo; counts on
-                <select data-set="slip_metric">
-                    <option value="">Nothing (just opens the reset)</option>
-                    ${metrics.filter(m => m.kind !== 'single').map(m => `<option value="${m.id}" ${d.slip_metric === m.id ? 'selected' : ''}>${this.esc(m.name)}</option>`).join('')}
-                </select></label>
-            <div class="mt-2"><button type="button" class="btn btn-paper btn-sm" data-rs="pin-setup">${this.privateState.has_pin ? 'Change PIN' : 'Set a PIN for private items'}</button></div>`;
-        body.querySelectorAll('input[data-set]:not([type=checkbox]), select[data-set]').forEach(el => el.classList.add('form-control', 'form-control-sm', 'd-inline-block', 'w-auto'));
-        body.addEventListener('change', (e) => this._saveSetting(e), { once: false });
-        body.querySelector('[data-rs="pin-setup"]').addEventListener('click', () => this.pinSetupDialog());
+            <div class="mb-3"><label class="form-label">Weekend days</label>
+                <div class="freq-days">${names.map((n, i) => `<button type="button" class="freq-day-btn ${wk.includes(i) ? 'active' : ''}" data-set="weekend" data-day="${i}">${n}</button>`).join('')}</div>
+                <small class="form-text text-brown">These days use the Holiday routine unless you change the day.</small></div>
+            <div class="mb-3"><label class="form-label">Day starts at</label>
+                <input type="time" class="form-control" data-set="day_start" value="${this.esc((d.day_start || '04:00').slice(0, 5))}">
+                <small class="form-text text-brown">Anything before this time still counts for the previous day.</small></div>
+            <div class="mb-3"><label class="form-label">Light days after travel</label>
+                <input type="number" class="form-control" min="0" max="7" data-set="travel_ramp_days" value="${this.esc(d.travel_ramp_days ?? 2)}"></div>
+            <div class="mb-3"><label class="form-label">Streak counts</label>
+                <select class="form-control" data-set="streak_rule">${opt('activity', 'Any activity (default)', d.streak_rule || 'activity')}${opt('routine', 'Routine met (essentials and anchors)', d.streak_rule)}</select></div>
+            <div class="mb-3"><label class="form-label">&ldquo;I slipped&rdquo; adds one to</label>
+                <select class="form-control" data-set="slip_metric">${opt('', 'Nothing (just opens the reset)', d.slip_metric ?? '')}${metrics.filter(m => m.kind !== 'single').map(m => opt(m.id, this.esc(m.name), d.slip_metric)).join('')}</select></div>
+            <div class="mb-0"><label class="form-label">Private items</label>
+                <div><button type="button" class="btn btn-paper btn-sm btn-primary" data-rs-set="pin">${this.privateState.has_pin ? 'Change PIN' : 'Set a PIN'}</button></div>
+                <small class="form-text text-brown">Type /private in the search bar or press Ctrl+Shift+L to show or hide them.</small></div>`;
     },
 
     async _saveSetting(e) {
@@ -667,7 +656,7 @@ const Resilient = {
         const key = el.dataset.set;
         let payload;
         if (key === 'weekend') {
-            payload = { weekend_days: [...document.querySelectorAll('[data-set="weekend"]:checked')].map(i => Number(i.value)) };
+            payload = { weekend_days: [...document.querySelectorAll('[data-set="weekend"].active')].map(b => Number(b.dataset.day)) };
         } else if (key === 'travel_ramp_days') {
             payload = { travel_ramp_days: Number(el.value) };
         } else if (key === 'slip_metric') {
