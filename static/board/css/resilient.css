@@ -38,6 +38,7 @@ select.form-control option { background: var(--surface-raised, var(--paper-bg));
 
 /* ── Dialogs (real Bootstrap modals, so .modal-content from style.css applies) ── */
 .rs-modal .modal-body { padding: 24px 30px; }
+.rs-modal .modal-dialog { max-width: 560px; }
 .rs-modal .form-label { font-size: .85rem; margin: 10px 0 2px; color: var(--ink-brown); }
 .rs-modal .form-label:first-child { margin-top: 0; }
 .rs-modal .form-text { color: var(--ink-gray); font-size: .78rem; }
@@ -70,9 +71,9 @@ select.form-control option { background: var(--surface-raised, var(--paper-bg));
 #rs-settings .freq-days { display: flex; flex-wrap: wrap; gap: 6px; }
 #rs-settings .freq-day-btn { padding: 4px 10px; }
 
-/* ── Timeline rows: actions sit on the same line as the text, on its left ── */
+/* ── Timeline rows: actions sit on the same line as the text, at its right end ── */
 .tl-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
-.tl-line .timeline-actions { order: -1; margin: 0; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tl-line .timeline-actions { margin: 0 0 0 auto; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .tl-line .timeline-actions .ms-1 { margin-left: 0 !important; }
 .tl-line .tl-resched { flex-basis: 100%; order: 2; }
 .tl-line .timeline-event-text { flex: 1 1 200px; min-width: 0; }
@@ -92,3 +93,18 @@ select.form-control option { background: var(--surface-raised, var(--paper-bg));
 :is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .btn-close {
     filter: invert(1) sepia(100%) hue-rotate(5deg) saturate(150%);
 }
+
+/* ── Conversational forms (extends .conversational-form / .form-input from the app) ── */
+.rs-lead { color: var(--ink-black); margin-bottom: 10px; line-height: 1.5; }
+.conversational-form .form-input.rs-num { min-width: 70px; width: 90px; }
+.conversational-form .form-input.rs-wide { min-width: 240px; width: min(100%, 380px); }
+.conversational-form select.form-input { min-width: 0; width: auto; cursor: pointer; padding-right: 4px; }
+select.form-input option { background: var(--surface-raised, var(--paper-bg)); color: var(--ink-black); }
+.conversational-form .form-input[type="date"], .conversational-form .form-input[type="time"], .conversational-form .form-input[type="datetime-local"] { min-width: 0; }
+.conversational-form .freq-days { vertical-align: middle; }
+.conversational-form .form-check { padding-left: 1.8em; }
+.rs-howto { font-size: .8rem; color: var(--ink-gray); line-height: 1.4; }
+#rs-habit-options h6, #rs-habit-options + * h6 { color: var(--ink-black); }
+.routine-entry-row { padding: 2px 0; border-bottom: 1px dashed rgba(var(--accent-rgb), .2); }
+.routine-entry-row .form-input { margin-bottom: 4px; }
+#routineEntries { font-size: 1rem; line-height: 2.3; color: var(--ink-brown); }

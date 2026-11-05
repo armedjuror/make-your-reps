@@ -138,12 +138,12 @@ const Trackers = {
 
     _fieldsToText(fields) {
         return (fields || []).map(f => f.type === 'choice' ? `${f.label}: ${(f.options || []).join(', ')}`
-            : f.type === 'scale' ? `${f.label}: scale ${f.max || 10}` : f.label).join('\n');
+            : f.type === 'scale' ? `${f.label}: scale ${f.max || 10}` : f.label).join('; ');
     },
 
     _textToFields(text) {
         const seen = new Set();
-        return text.split('\n').map(l => l.trim()).filter(Boolean).map(line => {
+        return text.split(/[;\n]/).map(l => l.trim()).filter(Boolean).map(line => {
             const [label, rest] = line.split(/:(.*)/s).map(x => x && x.trim());
             let key = this._slug(label), n = 2;
             while (seen.has(key)) key = `${this._slug(label)}_${n++}`;
@@ -161,24 +161,21 @@ const Trackers = {
         const habits = hres.status === 'success' ? (hres.data.results || hres.data) : [];
         const attached = new Set(m ? m.habit_ids : []);
         const v = (x, d = '') => esc(x == null ? d : x);
-        const F = (l, c, h) => Resilient.field(l, c, h);
-        const sel = (name, val, opts) => `<select data-f="${name}">${opts.map(([a, b]) =>
-            `<option value="${a}" ${String(val) === a ? 'selected' : ''}>${b}</option>`).join('')}</select>`;
-        const body =
-            F('Name', `<input data-f="name" maxlength="64" value="${v(m && m.name)}" placeholder="Water, Walk, Coffee">`) +
-            F('Unit', `<input data-f="unit" maxlength="16" value="${v(m && m.unit)}" placeholder="l, min, cups">`) +
-            F('What are you tracking?', sel('kind', m ? m.kind : 'additive', [['counter', 'A count (+1 each time)'], ['additive', 'An amount that adds up through the day'], ['single', 'One value per day (like sleep)']])) +
-            F('Goal', sel('direction', m ? m.direction : 'at_least', [['at_least', 'At least'], ['at_most', 'At most']])) +
-            F('Daily target', `<input data-f="target" type="number" step="any" value="${v(m && m.target)}" placeholder="Optional">`) +
-            F('Target on Light days', `<input data-f="target_light" type="number" step="any" value="${v(m && m.target_light)}" placeholder="Optional">`) +
-            F('Quick-add buttons', `<input data-f="quick_steps" value="${v(m && (m.quick_steps || []).join(', '))}" placeholder="1, 5, 10">`, 'Comma separated') +
-            F('Daily reminder', `<input data-f="remind_at" type="time" value="${v(m && m.remind_at)}">`, 'Adds a &ldquo;Log&rdquo; card to the timeline at this time') +
-            `<label class="form-label">Or attach to habits</label><div class="rs-scroll">${habits.length
-                ? habits.map(h => Resilient.check(`data-habit="${h.id}"`, esc(h.habit), attached.has(h.id))).join('')
-                : '<div class="form-text">No habits yet</div>'}</div>` +
-            F('Extra details to capture', `<textarea data-f="fields" rows="3" placeholder="Where: home, office, outside&#10;Mood: scale 5&#10;Note">${v(this._fieldsToText(m && m.fields))}</textarea>`,
-              'One per line. &ldquo;Label: a, b, c&rdquo; gives choices; &ldquo;Label: scale 5&rdquo; gives a 1&ndash;5 rating.') +
-            `<div class="mt-3">${Resilient.check('data-f="is_private"', 'Private (hidden until unlocked)', m && m.is_private)}</div>`;
+        const R = Resilient;
+        const linked = m && m.habit_ids && m.habit_ids.length ? m.habit_ids[0] : '';
+        const body = R.lead(m ? 'Change anything below.' : 'What would you like to keep an eye on? Water, walks, coffee, pages read&hellip;') + R.say(
+            `I want to track <input data-f="name" class="form-input" maxlength="64" value="${v(m && m.name)}" placeholder="water">
+             in <input data-f="unit" class="form-input rs-num" maxlength="16" value="${v(m && m.unit)}" placeholder="litres">`,
+            `Each entry is ${R.pick('data-f="kind"', m ? m.kind : 'additive', [['additive', 'an amount that adds up'], ['counter', 'one more (a count)'], ['single', 'the day&rsquo;s one value']])}.`,
+            `I&rsquo;m aiming for ${R.pick('data-f="direction"', m ? m.direction : 'at_least', [['at_least', 'at least'], ['at_most', 'at most']])}
+             <input data-f="target" type="number" step="any" class="form-input rs-num" value="${v(m && m.target)}" placeholder="3"> a day`,
+            `or <input data-f="target_light" type="number" step="any" class="form-input rs-num" value="${v(m && m.target_light)}" placeholder="2"> on Light days ${R.hint('(optional)')}`,
+            `Give me quick buttons for <input data-f="quick_steps" class="form-input" value="${v(m && (m.quick_steps || []).join(', '))}" placeholder="0.5, 1">`,
+            `Remind me at <input data-f="remind_at" type="time" class="form-input" value="${v(m && m.remind_at)}"> every day ${R.hint('(optional)')}`,
+            `and link it to ${R.pick('data-f="habit"', linked, [['', 'no habit'], ...habits.map(h => [h.id, esc(h.habit)])])}.`,
+            `When I log, also ask me <input data-f="fields" class="form-input rs-wide" value="${v(this._fieldsToText(m && m.fields))}" placeholder="where: home, office; mood: scale 5">`,
+            `Keep it ${R.pick('data-f="is_private"', m && m.is_private ? 'true' : 'false', [['false', 'visible'], ['true', 'private until I unlock']])}.`,
+        );
         const buttons = [{ label: 'Cancel' }];
         if (m && !m.is_system) buttons.unshift({ label: 'Delete', run: async () => {
             const r = await apiClient.delete(`board/api/metrics/${m.id}/`);
@@ -189,7 +186,7 @@ const Trackers = {
         buttons.push({ label: m ? 'Save' : 'Add tracker', primary: true, run: async (ov) => {
             const g = (n) => ov.querySelector(`[data-f="${n}"]`);
             const name = g('name').value.trim();
-            if (!name) return 'Give the tracker a name';
+            if (!name) return 'Tell me what you want to track';
             const steps = g('quick_steps').value.split(',').map(x => x.trim()).filter(Boolean).map(Number);
             if (steps.some(Number.isNaN)) return 'Quick-add buttons must be numbers';
             const payload = {
@@ -197,17 +194,16 @@ const Trackers = {
                 target: g('target').value === '' ? null : Number(g('target').value),
                 target_light: g('target_light').value === '' ? null : Number(g('target_light').value),
                 quick_steps: steps, remind_at: g('remind_at').value || null,
-                fields: this._textToFields(g('fields').value), is_private: g('is_private').checked,
+                fields: this._textToFields(g('fields').value), is_private: g('is_private').value === 'true',
             };
             const res = m ? await apiClient.put(`board/api/metrics/${m.id}/`, payload)
                           : await apiClient.post('board/api/metrics/', payload);
             if (res.status !== 'success') return res.error || 'Could not save the tracker';
             const metricId = res.data.id;
-            const chosen = new Set([...ov.querySelectorAll('[data-habit]:checked')].map(x => Number(x.dataset.habit)));
-            for (const h of habits) {
-                const was = attached.has(h.id), now = chosen.has(h.id);
-                if (now && !was) await apiClient.patch(`board/api/habits/${h.id}/`, { metric: metricId });
-                if (!now && was) await apiClient.patch(`board/api/habits/${h.id}/`, { metric: null });
+            const chosen = Number(g('habit').value) || null;
+            if (chosen !== (Number(linked) || null)) {
+                if (linked) await apiClient.patch(`board/api/habits/${linked}/`, { metric: null });
+                if (chosen) await apiClient.patch(`board/api/habits/${chosen}/`, { metric: metricId });
             }
             await Resilient.loadMetrics();
             if (typeof Resilient._refresh === 'function') Resilient._refresh();
@@ -221,11 +217,11 @@ const Trackers = {
         const res = await apiClient.get(`board/api/habits/${habitId}/steps/`, { silent: true });
         if (res.status !== 'success') return;
         const steps = res.data.steps.filter(s => s.visible);
-        const body = steps.length ? `<div class="rs-steps">${steps.map(s => `
-            <div class="form-check"><input class="form-check-input" type="checkbox" id="rs-st-${s.id}" data-step="${s.id}" ${s.done ? 'checked' : ''}>
-            <label class="form-check-label" for="rs-st-${s.id}">${esc(s.name)}${s.target ? ` <small class="text-brown">(${esc(s.target)})</small>` : ''}</label>
-            ${s.how_to ? `<div class="form-text">${esc(s.how_to)}</div>` : ''}</div>`).join('')}</div>`
-            : '<p>No steps yet. Add them from the habit settings.</p>';
+        const body = steps.length ? Resilient.lead('Tick each step as you do it.') + `<div class="conversational-form rs-steps">${steps.map(s => `
+            <div class="convo-line form-check"><input class="form-check-input" type="checkbox" id="rs-st-${s.id}" data-step="${s.id}" ${s.done ? 'checked' : ''}>
+            <label class="form-check-label" for="rs-st-${s.id}">${esc(s.name)}${s.target ? ` <small class="text-brown">${esc(s.target)}</small>` : ''}</label>
+            ${s.how_to ? `<div class="rs-howto">${esc(s.how_to)}</div>` : ''}</div>`).join('')}</div>`
+            : Resilient.lead('No steps yet. Add them from the habit&rsquo;s settings.');
         const ov = Resilient.dialog(name, body, [{ label: 'Close', run: async () => {
             if (typeof loadHabits === 'function') loadHabits();
             Resilient._refresh();
@@ -243,22 +239,25 @@ const Trackers = {
 
     // ── New Habit modal extras ───────────────────────────────
     _bindHabitCreate() {
-        const modal = document.getElementById('habitModal');
-        if (!modal || document.getElementById('rs-habit-create')) return;
-        const body = modal.querySelector('.modal-body');
-        const box = document.createElement('details');
+        const form = document.getElementById('habitConvoForm');
+        if (!form || document.getElementById('rs-habit-create')) return;
+        const R = Resilient;
+        const box = document.createElement('div');
         box.id = 'rs-habit-create';
-        box.className = 'mt-3';
-        const sel = (k, opts) => `<select data-hc="${k}" class="form-control">${opts.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select>`;
-        box.innerHTML = `<summary class="text-brown">More options</summary>
-            <div class="mt-2">
-                ${Resilient.field('On Light days', sel('on_light', [['required', 'Still required'], ['excused', 'Excused']]))}
-                ${Resilient.field('On Disrupted days', sel('on_disrupted', [['excused', 'Excused'], ['required', 'Still required']]))}
-                <div class="mt-3">${Resilient.check('data-hc="is_private"', 'Private (hidden until you unlock)')}
-                ${Resilient.check('data-hc="private_reminder"', 'Show a plain &ldquo;Reminder&rdquo; while locked')}</div>
-                ${Resilient.field('Checklist steps', '<textarea data-hc="steps" class="form-control" rows="3" placeholder="Glute bridges&#10;Plank&#10;Bird dog"></textarea>', 'One per line, optional')}
-            </div>`;
-        body.appendChild(box);
+        box.className = 'convo-line convo-step-2';
+        box.style.display = 'none';
+        box.innerHTML =
+            `<div>On Light days it&rsquo;s ${R.pick('data-hc="on_light"', 'required', [['required', 'still required'], ['excused', 'excused']])}
+             and on Disrupted days ${R.pick('data-hc="on_disrupted"', 'excused', [['excused', 'excused'], ['required', 'still required']])}.</div>
+             <div>Keep it ${R.pick('data-hc="is_private"', 'false', [['false', 'visible'], ['true', 'private until I unlock']])}.</div>
+             <div>The steps are <input type="text" data-hc="steps" class="form-input rs-wide" placeholder="glute bridges, plank, bird dog"> ${R.hint('(optional)')}</div>`;
+        form.appendChild(box);
+        // Shown together with the reminder and days lines, after the identity is filled in
+        const step = document.getElementById('habitFrequencyStep');
+        if (step && typeof MutationObserver !== 'undefined') {
+            new MutationObserver(() => { box.style.display = step.style.display; })
+                .observe(step, { attributes: true, attributeFilter: ['style'] });
+        }
     },
 
     /** Extra fields for the create-habit request. */
@@ -267,17 +266,15 @@ const Trackers = {
         if (!g('on_light')) return {};
         return {
             on_light: g('on_light').value, on_disrupted: g('on_disrupted').value,
-            is_private: g('is_private').checked, private_reminder: g('private_reminder').checked,
+            is_private: g('is_private').value === 'true',
         };
     },
 
     async afterHabitCreated(habitId) {
         const ta = document.querySelector('#rs-habit-create [data-hc="steps"]');
         if (!ta) return;
-        const names = ta.value.split('\n').map(x => x.trim()).filter(Boolean);
+        const names = ta.value.split(/[,\n]/).map(x => x.trim()).filter(Boolean);
         for (const name of names) await apiClient.post(`board/api/habits/${habitId}/steps/`, { name });
-        document.querySelectorAll('#rs-habit-create [data-hc]').forEach(el => {
-            if (el.type === 'checkbox') el.checked = false; else if (el.tagName === 'TEXTAREA') el.value = '';
-        });
+        document.querySelectorAll('#rs-habit-create [data-hc]').forEach(el => { el.value = el.tagName === 'SELECT' ? el.options[0].value : ''; });
     },
 };

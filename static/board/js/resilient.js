@@ -296,14 +296,19 @@ const Resilient = {
     },
 
     // ── Dialogs ──────────────────────────────────────────────
-    /** Markup helpers: the same field classes the rest of the app uses. */
-    field(label, control, hint) {
-        return `<label class="form-label">${label}</label>${control}${hint ? `<div class="form-text">${hint}</div>` : ''}`;
+    /**
+     * Conversational form helpers. Every form reads as a sentence the app says
+     * with you ("Remind me at ___"), built from the app's own .conversational-form,
+     * .convo-line and .form-input, like the New Habit and New Task modals.
+     */
+    say(...lines) { return `<div class="conversational-form">${lines.filter(Boolean).map(l => `<div class="convo-line">${l}</div>`).join('')}</div>`; },
+    /** An inline choice inside a sentence. opts: [[value, label], ...] */
+    pick(attrs, val, opts) {
+        return `<select class="form-input" ${attrs}>${opts.map(([v, l]) => `<option value="${v}" ${String(val) === String(v) ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
     },
-    check(attrs, label, checked) {
-        const id = 'rs-c-' + Math.random().toString(36).slice(2, 8);
-        return `<div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="${id}" ${attrs} ${checked ? 'checked' : ''}><label class="form-check-label" for="${id}">${label}</label></div>`;
-    },
+    hint(text) { return `<small class="text-brown ms-1">${text}</small>`; },
+    /** Assistant line shown above the sentence, like #habit_message. */
+    lead(text) { return `<div class="rs-lead">${text}</div>`; },
 
     /**
      * A real Bootstrap modal built like the app's own (modal-content, modal-icon,
@@ -319,11 +324,11 @@ const Resilient = {
             <div class="modal-body">${bodyHtml}<div class="rs-err" role="alert"></div></div>
             <div class="modal-footer">${buttons.map((b, i) => `<button type="button" class="btn btn-paper ${b.primary ? 'btn-primary' : ''}" data-idx="${i}">${this.esc(b.label)}</button>`).join('')}</div>
         </div></div>`;
-        el.querySelectorAll('input:not([type=checkbox]):not([type=radio]), textarea, select').forEach(x => x.classList.add('form-control'));
+        el.querySelectorAll('input:not([type=checkbox]):not([type=radio]):not([class]), textarea:not([class]), select:not([class])').forEach(x => x.classList.add('form-input'));
         document.body.appendChild(el);
         const modal = new bootstrap.Modal(el);
         el.addEventListener('hidden.bs.modal', () => { modal.dispose(); el.remove(); });
-        el.addEventListener('shown.bs.modal', () => { const f = el.querySelector('.modal-body input:not([type=checkbox]),.modal-body select,.modal-body textarea'); if (f) f.focus(); });
+        el.addEventListener('shown.bs.modal', () => { const f = el.querySelector('.modal-body input:not([type=checkbox]):not([type=hidden]),.modal-body textarea'); if (f) f.focus(); });
         el.addEventListener('click', async (ev) => {
             const btn = ev.target.closest('button[data-idx]');
             if (!btn) return;
@@ -342,11 +347,11 @@ const Resilient = {
     },
 
     slipDialog() {
-        this.dialog('I slipped', `<p>That&rsquo;s okay. This stays private, and the reset card will help you get back on track.</p>
-            ${this.field('What happened? (optional)', '<textarea rows="2" maxlength="280"></textarea>')}`, [
+        this.dialog('I slipped', this.lead('That&rsquo;s okay. One slip doesn&rsquo;t undo your progress, and this stays private.') +
+            this.say(`What happened was <input type="text" class="form-input rs-wide" id="rs-slip-note" maxlength="280" placeholder="optional, just for you">`), [
             { label: 'Cancel' },
             { label: 'Log it', primary: true, run: async (ov) => {
-                const res = await apiClient.post('board/api/lapses/', { note: ov.querySelector('textarea').value });
+                const res = await apiClient.post('board/api/lapses/', { note: ov.querySelector('#rs-slip-note').value });
                 if (res.status !== 'success') return res.error || 'Could not log that';
                 await this._refresh();
                 return true;
@@ -356,10 +361,9 @@ const Resilient = {
 
     travelDialog() {
         const t = this.logicalToday();
-        this.dialog('I\u2019m travelling',
-            this.field('From', `<input type="date" id="rs-t-from" value="${t}" min="${t}">`) +
-            this.field('To', `<input type="date" id="rs-t-to" value="${t}" min="${t}">`,
-                'Those days become Disrupted, followed by a few Light days to ease back in.'), [
+        this.dialog('I\u2019m travelling', this.lead('Travel days run on essentials only, then a few Light days help you ease back in.') +
+            this.say(`I&rsquo;m travelling from <input type="date" class="form-input" id="rs-t-from" value="${t}" min="${t}">`,
+                     `until <input type="date" class="form-input" id="rs-t-to" value="${t}" min="${t}">`), [
             { label: 'Cancel' },
             { label: 'Set travel', primary: true, run: async (ov) => {
                 const start = ov.querySelector('#rs-t-from').value, end = ov.querySelector('#rs-t-to').value;
@@ -396,19 +400,25 @@ const Resilient = {
     metricDialog(id) {
         const m = this.metrics.find(x => x.id === id);
         if (!m) return;
+        const unit = this.esc(m.unit || '');
+        const name = this.esc(m.name.toLowerCase());
+        const num = '<input id="rs-m-val" type="number" step="any" class="form-input rs-num" placeholder="0">';
+        const first = m.kind === 'counter' ? `One more ${name}.`
+            : m.kind === 'single' ? `Today my ${name} was ${num} ${unit}`
+            : `Add ${num} ${unit} to my ${name}`;
         const fields = (m.fields || []).map((f, i) => {
             const key = f.key || f.name;
+            const raw = f.label || key;
+            const label = this.esc(raw.charAt(0).toUpperCase() + raw.slice(1));
             const chips = ((m.chips || {})[key] || []).slice(0, 6);
-            const pick = chips.length ? `<div class="rs-pick">${chips.map(c => `<button type="button" class="freq-day-btn" data-chip="${i}" data-v="${this.esc(c)}">${this.esc(c)}</button>`).join('')}</div>` : '';
+            const pick = chips.length ? ` <span class="freq-days">${chips.map(c => `<button type="button" class="freq-day-btn" data-chip="${i}" data-v="${this.esc(c)}">${this.esc(c)}</button>`).join('')}</span>` : '';
             const input = f.type === 'scale'
-                ? `<input data-field="${this.esc(key)}" type="number" min="1" max="${f.max || 10}" placeholder="1 to ${f.max || 10}">`
-                : `<input data-field="${this.esc(key)}" type="text" maxlength="64">`;
-            return this.field(this.esc(f.label || key), pick + input);
-        }).join('');
-        const needValue = m.kind !== 'counter';
+                ? `<input data-field="${this.esc(key)}" type="number" min="1" max="${f.max || 10}" class="form-input rs-num" placeholder="1&ndash;${f.max || 10}">`
+                : `<input data-field="${this.esc(key)}" type="text" maxlength="64" class="form-input" placeholder="${f.type === 'choice' && f.options ? this.esc(f.options.slice(0, 2).join(', ')) : ''}">`;
+            return `${label}? ${input}${pick}`;
+        });
         const ov = this.dialog(`Log ${m.name}`,
-            (needValue ? this.field(`Value${m.unit ? ' (' + this.esc(m.unit) + ')' : ''}`, '<input id="rs-m-val" type="number" step="any">') : '') +
-            fields + this.field('Note (optional)', '<input id="rs-m-note" type="text" maxlength="280">'), [
+            this.say(first, ...fields, `and a note: <input id="rs-m-note" type="text" maxlength="280" class="form-input rs-wide" placeholder="optional">`), [
             { label: 'Cancel' },
             { label: 'Log', primary: true, run: async (o) => {
                 const data = {};
@@ -479,7 +489,7 @@ const Resilient = {
     },
 
     unlockDialog() {
-        this.dialog('Unlock private items', this.field('PIN', '<input id="rs-pin" type="password" inputmode="numeric" autocomplete="off">'), [
+        this.dialog('Unlock private items', this.say('My PIN is <input id="rs-pin" type="password" inputmode="numeric" autocomplete="off" class="form-input rs-num" placeholder="&bull;&bull;&bull;&bull;">'), [
             { label: 'Forgot PIN', run: async () => { this.resetPinDialog(); return true; } },
             { label: 'Unlock', primary: true, run: async (o) => {
                 const res = await apiClient.post('board/api/private/unlock/', { pin: o.querySelector('#rs-pin').value });
@@ -494,8 +504,9 @@ const Resilient = {
 
     pinSetupDialog() {
         this.dialog('Set a PIN for private items',
-            this.field('New PIN', '<input id="rs-pin" type="password" inputmode="numeric" autocomplete="off">', '4 to 12 digits') +
-            this.field('Repeat PIN', '<input id="rs-pin2" type="password" inputmode="numeric" autocomplete="off">'), [
+            this.lead('Private habits and trackers stay hidden until you unlock them with this PIN.') +
+            this.say('My new PIN is <input id="rs-pin" type="password" inputmode="numeric" autocomplete="off" class="form-input rs-num" placeholder="4&ndash;12 digits">',
+                     'and once more: <input id="rs-pin2" type="password" inputmode="numeric" autocomplete="off" class="form-input rs-num" placeholder="repeat">'), [
             { label: 'Cancel' },
             { label: 'Save PIN', primary: true, run: async (o) => {
                 const pin = o.querySelector('#rs-pin').value;
@@ -510,9 +521,9 @@ const Resilient = {
     },
 
     resetPinDialog() {
-        this.dialog('Reset PIN', '<p>We&rsquo;ll email you a code.</p>' +
-            this.field('Code from email', '<input id="rs-code" type="text" autocomplete="one-time-code">') +
-            this.field('New PIN', '<input id="rs-pin" type="password" inputmode="numeric" autocomplete="off">'), [
+        this.dialog('Reset PIN', this.lead('Tap &ldquo;Send code&rdquo; and we&rsquo;ll email you a code.') +
+            this.say('The code I got is <input id="rs-code" type="text" autocomplete="one-time-code" class="form-input rs-num" placeholder="123456">',
+                     'and my new PIN is <input id="rs-pin" type="password" inputmode="numeric" autocomplete="off" class="form-input rs-num" placeholder="4&ndash;12 digits">'), [
             { label: 'Send code', run: async (o) => {
                 const res = await apiClient.post('board/api/private/reset/request/', {});
                 return res.status === 'success' ? 'Code sent. Check your email.' : (res.error || 'Could not send a code');
@@ -553,7 +564,7 @@ const Resilient = {
         if (!box) {
             box = document.createElement('div');
             box.id = 'rs-habit-options';
-            box.className = 'mt-3';
+            box.className = 'mt-4 pt-3 border-top';
             const body = modal.querySelector('.modal-body') || modal;
             body.appendChild(box);
         }
@@ -563,31 +574,36 @@ const Resilient = {
         ]);
         const h = hres.status === 'success' ? hres.data : {};
         const steps = sres.status === 'success' ? sres.data.steps : [];
-        const sel = (key, val, opts) => `<select data-hopt="${key}" class="form-control">${
-            opts.map(([v, l]) => `<option value="${v}" ${val === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
+        const mres = await apiClient.get('board/api/metrics/', { silent: true });
+        const metrics = mres.status === 'success' ? mres.data : [];
         box.dataset.habit = habit.id;
-        box.innerHTML = `
-            <div class="settings-card mt-3">
-                <h6 class="settings-card-title"><i class="fas fa-cloud-sun-rain me-2"></i>Hard days</h6>
-                ${this.field('On Light days', sel('on_light', h.on_light || 'required', [['required', 'Still required'], ['excused', 'Excused']]))}
-                ${this.field('On Disrupted days', sel('on_disrupted', h.on_disrupted || 'excused', [['required', 'Still required'], ['excused', 'Excused']]))}
-                <div class="mt-3">${this.check('data-hopt="is_private"', 'Private (hidden until you unlock)', h.is_private)}
-                ${this.check('data-hopt="private_reminder"', 'Show a plain &ldquo;Reminder&rdquo; while locked', h.private_reminder)}</div>
-            </div>
-            <div class="settings-card mt-3">
-                <h6 class="settings-card-title"><i class="fas fa-list-check me-2"></i>Checklist</h6>
-                ${this.field('Complete when', sel('complete_when', h.complete_when || 'all', [['all', 'All steps are done'], ['any', 'Any step is done'], ['final', 'The last step is done']]))}
-                <div id="rs-steps-list" class="mt-2">${steps.map(st => `<div class="d-flex align-items-center gap-2 py-1"><span class="flex-grow-1">${this.esc(st.name)}</span><button type="button" class="rs-link" data-hstep="del" data-id="${st.id}">Remove</button></div>`).join('') || '<div class="form-text">No steps yet.</div>'}</div>
-                <div class="d-flex gap-2 mt-2 align-items-end"><input type="text" id="rs-new-step" class="form-control" maxlength="80" placeholder="Add a step"><button type="button" class="btn btn-paper btn-sm" data-hstep="add">Add</button></div>
-            </div>`;
+        box.innerHTML = `<h6 class="mb-2">On hard days and privacy:</h6>` + this.say(
+            `On Light days this habit is ${this.pick('data-hopt="on_light"', h.on_light || 'required', [['required', 'still required'], ['excused', 'excused']])}`,
+            `and on Disrupted days it&rsquo;s ${this.pick('data-hopt="on_disrupted"', h.on_disrupted || 'excused', [['excused', 'excused'], ['required', 'still required']])}.`,
+            `Keep it ${this.pick('data-hopt="is_private"', h.is_private ? 'true' : 'false', [['false', 'visible'], ['true', 'private until I unlock']])}`,
+            h.is_private ? `and while locked, remind me with ${this.pick('data-hopt="private_reminder"', h.private_reminder ? 'true' : 'false', [['false', 'nothing'], ['true', 'a plain &ldquo;Reminder&rdquo;']])}.` : '',
+            `Track it with ${this.pick('data-hopt="metric"', h.metric ?? '', [['', 'no tracker'], ...metrics.map(m => [m.id, this.esc(m.name)])])}.`,
+        ) + `<h6 class="mt-3 mb-2">Steps:</h6>` + this.say(
+            steps.length ? `Count it done when ${this.pick('data-hopt="complete_when"', h.complete_when || 'all', [['all', 'all the steps'], ['any', 'any step'], ['final', 'the last step']])} ${h.complete_when === 'any' || h.complete_when === 'final' ? 'is' : 'are'} ticked.` : '',
+            ...steps.map((st, i) => `${i + 1}. ${this.esc(st.name)} <button type="button" class="tl-link ms-1" data-hstep="del" data-id="${st.id}">remove</button>`),
+            `${steps.length ? 'Then' : 'First'} I <input type="text" id="rs-new-step" class="form-input" maxlength="80" placeholder="${steps.length ? 'add another step' : 'add a step'}"> <button type="button" class="btn btn-paper btn-sm" data-hstep="add">Add</button>`,
+        );
+        const input = box.querySelector('#rs-new-step');
+        input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); box.querySelector('[data-hstep="add"]').click(); } });
     },
 
     async _saveHabitOption(el) {
         const id = document.getElementById('rs-habit-options').dataset.habit;
         const key = el.dataset.hopt;
-        const value = el.type === 'checkbox' ? el.checked : el.value;
+        let value = el.value;
+        if (key === 'is_private' || key === 'private_reminder') value = value === 'true';
+        if (key === 'metric') value = value ? Number(value) : null;
         const res = await this._call('patch', `board/api/habits/${id}/`, { [key]: value });
-        if (res.status === 'success' && typeof loadHabits === 'function') loadHabits();
+        if (res.status === 'success') {
+            if (typeof loadHabits === 'function') loadHabits();
+            if (key === 'is_private' || key === 'complete_when') this.renderHabitOptions();
+            if (key === 'metric') this.loadMetrics();
+        }
     },
 
     async _habitStepAction(btn) {

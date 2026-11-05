@@ -1173,13 +1173,9 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Date</label>
-                        <input type="date" class="form-control" id="sleepDate">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Hours Slept</label>
-                        <input type="number" class="form-control" id="sleepHours" placeholder="Hours slept" step="0.5" min="0" max="24" required>
+                    <div class="conversational-form">
+                        <div class="convo-line">On <input type="date" class="form-input" id="sleepDate"></div>
+                        <div class="convo-line">I slept for <input type="number" class="form-input rs-num" id="sleepHours" placeholder="7" step="0.5" min="0" max="24" required> hours.</div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -1199,7 +1195,7 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="small mb-2"><b>Essential</b> stays on every day, even Disrupted days. <b>Anchor</b> stays on Light days. <b>Flexible</b> only appears on Normal days. <b>Fixed</b> blocks do not move when you run late. Duration is optional; a block otherwise runs until the next one starts.</p>
+                    <div class="rs-lead"><b>Essential</b> blocks stay on every day, even Disrupted ones. <b>Anchors</b> stay on Light days. <b>Flexible</b> ones only show on Normal days. Leave the minutes empty and a block runs until the next one starts.</div>
                     <div id="routineEntries">
                         <!-- Dynamic routine entry rows -->
                     </div>
@@ -1224,22 +1220,13 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Name</label>
-                        <input type="text" class="form-control" id="rlName" placeholder="GitHub">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">URL</label>
-                        <input type="url" class="form-control" id="rlUrl" placeholder="https://github.com">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Icon URL (optional)</label>
-                        <input type="url" class="form-control" id="rlIcon" placeholder="https://github.com/favicon.ico">
-                    </div>
-                    <div class="mb-3">
-                        <div class="form-check form-switch">
+                    <div class="conversational-form">
+                        <div class="convo-line">Save <input type="text" class="form-input" id="rlName" placeholder="GitHub"></div>
+                        <div class="convo-line">at <input type="url" class="form-input rs-wide" id="rlUrl" placeholder="https://github.com"></div>
+                        <div class="convo-line">with the icon <input type="url" class="form-input rs-wide" id="rlIcon" placeholder="https://github.com/favicon.ico"> <small class="text-brown ms-1">(optional)</small></div>
+                        <div class="convo-line form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="rlFeatured" checked>
-                            <label class="form-check-label" for="rlFeatured">Show on Home</label>
+                            <label class="form-check-label" for="rlFeatured">and show it on Home.</label>
                         </div>
                     </div>
                     <input type="hidden" id="rlEditId" value="">
@@ -1316,17 +1303,10 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Task</label>
-                        <input type="text" class="form-control" id="editTaskName" placeholder="Task name">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Group</label>
-                        <select class="form-control" id="editTaskGroup"></select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Deadline <small class="text-brown">(optional — clear to remove)</small></label>
-                        <input type="datetime-local" class="form-control" id="editTaskDeadline">
+                    <div class="conversational-form">
+                        <div class="convo-line">I want to <input type="text" class="form-input rs-wide" id="editTaskName" placeholder="finish the report"></div>
+                        <div class="convo-line">before <input type="datetime-local" class="form-input" id="editTaskDeadline"> <small class="text-brown ms-1">(clear it for no deadline)</small></div>
+                        <div class="convo-line">in <select class="form-input" id="editTaskGroup"></select></div>
                     </div>
                     <input type="hidden" id="editTaskId" value="">
                 </div>
@@ -1364,9 +1344,8 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Group Name</label>
-                        <input type="text" class="form-control" id="groupNameInput" placeholder="e.g. Work, Personal" autofocus>
+                    <div class="conversational-form">
+                        <div class="convo-line">Call this group <input type="text" class="form-input" id="groupNameInput" placeholder="work" autofocus></div>
                     </div>
                     <input type="hidden" id="groupEditId" value="">
                 </div>
