@@ -1,5 +1,5 @@
 import uuid
-from datetime import date, timedelta
+from datetime import date, time, timedelta
 
 from django.contrib.auth.models import User
 from django.contrib.postgres.fields import ArrayField
@@ -36,6 +36,15 @@ class SearchEngineChoices(models.TextChoices):
     YOUTUBE = 'youtube'
     CHATGPT = 'chatgpt'
     CLAUDE = 'claude'
+
+
+def default_weekend():
+    return [5, 6]
+
+
+class StreakRule(models.TextChoices):
+    ACTIVITY = 'activity'   # today's rule: any counted action keeps the streak
+    ROUTINE = 'routine'     # the day must meet its routine bar
 
 
 class UserDetail(models.Model):
@@ -80,6 +89,24 @@ class UserDetail(models.Model):
     last_active_date = models.DateField(null=True, blank=True, default=None)
 
     is_onboarded = models.BooleanField(default=False)
+
+    # Resilient days
+    weekend_days = ArrayField(models.IntegerField(), default=default_weekend)  # Monday = 0
+    day_start = models.TimeField(default=time(4, 0))  # activity before this belongs to yesterday
+    freezes = models.PositiveSmallIntegerField(default=1)
+    travel_ramp_days = models.PositiveSmallIntegerField(default=1)
+    streak_rule = models.CharField(max_length=8, choices=StreakRule.choices, default=StreakRule.ACTIVITY)
+    slip_metric = models.ForeignKey(
+        'Metric', null=True, blank=True, on_delete=models.SET_NULL, related_name='+',
+    )
+    # Writing the day's journal marks this habit done
+    journal_habit = models.ForeignKey(
+        'Habit', null=True, blank=True, on_delete=models.SET_NULL, related_name='+',
+    )
+
+    # Privacy mode (PIN hides private items; it is not encryption)
+    private_pin_hash = models.CharField(max_length=128, blank=True, default='')
+    private_unlock_minutes = models.PositiveSmallIntegerField(default=10)
 
     updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -181,60 +208,34 @@ class Habit(models.Model):
         choices=HabitStatus.choices,
         default=HabitStatus.ACTIVE.value
     )
+    # Resilient days: how this habit behaves on Light / Disrupted days
+    on_light = models.CharField(max_length=8, default='required')       # required / excused
+    on_disrupted = models.CharField(max_length=8, default='excused')    # required / excused
+    # Metrics, checklists, privacy
+    metric = models.ForeignKey('Metric', null=True, blank=True, on_delete=models.SET_NULL, related_name='habits')
+    current_stage = models.PositiveSmallIntegerField(default=1)
+    complete_when = models.CharField(max_length=8, default='all')       # all / any
+    is_private = models.BooleanField(default=False)
+    is_system = models.BooleanField(default=False)                      # hidden system habit (Reset)
+    private_reminder = models.BooleanField(default=False)               # locked: show a bare 'Reminder' instead of nothing
+
+    def _streaks(self):
+        """(current, max), cached on the instance. Views may set ``_streak_ctx`` to share one context."""
+        cached = getattr(self, '_streak_cache', None)
+        if cached is None:
+            from board.streaks import StreakContext, habit_streaks
+            ctx = getattr(self, '_streak_ctx', None) or StreakContext(self.user_id)
+            logs = {x.date: x.is_done for x in self.habitlog_set.all()}
+            cached = self._streak_cache = habit_streaks(self, logs, ctx)
+        return cached
 
     @property
     def current_streak(self):
-        logs = {x.date.isoformat(): x.is_done for x in self.habitlog_set.all()}
-        current_streak = 0
-        today = date.today()
-        min_date = self.created_at.date()
-
-        today_weekday = today.weekday()
-        today_is_scheduled = not self.frequency or today_weekday in self.frequency
-        today_is_done = logs.get(today.isoformat(), False)
-
-        if today_is_scheduled and not today_is_done:
-            current_date = today - timedelta(days=1)
-        else:
-            current_date = today
-
-        while current_date >= min_date:
-            weekday = current_date.weekday()
-            if self.frequency and (weekday not in self.frequency):
-                current_date -= timedelta(days=1)
-                continue
-
-            if logs.get(current_date.isoformat(), False):
-                current_streak += 1
-                current_date -= timedelta(days=1)
-            else:
-                break
-        return current_streak
+        return self._streaks()[0]
 
     @property
     def max_streak(self):
-        logs = list(self.habitlog_set.filter(
-            is_done=True
-        ).order_by('date').values_list('date', flat=True))
-
-        if not logs:
-            return 0
-
-        max_streak = 0
-        current_streak = 1
-        for i in range(1, len(logs)):
-            prev_date = logs[i - 1]
-            curr_date = logs[i]
-            next_scheduled = prev_date + timedelta(days=1)
-            while self.frequency and (next_scheduled.weekday() not in self.frequency):
-                next_scheduled += timedelta(days=1)
-            if curr_date == next_scheduled:
-                current_streak += 1
-                max_streak = max(max_streak, current_streak)
-            else:
-                current_streak = 1
-
-        return max(max_streak, current_streak)
+        return self._streaks()[1]
 
 
 class LogStatus(models.TextChoices):
@@ -282,12 +283,21 @@ class RoutineType(models.TextChoices):
     HOLIDAY = 'holiday'
 
 
+class Tier(models.TextChoices):
+    ESSENTIAL = 'essential'   # shown in every mode; never shifted
+    ANCHOR = 'anchor'         # Normal + Light
+    FLEXIBLE = 'flexible'     # Normal only; first to be dropped
+
+
 class RoutineEntry(models.Model):
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='routine_entries')
     routine_type = models.CharField(max_length=10, choices=RoutineType.choices)
     title = models.CharField(max_length=255)
     time = models.TimeField()
+    tier = models.CharField(max_length=10, choices=Tier.choices, default=Tier.ANCHOR)
+    fixed_time = models.BooleanField(default=False)  # True: running late never shifts it
+    duration_min = models.PositiveSmallIntegerField(null=True, blank=True)  # null: ends at next block
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -457,3 +467,154 @@ class Feedback(models.Model):
 
     def __str__(self):
         return f"{self.get_type_display()}: {self.subject}"
+
+
+# ──────────────────────────────────────
+# Resilient days: day plans, block logs, summaries
+# ──────────────────────────────────────
+
+class DayMode(models.TextChoices):
+    NORMAL = 'normal'
+    LIGHT = 'light'
+    DISRUPTED = 'disrupted'
+
+
+class DayPlan(models.Model):
+    """One row per user per date. No row means: weekday rule + Normal."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='day_plans')
+    date = models.DateField()
+    template = models.CharField(max_length=10, choices=RoutineType.choices)
+    mode = models.CharField(max_length=10, choices=DayMode.choices, default=DayMode.NORMAL)
+    # manual / checkin / travel / ramp / reset / slip
+    source = models.CharField(max_length=10, default='manual')
+    shifts = models.JSONField(default=list)  # running late: [{"at": iso, "minutes": 30}, ...]
+    slips = models.JSONField(default=list)   # private: [{"at": iso, "note": "..."}]
+    reset_done_at = models.DateTimeField(null=True, blank=True)
+    reason = models.CharField(max_length=160, blank=True, default='')  # off day: 'Night shift: ward 3'
+
+    class Meta:
+        unique_together = ('user', 'date')
+
+    def __str__(self):
+        return f'{self.user} {self.date} {self.template}/{self.mode}'
+
+
+class BlockStatus(models.TextChoices):
+    DONE = 'done'
+    SKIPPED = 'skipped'
+    DROPPED = 'dropped'   # 'missed' is derived, never stored
+
+
+class BlockLog(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='block_logs')
+    date = models.DateField()
+    entry = models.ForeignKey(RoutineEntry, null=True, on_delete=models.SET_NULL)
+    title = models.CharField(max_length=255)        # snapshot, survives entry deletion
+    scheduled_time = models.TimeField()             # snapshot
+    tier = models.CharField(max_length=10, choices=Tier.choices, default=Tier.ANCHOR)  # snapshot
+    status = models.CharField(max_length=8, choices=BlockStatus.choices)
+    reason = models.CharField(max_length=120, blank=True)
+    logged_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('user', 'date', 'entry')
+
+
+class DaySummary(models.Model):
+    """One row per closed day; the streak source of truth."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='day_summaries')
+    date = models.DateField()
+    mode = models.CharField(max_length=10)
+    required = models.PositiveSmallIntegerField(default=0)
+    required_done = models.PositiveSmallIntegerField(default=0)
+    outcome = models.CharField(max_length=8)  # met / reset / frozen / missed / legacy
+
+    class Meta:
+        unique_together = ('user', 'date')
+
+
+# ──────────────────────────────────────
+# Metrics, checklists, journals
+# ──────────────────────────────────────
+
+class MetricKind(models.TextChoices):
+    COUNTER = 'counter'
+    ADDITIVE = 'additive'
+    SINGLE = 'single'
+
+
+class Metric(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='metrics')
+    name = models.CharField(max_length=64)          # Walk, Coffee, Water, Sleep
+    unit = models.CharField(max_length=16, blank=True)
+    kind = models.CharField(max_length=8, choices=MetricKind.choices, default=MetricKind.ADDITIVE)
+    direction = models.CharField(max_length=8, default='at_least')  # at_least / at_most
+    target = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    target_light = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    quick_steps = ArrayField(models.DecimalField(max_digits=8, decimal_places=2), default=list)
+    fields = models.JSONField(default=list)  # [{key, label, type: choice|scale|text, options?, allow_other?, max?}]
+    is_private = models.BooleanField(default=False)
+    is_system = models.BooleanField(default=False)  # built-in, cannot be deleted
+    system_key = models.CharField(max_length=8, blank=True, default='')  # 'sleep' or 'slip'
+    remind_at = models.TimeField(null=True, blank=True)  # daily reminder on the timeline
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return f'{self.user} - {self.name}'
+
+
+class MetricEntry(models.Model):
+    metric = models.ForeignKey(Metric, on_delete=models.CASCADE, related_name='entries')
+    date = models.DateField()        # follows day_start
+    at = models.DateTimeField()      # auto now, editable for back-logging
+    value = models.DecimalField(max_digits=8, decimal_places=2)
+    data = models.JSONField(default=dict)  # {trigger: 'after meal', urge: 4}; single: {previous: 6.5}
+
+    class Meta:
+        ordering = ['at', 'id']
+        indexes = [models.Index(fields=['metric', 'date'])]
+
+
+class HabitStep(models.Model):
+    habit = models.ForeignKey(Habit, on_delete=models.CASCADE, related_name='steps')
+    order = models.PositiveSmallIntegerField(default=0)
+    name = models.CharField(max_length=120)               # Glute bridges
+    target = models.CharField(max_length=60, blank=True)  # 2 x 10-12, 20 s hold
+    how_to = models.TextField(blank=True)                 # push through heels, don't arch
+    stage = models.PositiveSmallIntegerField(default=1)   # shown when habit.current_stage >= stage
+    metric = models.ForeignKey(Metric, null=True, blank=True, on_delete=models.SET_NULL)
+
+    class Meta:
+        ordering = ['order', 'id']
+
+
+class HabitStepLog(models.Model):
+    step = models.ForeignKey(HabitStep, on_delete=models.CASCADE, related_name='logs')
+    date = models.DateField()
+    done = models.BooleanField(default=False)
+    value = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+
+    class Meta:
+        unique_together = ('step', 'date')
+
+
+class Journal(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='journals')
+    name = models.CharField(max_length=64)
+    metric = models.OneToOneField(Metric, null=True, blank=True, on_delete=models.SET_NULL, related_name='journal')
+    is_default = models.BooleanField(default=False)
+    is_private = models.BooleanField(default=False)
+
+
+class JournalEntry(models.Model):
+    journal = models.ForeignKey(Journal, on_delete=models.CASCADE, related_name='entries')
+    date = models.DateField()
+    at = models.DateTimeField()
+    text = models.TextField()
+    metric_entry = models.OneToOneField(MetricEntry, null=True, blank=True, on_delete=models.SET_NULL)
+
+    class Meta:
+        ordering = ['-at', '-id']

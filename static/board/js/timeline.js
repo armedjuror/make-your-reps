@@ -16,8 +16,9 @@ const Timeline = {
     init() {
         this.events = [];
         this.hasMore = true;
-        this.currentDate = getDate(new Date());
+        this.currentDate = Resilient.logicalToday();
         this.updateDateLabel();
+        Resilient.init();
         this.loadEvents();
         this.setupScroll();
         if (!this._bound) { this._bound = true; this._bindListEvents(); }
@@ -29,7 +30,7 @@ const Timeline = {
     updateDateLabel() {
         const el = document.getElementById('timeline-date-label');
         if (!el) return;
-        const today = getDate(new Date());
+        const today = Resilient.logicalToday();
         const yesterday = getDate(new Date(Date.now() - 86400000));
         const tomorrow = getDate(new Date(Date.now() + 86400000));
         if (this.currentDate === today) el.textContent = 'Today';
@@ -74,7 +75,7 @@ const Timeline = {
 
         if (res.status === 'success') {
             // Auto-generate if no real events exist yet for this date
-            const realTypes = ['habit', 'todo', 'meeting', 'accountability_habit', 'accountability_invite', 'friend_request'];
+            const realTypes = ['routine', 'habit', 'todo', 'meeting', 'accountability_habit', 'accountability_invite', 'friend_request'];
             const hasRealEvents = res.data.some(e => realTypes.includes(e.event_type));
             if (!before && !hasRealEvents && !this.generatedDates.has(this.currentDate)) {
                 this.generatedDates.add(this.currentDate);
@@ -82,6 +83,7 @@ const Timeline = {
                 await this.loadEvents();
                 return;
             }
+            if (!before && res.day) Resilient.setDay(res.day, this.currentDate);
             this.events = this.events.concat(res.data);
             this.hasMore = res.has_more;
             this.render();
@@ -141,7 +143,7 @@ const Timeline = {
 
     setFilter(filter) {
         this.filter = filter;
-        document.querySelectorAll('.timeline-chip').forEach(b =>
+        document.querySelectorAll('.timeline-chip[data-tl-filter]').forEach(b =>
             b.classList.toggle('active', b.dataset.tlFilter === filter));
         this.render();
     },
@@ -173,7 +175,7 @@ const Timeline = {
         };
         return `
             <div class="tl-resched">
-                <input type="date" class="tl-date" data-tl-date min="${getDate(new Date())}" value="${this.esc(d)}" aria-label="New date">
+                <input type="date" class="tl-date" data-tl-date min="${Resilient.logicalToday()}" value="${this.esc(d)}" aria-label="New date">
                 ${quick('Tomorrow', 1)}${quick('In a week', 7)}
                 <button type="button" class="btn btn-paper btn-sm btn-primary" data-tl-action="resched-go" data-target="${this.esc(target)}">${verb}</button>
                 <button type="button" class="tl-link" data-tl-action="resched-cancel">Cancel</button>
@@ -191,14 +193,18 @@ const Timeline = {
     _itemHtml(event, extraClass = '', label = '') {
         const ts = new Date(event.timestamp);
         const responded = event.action_response ? 'responded' : '';
+        const endTs = event.ends_at ? new Date(event.ends_at) : null;
+        const timeText = endTs ? `${this._fmtTime(ts)} \u2013 ${this._fmtTime(endTs)}` : this._fmtTime(ts);
         return `
-            <div class="timeline-item ${this.esc('timeline-type-' + event.event_type)} ${responded} ${extraClass}" data-id="${event.id}">
-                <div class="timeline-time">${this._fmtTime(ts)}</div>
+            <div class="timeline-item ${this.esc('timeline-type-' + event.event_type)} ${responded} ${event.status ? this.esc('tl-st-' + event.status) : ''} ${extraClass}" data-id="${this.esc(event.id)}">
+                <div class="timeline-time">${timeText}</div>
                 <div class="timeline-icon"><i class="${this.getTypeIcon(event.event_type)}"></i></div>
                 <div class="timeline-content">
                     ${label ? `<div class="timeline-label">${label}</div>` : ''}
-                    <div class="timeline-event-text">${this.esc(event.event)}${event.group ? ` <span class="timeline-group">${this.esc(event.group.name)}</span>` : ''}</div>
-                    ${this._actionsFor(event, extraClass)}
+                    <div class="tl-line">
+                        <div class="timeline-event-text">${this.esc(event.event)}${Resilient.note(event)}${event.group ? ` <span class="timeline-group">${this.esc(event.group.name)}</span>` : ''}</div>
+                        ${this._actionsFor(event, extraClass)}
+                    </div>
                 </div>
             </div>`;
     },
@@ -233,8 +239,11 @@ const Timeline = {
         const isOverdue = e => this._isOverdue(e);
         const overdue = sorted.filter(isOverdue);
         const rest = sorted.filter(e => !isOverdue(e));
-        const past = rest.filter(e => new Date(e.timestamp) <= now);
-        const upcoming = rest.filter(e => new Date(e.timestamp) > now);
+        // A block that has started but not ended stays "current" until it ends
+        const inProgress = rest.filter(e => e.ends_at && new Date(e.timestamp) <= now && now < new Date(e.ends_at));
+        const current = inProgress.length ? inProgress[inProgress.length - 1] : null;
+        const past = rest.filter(e => e !== current && new Date(e.timestamp) <= now);
+        const upcoming = rest.filter(e => e !== current && new Date(e.timestamp) > now);
 
         let html = '';
 
@@ -258,7 +267,7 @@ const Timeline = {
         const latest = past.length ? past[past.length - 1] : null;
         const folded = past.slice(0, -1);
         if (folded.length) {
-            const pending = folded.filter(e => e.action && !e.action_response).length;
+            const pending = folded.filter(e => this._isUndone(e)).length;
             const names = folded.slice(-6).map(e => this.esc(e.event)).join(' &middot; ');
             html += `
                 <div class="tl-earlier ${this.showEarlier ? 'open' : ''}">
@@ -281,12 +290,18 @@ const Timeline = {
                 <div class="timeline-now-line"></div>
             </div>`;
 
+        if (current) {
+            const left = this._until(new Date(current.ends_at), now);
+            // The block you are in now gets the highlight; the next one is shown in bold
+            html += this._itemHtml(current, 'timeline-next timeline-current', this.esc(`IN PROGRESS \u00b7 ${left} left`));
+        }
+
         upcoming.forEach((e, i) => {
             html += i === 0
-                ? this._itemHtml(e, 'timeline-next', this.esc(Theme.text('next', this._until(new Date(e.timestamp), now).toUpperCase())))
+                ? this._itemHtml(e, current ? 'timeline-upnext' : 'timeline-next', this.esc(Theme.text('next', this._until(new Date(e.timestamp), now).toUpperCase())))
                 : this._itemHtml(e);
         });
-        if (!upcoming.length) html += '<div class="timeline-empty">Nothing else today.</div>';
+        if (!upcoming.length && !current) html += '<div class="timeline-empty">Nothing else today.</div>';
 
         list.innerHTML = html;
 
@@ -335,7 +350,7 @@ const Timeline = {
             if (act === 'resched-quick') this.reschedDate = btn.dataset.date;
             if (act === 'resched-go') {
                 const date = this.reschedDate;
-                if (!date || date < getDate(new Date())) return;
+                if (!date || date < Resilient.logicalToday()) return;
                 const t = btn.dataset.target;
                 btn.disabled = true;
                 if (t === 'all') this.snoozeAllOverdue(date); else this.snooze(Number(t), date);
@@ -346,7 +361,7 @@ const Timeline = {
         if (list) list.addEventListener('change', (e) => {
             if (e.target.matches('[data-tl-date]')) this.reschedDate = e.target.value;
         });
-        document.querySelectorAll('.timeline-chip').forEach(b =>
+        document.querySelectorAll('.timeline-chip[data-tl-filter]').forEach(b =>
             b.addEventListener('click', () => this.setFilter(b.dataset.tlFilter)));
         const gsel = document.getElementById('timeline-group-filter');
         if (gsel) gsel.addEventListener('change', () => { this.groupFilter = gsel.value; this.render(); });
@@ -385,6 +400,19 @@ const Timeline = {
         if (typeof TodosPane !== 'undefined' && panesLoaded?.todos) TodosPane.loadTodos();
     },
 
+    /**
+     * Something you could have marked done and didn't: a routine block, a habit,
+     * a task, the journal, a tracker log or the reset card. Meetings, partner
+     * check-ins, invites and info cards have buttons but nothing to complete.
+     */
+    _isUndone(e) {
+        if (e.action_response) return false;
+        if (e.event_type === 'routine') return e.status === 'pending' || e.status === 'missed';
+        const id = String(e.id);
+        if (id.startsWith('reset-') || /^metric-\d+-/.test(id)) return !!e.action;
+        return ['habit', 'todo', 'journal'].includes(e.event_type) && !!e.action;
+    },
+
     _isOverdue(e) {
         return e.event_type === 'todo' && !e.action_response && /^overdue/i.test(e.event || '');
     },
@@ -417,6 +445,8 @@ const Timeline = {
     },
 
     renderAction(event) {
+        // Only the resilient-day items (blocks, check-in, reset, tracker reminders) are handled there
+        if (Resilient.owns(event)) return Resilient.actions(event);
         if (!event.action) return '';
         if (event.action_response) {
             // Already responded
@@ -489,7 +519,8 @@ const Timeline = {
         let label = '';
         for (const key of keys) {
             const val = resp[key];
-            if (val === true) label = '<span class="badge-done"><i class="fas fa-check"></i> Done</span>';
+            const doneText = { open_journal: 'Journaled', log_sleep: 'Logged' }[key] || 'Done';
+            if (val === true) label = `<span class="badge-done"><i class="fas fa-check"></i> ${doneText}</span>`;
             else if (val === false) label = '<span class="badge-skipped">Skipped</span>';
             else label = `<span class="badge-done">${val}</span>`;
         }

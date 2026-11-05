@@ -57,6 +57,14 @@ const JournalPane = {
                 };
             }
         }
+        // Notes logged with trackers also mark the day
+        const notes = await apiClient.get(`board/api/journal_entries/?from=${startDate}&to=${endDate}`, { silent: true });
+        if (notes.status === 'success') {
+            for (const n of notes.data) {
+                const d = this.journalData[n.date] || (this.journalData[n.date] = { journal: '' });
+                d.notes = (d.notes || 0) + 1;
+            }
+        }
 
         this.renderCalendar();
     },
@@ -68,6 +76,7 @@ const JournalPane = {
             const editor = document.getElementById('journal-editor');
             if (editor) editor.value = res.data.journal || '';
         }
+        if (typeof Trackers !== 'undefined') Trackers.journalNotes(today);
     },
 
     renderCalendar() {
@@ -105,8 +114,8 @@ const JournalPane = {
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
             const isToday = dateStr === todayStr;
             const data = this.journalData[dateStr];
-            const hasJournal = data && data.journal && data.journal.trim().length > 0;
-            const preview = hasJournal ? data.journal.substring(0, 40) : '';
+            const hasJournal = data && ((data.journal && data.journal.trim().length > 0) || data.notes > 0);
+            const preview = hasJournal ? (data.journal || '').substring(0, 40) : '';
 
             let classes = 'calendar-day';
             if (isToday) classes += ' today';
@@ -131,6 +140,7 @@ const JournalPane = {
     },
 
     openDay(dateStr) {
+        if (typeof Trackers !== 'undefined') Trackers.journalNotes(dateStr);
         const data = this.journalData[dateStr];
         const editor = document.getElementById('journal-editor');
         if (editor) {
@@ -170,6 +180,12 @@ function updateJournal() {
             JournalPane.journalData[dateStr].journal = journal;
             JournalPane.renderCalendar();
             General.loadProductivityScore();
+            if (typeof Resilient !== 'undefined') Resilient.refreshSoon();
+            // The journaling habit follows the journal, so its tick may have changed
+            if (AppConfig.userDetail && AppConfig.userDetail.journal_habit && typeof loadHabits === 'function') {
+                clearTimeout(JournalPane._habitsSoon);
+                JournalPane._habitsSoon = setTimeout(loadHabits, 1500);
+            }
             if (statusEl) {
                 statusEl.textContent = 'Saved';
                 statusEl.className = 'journal-save-status saved';

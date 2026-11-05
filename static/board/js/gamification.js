@@ -9,6 +9,10 @@ const Gamification = {
         const res = await apiClient.get('board/api/gamification/');
         if (res.status !== 'success') return;
         this.data = res.data;
+        try {
+            const { current_streak, level_name, total_points, xp_pct, freezes } = res.data;
+            localStorage.setItem('mr_gami', JSON.stringify({ current_streak, level_name, total_points, xp_pct, freezes }));
+        } catch (e) { /* storage unavailable */ }
         this.renderStatusBar();
     },
 
@@ -19,7 +23,22 @@ const Gamification = {
         const ln = document.getElementById('gami-level-name');
         const pts = document.getElementById('gami-points');
         const fill = document.getElementById('gami-xp-fill');
-        if (s) s.textContent = d.current_streak;
+        if (s) {
+            s.textContent = d.current_streak;
+            // Freeze balance sits next to the streak
+            let f = document.getElementById('gami-freezes');
+            if (!f && s.parentElement) {
+                f = document.createElement('span');
+                f.id = 'gami-freezes';
+                f.style.cssText = 'font-size:.75em;opacity:.75;margin-left:6px';
+                s.insertAdjacentElement('afterend', f);
+            }
+            if (f) {
+                const n = d.freezes ?? 0;
+                f.innerHTML = `<i class="fas fa-snowflake"></i> ${esc(n)}`;
+                f.title = `${n} streak freeze${n === 1 ? '' : 's'} available`;
+            }
+        }
         if (ln) ln.textContent = d.level_name;
         if (pts) pts.textContent = d.total_points.toLocaleString();
         if (fill) fill.style.width = d.xp_pct + '%';
@@ -232,9 +251,10 @@ const Gamification = {
         const perfect = d.total >= 10;
         const stats = [];
         if (b.habits_due || b.habits_done) stats.push(`${b.habits_done}/${Math.max(b.habits_due, b.habits_done)} habits`);
+        if (b.routine_due) stats.push(`${b.routine_done}/${b.routine_due} routine`);
         if (b.todos_due || b.todos_done) stats.push(`${b.todos_done} task${b.todos_done === 1 ? '' : 's'} done`);
         if (b.journaled) stats.push('Journaled');
-        if (b.sleep_logged) stats.push('Sleep logged');
+        if (b.trackers_due || b.trackers_done) stats.push(`${b.trackers_done}/${Math.max(b.trackers_due, b.trackers_done)} trackers`);
         return {
             kind: perfect ? 'perfect_day' : 'day_score', tag: date,
             label: perfect ? 'Perfect day' : 'Productivity score',
@@ -306,14 +326,14 @@ const Gamification = {
     checkPerfectDay(score) {
         if (typeof SharePoster === 'undefined' || !score || score.total < 10) return;
         const b = score.breakdown || {};
-        if (!(b.habits_done > 0 || b.todos_done > 0)) return;   // a 10 earned by doing nothing isn't a win
+        if (!(b.habits_done > 0 || b.todos_done > 0 || b.routine_done > 0)) return;   // a 10 earned by doing nothing isn't a win
         const today = new Date();
         const key = `mr_perfect_day_${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
         try { if (localStorage.getItem(key)) return; localStorage.setItem(key, '1'); } catch (e) { /* show anyway */ }
         const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
         SharePoster.celebrate(this.daySpec(iso, score), {
             heading: 'A perfect 10/10 day!',
-            message: 'Habits, tasks, journal and sleep, all done. That deserves a poster.',
+            message: 'Habits, routine, tasks, trackers and journal, all done. That deserves a poster.',
         });
     },
 
@@ -390,3 +410,12 @@ document.addEventListener('DOMContentLoaded', () => {
         Gamification.load();
     });
 });
+
+// First paint: the last streak, level and points seen, instead of 0 / Newcomer,
+// until the live numbers arrive.
+(function () {
+    try {
+        const cached = JSON.parse(localStorage.getItem('mr_gami') || 'null');
+        if (cached && !Gamification.data) { Gamification.data = cached; Gamification.renderStatusBar(); Gamification.data = null; }
+    } catch (e) { /* nothing cached yet */ }
+})();

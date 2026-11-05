@@ -52,6 +52,12 @@ const DefaultPane = {
         const query = document.getElementById('search-input').value.trim();
         if (!query) return;
 
+        if (query.toLowerCase() === '/private') {
+            document.getElementById('search-input').value = '';
+            Resilient.privateCommand();
+            return;
+        }
+
         if (query.toLowerCase().startsWith('/ai ')) {
             const prompt = query.slice(4).trim();
             document.getElementById('search-input').value = '';

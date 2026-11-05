@@ -21,9 +21,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredericka+the+Great&family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=JetBrains+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Barlow+Condensed:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=DotGothic16&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'board/css/style.css' %}">
-    <link rel="stylesheet" href="{% static 'board/css/dashboard.css' %}">
-    <link rel="stylesheet" href="{% static 'board/css/share-poster.css' %}">
+    <link rel="stylesheet" href="{% static 'board/css/style.css' %}?v={{ ASSET_VERSION }}">
+    <link rel="stylesheet" href="{% static 'board/css/dashboard.css' %}?v={{ ASSET_VERSION }}">
+    <link rel="stylesheet" href="{% static 'board/css/share-poster.css' %}?v={{ ASSET_VERSION }}">
+    <link rel="stylesheet" href="{% static 'board/css/resilient.css' %}?v={{ ASSET_VERSION }}">
     <!-- PWA -->
     <link rel="manifest" href="{% static 'manifest.json' %}">
     <meta name="theme-color" content="#98753f">
@@ -193,7 +194,7 @@
                         <!-- Greeting + focus strip -->
                         <div class="today-head">
                             <div class="greeting-main">
-                                <h1 id="greeting-text" aria-live="polite">Hello</h1>
+                                <h1 id="greeting-text" aria-live="polite" data-name="{{ request.user.first_name }}"></h1>
                             </div>
                         <div class="pomodoro-section">
                             <div class="pomodoro-main">
@@ -267,13 +268,8 @@
                                         <i class="fas fa-chevron-right"></i>
                                     </button>
                                 </div>
-                                <div class="timeline-chips" id="timeline-filters" role="group" aria-label="Filter timeline">
-                                    <button type="button" class="timeline-chip active" data-tl-filter="all">All</button>
-                                    <button type="button" class="timeline-chip" data-tl-filter="habits">Habits</button>
-                                    <button type="button" class="timeline-chip" data-tl-filter="todos">Todos</button>
-                                    <button type="button" class="timeline-chip" data-tl-filter="routine">Routine</button>
-                                    <select class="timeline-group-select" id="timeline-group-filter" aria-label="Filter by task group" hidden></select>
-                                </div>
+                                <div class="timeline-chips" id="timeline-filters" role="group" aria-label="Day type"></div>
+                                <select class="timeline-group-select" id="timeline-group-filter" aria-label="Filter by task group" hidden></select>
                             </div>
                             <div class="timeline-container" id="timeline-container">
                                 <div class="timeline-list" id="timeline-list">
@@ -346,18 +342,19 @@
                         </div>
                         <button class="btn btn-paper btn-sm btn-primary mt-3" id="edit-routine-btn">Edit Routine</button>
                     </div>
-
-                    <!-- Sleep Tracker -->
+                </div>
+            </div>
+            <!-- Trackers: a multi-row grid under habits and routines -->
+            <div class="row mt-2">
+                <div class="col-12">
                     <div class="section">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h3 class="section-title mb-0" id="section-title-sleep">Sleep Tracker</h3>
-                            <button class="btn btn-paper btn-sm btn-primary" id="add-sleep-btn">
-                                <i class="fas fa-plus"></i> Add Entry
-                            </button>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h3 class="section-title mb-0" id="section-title-trackers">Trackers</h3>
+                            <button class="btn btn-paper btn-primary btn-sm" id="new-tracker-btn">New Tracker <i class="fa fa-add"></i></button>
                         </div>
-                        <div class="sleep-graph">
-                            <canvas id="sleepChart"></canvas>
-                        </div>
+                        <div class="tracker-grid" id="trackerGrid"></div>
+                        <!-- Kept (hidden) so a cached older dashboard.js, which binds this id, does not crash -->
+                        <button type="button" id="add-sleep-btn" hidden aria-hidden="true" tabindex="-1"></button>
                     </div>
                 </div>
             </div>
@@ -600,6 +597,7 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                 <h4 class="section-title mb-4">Settings</h4>
                 <ul class="nav nav-tabs settings-tabs mb-4" id="settingsPaneTabs">
                     <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#sp-general">General</a></li>
+                    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#sp-appearance">Appearance</a></li>
                     <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#sp-pomodoro">Pomodoro</a></li>
                     <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#sp-notifications">Notifications</a></li>
                     <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#sp-integrations" id="tab-integrations">Integrations</a></li>
@@ -611,6 +609,10 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                         <div class="settings-card mb-4">
                             <h6 class="settings-card-title"><i class="fas fa-user me-2"></i>User</h6>
                             <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <div id="settingsEmail" class="text-brown"></div>
+                            </div>
+                            <div class="mb-3">
                                 <label class="form-label">Name</label>
                                 <div class="d-flex gap-2">
                                     <input type="text" class="form-control" id="settingsFirstName" placeholder="First name">
@@ -618,9 +620,29 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                                     <button class="btn btn-paper btn-sm btn-primary" id="settings-name-save-btn" onclick="Settings.saveName()">Save</button>
                                 </div>
                             </div>
+                            <div id="rs-user-pin"></div>
                         </div>
                         <div class="settings-card">
-                            <h6 class="settings-card-title"><i class="fas fa-palette me-2"></i>Preferences</h6>
+                            <h6 class="settings-card-title"><i class="fas fa-sliders me-2"></i>Preferences</h6>
+                            
+                            
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Default Search Engine</label>
+                                <select class="form-control" id="searchEngineSelect"></select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Sleep Time</label>
+                                <input type="time" class="form-control" id="sleepTimeInput">
+                                <small class="form-text text-brown">Used for journal reminder & sleep notification</small>
+                            </div>
+                            <div id="rs-settings"></div>
+                        </div>
+                    </div>
+                    <!-- Appearance -->
+                    <div class="tab-pane fade" id="sp-appearance">
+                        <div class="settings-card">
+                            <h6 class="settings-card-title"><i class="fas fa-palette me-2"></i>Appearance</h6>
                             <div class="mb-3" id="theme-picker">
                                 <label class="form-label">Theme</label>
                                 <div class="theme-swatches" role="group" aria-label="Theme">
@@ -650,21 +672,12 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                                     <option value="DotGothic16">DotGothic16</option>
                                 </select>
                             </div>
-                            <div class="mb-3">
+                            <div class="mb-0">
                                 <label class="form-label">Clock Format</label>
                                 <select class="form-control" id="clockFormatSelect">
                                     <option value="12h">12 Hour</option>
                                     <option value="24h">24 Hour</option>
                                 </select>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Default Search Engine</label>
-                                <select class="form-control" id="searchEngineSelect"></select>
-                            </div>
-                            <div class="mb-0">
-                                <label class="form-label">Sleep Time</label>
-                                <input type="time" class="form-control" id="sleepTimeInput">
-                                <small class="form-text text-brown">Used for journal reminder & sleep notification</small>
                             </div>
                         </div>
                     </div>
@@ -994,76 +1007,12 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                             <i class="fas fa-user-friends me-2"></i>
                             <span>Accountability Partner: </span>
                             <span id="partnerDisplay" class="ms-2 text-brown">None assigned</span>
+                                <button type="button" class="tl-link ms-2" id="habit-partner-edit">edit</button>
                         </div>
                         <div class="d-flex align-items-center mt-2">
                             <i class="fas fa-bell me-2"></i>
                             <span>Reminder: </span>
                             <span id="reminderDisplay" class="ms-2 text-brown">None</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="editHabitForm" style="display: none;">
-                    <h6 class="mb-3">Edit your habit:</h6>
-                    <div class="paragraph-form">
-                        I will
-                        <input type="text"
-                               class="form-input habit-input"
-                               name="habit"
-                               id="editHabit"
-                               placeholder="read a page"
-                               required>
-                        <input type="text"
-                               class="form-input when-where-input"
-                               name="whenWhere"
-                               id="editWhenWhere"
-                               placeholder="when I wake up"
-                               required>
-                        so that I can become
-                        <input type="text"
-                               class="form-input identity-input"
-                               name="identity"
-                               id="editIdentity"
-                               placeholder="a wise person"
-                               required>
-                    </div>
-                    <div class="paragraph-form mt-2">
-                        Remind me at
-                        <input type="time" class="form-input" id="editNotify" aria-label="Reminder time">
-                        <small class="text-brown ms-1">(optional, leave empty for no reminder)</small>
-                    </div>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="habit-actions mt-4">
-                    <div class="row">
-                        <div class="col-lg-4 col-md-6 mb-3">
-                            <button type="button" class="btn habit-action-btn" id="habit-toggle-edit-btn">
-                                <i class="fas fa-edit"></i>
-                                <span class="btn-text">Adjust Habit</span>
-                                <small class="btn-subtitle">Modify your habit details</small>
-                            </button>
-                        </div>
-                        <div class="col-lg-4 col-md-6 mb-3">
-                            <button type="button" class="btn habit-action-btn partner-btn" id="habit-accountability-btn">
-                                <i class="fas fa-user-friends"></i>
-                                <span class="btn-text">Accountability</span>
-                                <small class="btn-subtitle">Manage partners</small>
-                            </button>
-                        </div>
-                        <div class="col-lg-4 col-md-6 mb-3">
-                            <button type="button" class="btn habit-action-btn" id="habit-hallmark-btn">
-                                <i class="fas fa-star"></i>
-                                <span class="btn-text">Hallmark Habit</span>
-                                <small class="btn-subtitle">Mark as successfully formed</small>
-                            </button>
-                        </div>
-                        <div class="col-lg-4 col-md-6 mb-3">
-                            <button type="button" class="btn habit-action-btn" id="habit-delete-btn">
-                                <i class="fas fa-trash"></i>
-                                <span class="btn-text">Delete Habit</span>
-                                <small class="btn-subtitle">Remove this habit</small>
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -1093,15 +1042,71 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                     </div>
                 </div>
 
+                <!-- Partner Section Actions -->
+                <div id="partnerActions" class="text-end mt-3" style="display: none;">
+                    <button type="button" class="btn btn-paper" id="partner-close-btn">Close</button>
+                </div>
+
+                <div id="editHabitForm" style="display: none;">
+                    <h6 class="mb-3">Edit your habit:</h6>
+                    <div class="paragraph-form">
+                        I will
+                        <input type="text"
+                               class="form-input habit-input"
+                               name="habit"
+                               id="editHabit"
+                               placeholder="read a page"
+                               required>
+                        <input type="text"
+                               class="form-input when-where-input"
+                               name="whenWhere"
+                               id="editWhenWhere"
+                               placeholder="when I wake up"
+                               required>
+                        so that I can become
+                        <input type="text"
+                               class="form-input identity-input"
+                               name="identity"
+                               id="editIdentity"
+                               placeholder="a wise person"
+                               required>
+                    </div>
+                </div>
+
+                <!-- Steps, reminder, hard days and privacy (resilient.js) -->
+                <div id="rs-habit-sections"></div>
+
+                <!-- Action Buttons -->
+                <div class="habit-actions mt-4">
+                    <div class="row">
+                        <div class="col-lg-4 col-md-6 mb-3">
+                            <button type="button" class="btn habit-action-btn" id="habit-toggle-edit-btn">
+                                <i class="fas fa-edit"></i>
+                                <span class="btn-text">Adjust Habit</span>
+                                <small class="btn-subtitle">Modify your habit details</small>
+                            </button>
+                        </div>
+                        <div class="col-lg-4 col-md-6 mb-3">
+                            <button type="button" class="btn habit-action-btn" id="habit-hallmark-btn">
+                                <i class="fas fa-star"></i>
+                                <span class="btn-text">Hallmark Habit</span>
+                                <small class="btn-subtitle">Mark as successfully formed</small>
+                            </button>
+                        </div>
+                        <div class="col-lg-4 col-md-6 mb-3">
+                            <button type="button" class="btn habit-action-btn" id="habit-delete-btn">
+                                <i class="fas fa-trash"></i>
+                                <span class="btn-text">Delete Habit</span>
+                                <small class="btn-subtitle">Remove this habit</small>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Save/Cancel buttons for edit mode -->
                 <div id="editActions" class="text-end mt-3" style="display: none;">
                     <button type="button" class="btn btn-paper me-2" id="habit-cancel-edit-btn">Cancel</button>
                     <button type="button" class="btn btn-paper btn-primary" id="habit-save-changes-btn">Save Changes</button>
-                </div>
-
-                <!-- Partner Section Actions -->
-                <div id="partnerActions" class="text-end mt-3" style="display: none;">
-                    <button type="button" class="btn btn-paper" id="partner-close-btn">Close</button>
                 </div>
             </div>
         </div>
@@ -1176,13 +1181,10 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Date</label>
-                        <input type="date" class="form-control" id="sleepDate">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Hours Slept</label>
-                        <input type="number" class="form-control" id="sleepHours" placeholder="Hours slept" step="0.5" min="0" max="24" required>
+                    <div class="rs-lead" data-rs-msg>How did you sleep?</div>
+                    <div class="conversational-form" data-rs-convo>
+                        <div class="convo-line" data-need data-msg="Which night is this for? It defaults to last night.">On <input type="date" class="form-input" id="sleepDate"></div>
+                        <div class="convo-line" data-need data-msg="Roughly how many hours? Halves are fine, like 6.5.">I slept for <input type="number" class="form-input" id="sleepHours" placeholder="7" step="0.5" min="0" max="24" required> hours.</div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -1195,13 +1197,14 @@ Write freely here, like you're writing in your personal journal..." id="journal-
 
     <!-- Routine Edit Modal -->
     <div class="modal fade" id="routineModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title"><div class="modal-icon info"><i class="fas fa-edit"></i></div> Edit Routine</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
+                    <p class="small mb-2"><b>Essential</b> stays on every day, even Disrupted days. <b>Anchor</b> stays on Light days. <b>Flexible</b> only appears on Normal days. <b>Fixed</b> blocks do not move when you run late. Duration is optional; a block otherwise runs until the next one starts.</p>
                     <div id="routineEntries">
                         <!-- Dynamic routine entry rows -->
                     </div>
@@ -1226,22 +1229,14 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Name</label>
-                        <input type="text" class="form-control" id="rlName" placeholder="GitHub">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">URL</label>
-                        <input type="url" class="form-control" id="rlUrl" placeholder="https://github.com">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Icon URL (optional)</label>
-                        <input type="url" class="form-control" id="rlIcon" placeholder="https://github.com/favicon.ico">
-                    </div>
-                    <div class="mb-3">
-                        <div class="form-check form-switch">
+                    <div class="rs-lead" data-rs-msg>What would you like to save?</div>
+                    <div class="conversational-form" data-rs-convo data-rs-reveal="filled">
+                        <div class="convo-line" data-need data-msg="Give it a short name you&rsquo;ll recognise.">Save <input type="text" class="form-input" id="rlName" placeholder="GitHub"></div>
+                        <div class="convo-line" data-need data-msg="Paste the link.">at <input type="url" class="form-input" id="rlUrl" placeholder="https://github.com"></div>
+                        <div class="convo-line" data-msg="Optional. Leave it empty and we&rsquo;ll use the site&rsquo;s own icon. Tab to skip.">with the icon <input type="url" class="form-input" id="rlIcon" placeholder="https://github.com/favicon.ico"></div>
+                        <div class="convo-line form-check form-switch" data-msg="Show it on the Today page for quick access?">
                             <input class="form-check-input" type="checkbox" id="rlFeatured" checked>
-                            <label class="form-check-label" for="rlFeatured">Show on Home</label>
+                            <label class="form-check-label" for="rlFeatured">and show it on Home.</label>
                         </div>
                     </div>
                     <input type="hidden" id="rlEditId" value="">
@@ -1318,17 +1313,11 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Task</label>
-                        <input type="text" class="form-control" id="editTaskName" placeholder="Task name">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Group</label>
-                        <select class="form-control" id="editTaskGroup"></select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Deadline <small class="text-brown">(optional — clear to remove)</small></label>
-                        <input type="datetime-local" class="form-control" id="editTaskDeadline">
+                    <div class="rs-lead" data-rs-msg>Change anything below.</div>
+                    <div class="conversational-form" data-rs-convo data-rs-reveal="filled">
+                        <div class="convo-line" data-need data-msg="What&rsquo;s the task?">I want to <input type="text" class="form-input" id="editTaskName" placeholder="finish the report"></div>
+                        <div class="convo-line" data-msg="When should it be done by? Clear it for no deadline.">before <input type="datetime-local" class="form-input" id="editTaskDeadline"></div>
+                        <div class="convo-line" data-msg="Which group does it belong to?">in <select class="form-input" id="editTaskGroup"></select></div>
                     </div>
                     <input type="hidden" id="editTaskId" value="">
                 </div>
@@ -1366,9 +1355,9 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Group Name</label>
-                        <input type="text" class="form-control" id="groupNameInput" placeholder="e.g. Work, Personal" autofocus>
+                    <div class="rs-lead" data-rs-msg>Groups keep related tasks together, like Work or Home.</div>
+                    <div class="conversational-form" data-rs-convo>
+                        <div class="convo-line" data-need>Call this group <input type="text" class="form-input" id="groupNameInput" placeholder="work" autofocus></div>
                     </div>
                     <input type="hidden" id="groupEditId" value="">
                 </div>
@@ -1534,25 +1523,28 @@ Write freely here, like you're writing in your personal journal..." id="journal-
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>const HOST = window.location.origin + '/';</script>
-    <script src="{% static 'board/js/utils.js' %}"></script>
-    <script src="{% static 'board/js/notifications.js' %}"></script>
-    <script src="{% static 'board/js/theme.js' %}"></script>
-    <script src="{% static 'board/js/config.js' %}"></script>
-    <script src="{% static 'board/js/habits.js' %}"></script>
-    <script src="{% static 'board/js/todos.js' %}"></script>
-    <script src="{% static 'board/js/pomodoro.js' %}"></script>
-    <script src="{% static 'board/js/dashboard.js' %}"></script>
-    <script src="{% static 'board/js/timeline.js' %}"></script>
-    <script src="{% static 'board/js/default-pane.js' %}"></script>
-    <script src="{% static 'board/js/tracker-pane.js' %}"></script>
-    <script src="{% static 'board/js/todos-pane.js' %}"></script>
-    <script src="{% static 'board/js/journals-pane.js' %}"></script>
-    <script src="{% static 'board/js/reading-list.js' %}"></script>
-    <script src="{% static 'board/js/settings.js' %}"></script>
-    <script src="{% static 'board/js/misc.js' %}"></script>
-    <script src="{% static 'board/js/share-poster.js' %}"></script>
-    <script src="{% static 'board/js/gamification.js' %}"></script>
-    <script src="{% static 'board/js/greeting.js' %}"></script>
+    <script src="{% static 'board/js/utils.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/notifications.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/theme.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/config.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/habits.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/todos.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/pomodoro.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/dashboard.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/resilient.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/trackers.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/setup.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/timeline.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/default-pane.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/tracker-pane.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/todos-pane.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/journals-pane.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/reading-list.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/settings.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/misc.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/share-poster.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/gamification.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/greeting.js' %}?v={{ ASSET_VERSION }}"></script>
     <script>
         (function () {
             const params = new URLSearchParams(window.location.search);
@@ -1581,7 +1573,10 @@ Write freely here, like you're writing in your personal journal..." id="journal-
         // ── Register Service Worker ──
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js', { scope: '/board/' }).catch(() => {});
+                // The worker no longer caches anything; registering the new version
+                // replaces any older one and clears the caches it left behind.
+                navigator.serviceWorker.register('/sw.js?v={{ ASSET_VERSION }}', { scope: '/board/' })
+                    .then(reg => reg.update()).catch(() => {});
             });
         }
 

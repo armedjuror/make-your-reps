@@ -82,35 +82,7 @@ def user_signed_up_handler(sender, request, user, **kwargs):
         user_agent=request.META.get('HTTP_USER_AGENT', '')
     )
 
-    # Fill dummy data — Habits
-    all_days = [0, 1, 2, 3, 4, 5, 6]
-    habits_to_create = [
-        Habit(
-            user=user,
-            habit="Read a page",
-            detail="When I wake up, before checking my phone",
-            identity="a well-read, curious person",
-            frequency=all_days,
-            notify_at=time(7, 0),
-        ),
-        Habit(
-            user=user,
-            habit="Put the gym shoes on",
-            detail="At 7:00 AM, right after brushing my teeth",
-            identity="a fit and energetic person",
-            frequency=[0, 1, 2, 3, 4],  # Weekdays
-            notify_at=time(7, 0),
-        ),
-        Habit(
-            user=user,
-            habit="Write 3 things I'm grateful for",
-            detail="Every evening before dinner",
-            identity="a positive and mindful person",
-            frequency=all_days,
-            notify_at=time(18, 0),
-        ),
-    ]
-    Habit.objects.bulk_create(habits_to_create)
+    # Habits come from the setup questions on first open (board OnboardingSetupView)
 
     # Tasks
     tasks_to_create = [

@@ -59,7 +59,13 @@ const Greeting = {
 
     // ── data ──
     name() {
-        return (AppConfig?.userDetail?.first_name || '').trim();
+        const live = (typeof AppConfig !== 'undefined' && AppConfig.userDetail && AppConfig.userDetail.first_name || '').trim();
+        if (live) { try { localStorage.setItem('mr_first_name', live); } catch (e) { /* storage unavailable */ } return live; }
+        // Before the config has loaded: the name the page was rendered with, or the last one seen
+        const el = document.getElementById('greeting-text');
+        let cached = '';
+        try { cached = localStorage.getItem('mr_first_name') || ''; } catch (e) { /* storage unavailable */ }
+        return ((el && el.dataset.name) || cached).trim();
     },
 
     async gather() {
@@ -431,3 +437,10 @@ const Greeting = {
         }
     },
 };
+
+// First paint: a plain time-of-day greeting right away, instead of placeholder
+// text, until the full greeting has what it needs (habits, tasks, streak).
+(function () {
+    const el = document.getElementById('greeting-text');
+    if (el && !el.textContent.trim()) el.textContent = Greeting.base(new Date(), Greeting.name());
+})();
