@@ -114,9 +114,9 @@ function bindEvents() {
     // Settings is now triggered from the Others pane sub-tab
 
     // Navigation — mobile menu
-    // document.getElementById('hamburger-btn').addEventListener('click', toggleMobileMenu);
-    document.getElementById('mobile-menu-overlay').addEventListener('click', closeMobileMenu);
-    document.getElementById('mobile-menu-close-btn').addEventListener('click', closeMobileMenu);
+    // document.getElementById('hamburger-btn')?.addEventListener('click', toggleMobileMenu);
+    document.getElementById('mobile-menu-overlay')?.addEventListener('click', closeMobileMenu);
+    document.getElementById('mobile-menu-close-btn')?.addEventListener('click', closeMobileMenu);
     document.querySelectorAll('.mobile-menu-item[data-pane]').forEach(item => {
         item.addEventListener('click', () => { switchPane(item.dataset.pane); closeMobileMenu(); });
     });
@@ -125,32 +125,32 @@ function bindEvents() {
     document.querySelectorAll('.mobile-bottom-nav-item[data-pane]').forEach(item => {
         item.addEventListener('click', () => switchPane(item.dataset.pane));
     });
-    document.getElementById('mobile-bottom-more-btn').addEventListener('click', toggleMobileMenu);
-    document.getElementById('mobile-theme-btn').addEventListener('click', () => { closeMobileMenu(); Theme.openAppearance(); });
+    document.getElementById('mobile-bottom-more-btn')?.addEventListener('click', toggleMobileMenu);
+    document.getElementById('mobile-theme-btn')?.addEventListener('click', () => { closeMobileMenu(); Theme.openAppearance(); });
     // Settings is now triggered from the Others pane sub-tab
 
     // Pomodoro
-    document.getElementById('pomodoro-start').addEventListener('click', () => Pomodoro.toggle());
-    document.getElementById('pomodoro-reset').addEventListener('click', () => Pomodoro.reset());
-    document.getElementById('pomodoro-toggle-mode').addEventListener('click', () => Pomodoro.toggleMode());
+    document.getElementById('pomodoro-start')?.addEventListener('click', () => Pomodoro.toggle());
+    document.getElementById('pomodoro-reset')?.addEventListener('click', () => Pomodoro.reset());
+    document.getElementById('pomodoro-toggle-mode')?.addEventListener('click', () => Pomodoro.toggleMode());
 
     // Search
-    document.getElementById('search-engine-btn').addEventListener('click', () => toggleSearchEngineDropdown());
-    document.getElementById('search-input').addEventListener('keydown', e => {
+    document.getElementById('search-engine-btn')?.addEventListener('click', () => toggleSearchEngineDropdown());
+    document.getElementById('search-input')?.addEventListener('keydown', e => {
         if (e.key === 'Enter') { e.preventDefault(); DefaultPane.doSearch(); }
     });
 
     // Home — habits & routines & sleep
-    document.getElementById('new-habit-btn').addEventListener('click', () => Habits.showHabitModal());
-    document.getElementById('workday_routine_button').addEventListener('click', () => showRoutine('workday'));
-    document.getElementById('holiday_routine_button').addEventListener('click', () => showRoutine('holiday'));
-    document.getElementById('edit-routine-btn').addEventListener('click', () => editRoutine());
+    document.getElementById('new-habit-btn')?.addEventListener('click', () => Habits.showHabitModal());
+    document.getElementById('workday_routine_button')?.addEventListener('click', () => showRoutine('workday'));
+    document.getElementById('holiday_routine_button')?.addEventListener('click', () => showRoutine('holiday'));
+    document.getElementById('edit-routine-btn')?.addEventListener('click', () => editRoutine());
 
     // Journal pane
-    document.getElementById('journal-prev-month').addEventListener('click', () => JournalPane.prevMonth());
-    document.getElementById('journal-today').addEventListener('click', () => JournalPane.goToday());
-    document.getElementById('journal-next-month').addEventListener('click', () => JournalPane.nextMonth());
-    document.getElementById('journal-editor').addEventListener('focusout', () => updateJournal());
+    document.getElementById('journal-prev-month')?.addEventListener('click', () => JournalPane.prevMonth());
+    document.getElementById('journal-today')?.addEventListener('click', () => JournalPane.goToday());
+    document.getElementById('journal-next-month')?.addEventListener('click', () => JournalPane.nextMonth());
+    document.getElementById('journal-editor')?.addEventListener('focusout', () => updateJournal());
 
     // Todos pane
     document.querySelector('.todos-filters').addEventListener('click', e => {
@@ -159,50 +159,50 @@ function bindEvents() {
         const dlBtn = e.target.closest('.todo-deadline-filter[data-deadline-filter]');
         if (dlBtn) TodosPane.setDeadlineFilter(dlBtn.dataset.deadlineFilter);
     });
-    document.getElementById('todos-date-filter').addEventListener('change', e => {
+    document.getElementById('todos-date-filter')?.addEventListener('change', e => {
         TodosPane.setDateFilter(e.target.value);
     });
-    document.getElementById('todos-add-task-btn').addEventListener('click', () => Todo.showTodoModal());
+    document.getElementById('todos-add-task-btn')?.addEventListener('click', () => Todo.showTodoModal());
 
     // Modal — Todo
-    document.getElementById('todoSaveBtn').addEventListener('click', () => Todo.saveTodo());
+    document.getElementById('todoSaveBtn')?.addEventListener('click', () => Todo.saveTodo());
 
     // Modal — Habit add
-    document.getElementById('habit-save-btn').addEventListener('click', () => Habits.saveHabit());
+    document.getElementById('habit-save-btn')?.addEventListener('click', () => Habits.saveHabit());
 
     // Modal — Habit settings
-    document.getElementById('habit-toggle-edit-btn').addEventListener('click', toggleEditForm);
-    document.getElementById('habit-hallmark-btn').addEventListener('click', hallmarkHabit);
-    document.getElementById('habit-delete-btn').addEventListener('click', deleteHabit);
-    document.getElementById('habit-partner-edit').addEventListener('click', togglePartnerSection);
-    document.getElementById('assign-partner-btn').addEventListener('click', assignPartner);
-    document.getElementById('habit-cancel-edit-btn').addEventListener('click', cancelEdit);
-    document.getElementById('habit-save-changes-btn').addEventListener('click', saveHabitChanges);
-    document.getElementById('partner-close-btn').addEventListener('click', togglePartnerSection);
+    document.getElementById('habit-toggle-edit-btn')?.addEventListener('click', toggleEditForm);
+    document.getElementById('habit-hallmark-btn')?.addEventListener('click', hallmarkHabit);
+    document.getElementById('habit-delete-btn')?.addEventListener('click', deleteHabit);
+    document.getElementById('habit-partner-edit')?.addEventListener('click', togglePartnerSection);
+    document.getElementById('assign-partner-btn')?.addEventListener('click', assignPartner);
+    document.getElementById('habit-cancel-edit-btn')?.addEventListener('click', cancelEdit);
+    document.getElementById('habit-save-changes-btn')?.addEventListener('click', saveHabitChanges);
+    document.getElementById('partner-close-btn')?.addEventListener('click', togglePartnerSection);
 
     // Modal — Hallmark & Delete confirmation
-    document.getElementById('hallmark-confirm-btn').addEventListener('click', confirmHallmark);
-    document.getElementById('delete-confirm-btn').addEventListener('click', confirmDelete);
+    document.getElementById('hallmark-confirm-btn')?.addEventListener('click', confirmHallmark);
+    document.getElementById('delete-confirm-btn')?.addEventListener('click', confirmDelete);
 
     // Modal — Sleep
-    document.getElementById('save-sleep-btn').addEventListener('click', () => saveSleepEntry());
+    document.getElementById('save-sleep-btn')?.addEventListener('click', () => saveSleepEntry());
 
     // Modal — Routine editor
-    document.getElementById('routine-add-row-btn').addEventListener('click', () => RoutineEditor.addRow());
-    document.getElementById('routine-save-btn').addEventListener('click', () => RoutineEditor.save());
+    document.getElementById('routine-add-row-btn')?.addEventListener('click', () => RoutineEditor.addRow());
+    document.getElementById('routine-save-btn')?.addEventListener('click', () => RoutineEditor.save());
 
     // Modal — Reading list
-    document.getElementById('rlDeleteBtn').addEventListener('click', () => ReadingList.deleteSelected());
-    document.getElementById('reading-list-save-btn').addEventListener('click', () => ReadingList.save());
+    document.getElementById('rlDeleteBtn')?.addEventListener('click', () => ReadingList.deleteSelected());
+    document.getElementById('reading-list-save-btn')?.addEventListener('click', () => ReadingList.save());
 
     // Modal — Group
-    document.getElementById('group-save-btn').addEventListener('click', () => TodosPane.saveGroup());
+    document.getElementById('group-save-btn')?.addEventListener('click', () => TodosPane.saveGroup());
 
     // Settings — general
-    document.getElementById('fontSelect').addEventListener('change', () => Settings.changeFont());
-    document.getElementById('clockFormatSelect').addEventListener('change', () => Settings.changeClockFormat());
-    document.getElementById('searchEngineSelect').addEventListener('change', () => Settings.changeSearchEngine());
-    document.getElementById('sleepTimeInput').addEventListener('change', () => Settings.changeSleepTime());
+    document.getElementById('fontSelect')?.addEventListener('change', () => Settings.changeFont());
+    document.getElementById('clockFormatSelect')?.addEventListener('change', () => Settings.changeClockFormat());
+    document.getElementById('searchEngineSelect')?.addEventListener('change', () => Settings.changeSearchEngine());
+    document.getElementById('sleepTimeInput')?.addEventListener('change', () => Settings.changeSleepTime());
 
     // Settings — pomodoro
     ['pomFocus', 'pomBreak', 'pomLongBreak', 'pomCycles'].forEach(id => {
@@ -210,8 +210,8 @@ function bindEvents() {
     });
 
     // Settings — sounds
-    document.getElementById('soundPomodoro').addEventListener('change', () => Settings.saveSoundSettings());
-    document.getElementById('soundNotifications').addEventListener('change', () => Settings.saveSoundSettings());
+    document.getElementById('soundPomodoro')?.addEventListener('change', () => Settings.saveSoundSettings());
+    document.getElementById('soundNotifications')?.addEventListener('change', () => Settings.saveSoundSettings());
 }
 
 
@@ -329,7 +329,12 @@ const Onboarding = {
     const validPanes = ['home', 'todos', 'trackers', 'journals', 'achievements', 'reading-list', 'friends', 'settings', 'help'];
     const initialPane = validPanes.includes(hash) ? hash : 'home';
 
-    AppConfig.load().then(() => {
+    // Wait for every script on the page (greeting.js and the rest load after this
+    // one) as well as the config; a fast config response used to win the race.
+    const scriptsReady = document.readyState === 'loading'
+        ? new Promise(r => document.addEventListener('DOMContentLoaded', r, { once: true }))
+        : Promise.resolve();
+    Promise.all([AppConfig.load(), scriptsReady]).then(() => {
 
         panesLoaded.home = true;
         initHomePane();
@@ -364,7 +369,7 @@ document.querySelectorAll('.form-input').forEach(input => {
     });
 });
 
-document.getElementById('journal-editor').addEventListener('keyup', function(e) {
+document.getElementById('journal-editor')?.addEventListener('keyup', function(e) {
     let line_count = this.value.split('\n').length;
     let currentRows = parseInt(this.getAttribute('rows'));
     if (currentRows < line_count + 10) {

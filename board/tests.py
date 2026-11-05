@@ -280,6 +280,14 @@ class DayApiTests(Base):
         work = RoutineEntry.objects.get(user=self.user, routine_type='workday', title='Work')
         self.assertEqual((work.tier, work.duration_min), ('anchor', 510))
 
+    def test_dashboard_page_is_never_cached_and_sw_is_never_cached(self):
+        self.client.force_login(self.user)
+        r = self.client.get('/board/')
+        self.assertEqual(r.status_code, 200)
+        self.assertIn('no-cache', r['Cache-Control'])
+        self.assertIn('max-age=0', r['Cache-Control'])
+        self.assertIn('no-store', self.client.get('/sw.js')['Cache-Control'])
+
     def test_journal_card_shows_done_once_written(self):
         card = lambda: next(x for x in self.client.get('/board/api/timeline/?date=2026-11-05').json()['data']
                             if x['id'].startswith('journal-reminder-'))

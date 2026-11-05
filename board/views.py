@@ -1,6 +1,8 @@
 import os
 from datetime import datetime, time, timedelta
 
+from django.views.decorators.cache import never_cache
+
 from django.contrib.auth.models import User
 from django.db.models import Count, F, Prefetch, Q
 from django.shortcuts import render, redirect
@@ -235,8 +237,9 @@ def _send_friend_request_email(to_email, from_name, token, site_url):
 # Page Views
 # ──────────────────────────────────────
 
+@never_cache
 def dashboard(request):
-    """Single unified dashboard view serving all panes."""
+    """Single unified dashboard view serving all panes. Never cached, so it always matches the current JS."""
     if request.user.is_authenticated:
         return render(request, 'board/dashboard.html')
     else:

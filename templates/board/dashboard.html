@@ -1573,16 +1573,10 @@ Write freely here, like you're writing in your personal journal..." id="journal-
         // ── Register Service Worker ──
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
+                // The worker no longer caches anything; registering the new version
+                // replaces any older one and clears the caches it left behind.
                 navigator.serviceWorker.register('/sw.js?v={{ ASSET_VERSION }}', { scope: '/board/' })
                     .then(reg => reg.update()).catch(() => {});
-                // When a new worker takes over, reload once so this page stops using files the old one cached
-                let reloaded = false;
-                navigator.serviceWorker.addEventListener('controllerchange', () => {
-                    if (reloaded || sessionStorage.getItem('mr_sw_reloaded') === '{{ ASSET_VERSION }}') return;
-                    reloaded = true;
-                    sessionStorage.setItem('mr_sw_reloaded', '{{ ASSET_VERSION }}');
-                    location.reload();
-                });
             });
         }
 

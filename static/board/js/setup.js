@@ -248,7 +248,8 @@ document.addEventListener('DOMContentLoaded', () => {
     box.innerHTML = `<h6 class="settings-card-title"><i class="fas fa-route me-2"></i>Getting around</h6>
         <p class="mb-2">A one-minute tour of the main features.</p>
         <button type="button" class="btn btn-paper btn-sm btn-primary" id="rs-tour-replay">Take the tour</button>`;
-    const host = help.querySelector('.container-fluid, .misc-pane-layout') || help;
-    host.insertBefore(box, host.querySelector('.misc-pane-layout') ? host.querySelector('.misc-pane-layout').firstChild : host.firstChild);
+    const host = help.querySelector('.misc-pane-layout') || help.querySelector('.container-fluid') || help;
+    const title = host.querySelector(':scope > h4, :scope > .section-title');
+    if (title) title.insertAdjacentElement('afterend', box); else host.prepend(box);
     box.querySelector('#rs-tour-replay').addEventListener('click', () => Tour.start());
 });
