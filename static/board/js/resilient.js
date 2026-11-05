@@ -77,11 +77,11 @@ const Resilient = {
         .rs-link{background:none;border:0;color:inherit;opacity:.65;font-size:.75rem;text-decoration:underline;cursor:pointer;padding:0 4px}
         .rs-steps{margin:6px 0}
         .rs-steps label{display:flex;gap:6px;align-items:center;font-size:.85rem;margin:2px 0}
-        .rs-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2000;display:flex;align-items:center;justify-content:center}
-        .rs-dialog{background:var(--surface-raised, var(--paper-bg));color:var(--ink-black);border-radius:12px;padding:18px;width:min(92vw,360px);box-shadow:0 10px 40px rgba(0,0,0,.3)}
-        .rs-dialog h5{margin:0 0 10px;font-size:1rem}
-        .rs-dialog input,.rs-dialog select,.rs-dialog textarea{width:100%;margin:4px 0 8px;padding:6px 8px;border-radius:6px;border:1px solid rgba(var(--accent-rgb),.3);background:transparent;color:inherit}
-        .rs-dialog .rs-row{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}
+        .rs-overlay{overflow:auto;z-index:2000}
+        .rs-backdrop{position:fixed;inset:0;z-index:1990;background:rgba(0,0,0,.5)}
+        .rs-dialog .modal-body{padding:18px}
+        .rs-dialog .form-control,.rs-dialog .form-select{margin:4px 0 8px}
+        .rs-dialog label{font-size:.85rem}
         .rs-err{color:#c0392b;font-size:.8rem;min-height:1em}
         .rs-chips{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
         `;
@@ -331,15 +331,23 @@ const Resilient = {
     },
 
     // ── Dialogs ──────────────────────────────────────────────
+    /** Themed modal: same markup the rest of the app's modals use, so every theme styles it. */
     dialog(title, bodyHtml, buttons) {
         const ov = document.createElement('div');
-        ov.className = 'rs-overlay';
-        ov.innerHTML = `<div class="rs-dialog" role="dialog" aria-modal="true"><h5>${this.esc(title)}</h5>${bodyHtml}
-            <div class="rs-err"></div>
-            <div class="rs-row">${buttons.map((b, i) => `<button type="button" class="btn btn-paper btn-sm ${b.primary ? 'btn-primary' : ''}" data-idx="${i}">${this.esc(b.label)}</button>`).join('')}</div></div>`;
-        const close = () => ov.remove();
+        ov.className = 'modal show rs-overlay';
+        ov.style.display = 'block';
+        ov.innerHTML = `<div class="modal-dialog modal-dialog-centered"><div class="modal-content rs-dialog" role="dialog" aria-modal="true">
+            <div class="modal-header"><h5 class="modal-title">${this.esc(title)}</h5><button type="button" class="btn-close" data-close="1" aria-label="Close"></button></div>
+            <div class="modal-body">${bodyHtml}<div class="rs-err"></div></div>
+            <div class="modal-footer">${buttons.map((b, i) => `<button type="button" class="btn btn-paper btn-sm ${b.primary ? 'btn-primary' : ''}" data-idx="${i}">${this.esc(b.label)}</button>`).join('')}</div>
+        </div></div>`;
+        ov.querySelectorAll('input:not([type=checkbox]):not([type=radio]), textarea').forEach(el => el.classList.add('form-control'));
+        ov.querySelectorAll('select').forEach(el => el.classList.add('form-select'));
+        const backdrop = document.createElement('div');
+        backdrop.className = 'rs-backdrop';
+        const close = () => { ov.remove(); backdrop.remove(); };
         ov.addEventListener('click', async (ev) => {
-            if (ev.target === ov) return close();
+            if (ev.target === ov || ev.target.closest('[data-close]')) return close();
             const btn = ev.target.closest('button[data-idx]');
             if (!btn) return;
             const spec = buttons[Number(btn.dataset.idx)];
@@ -350,6 +358,7 @@ const Resilient = {
             if (out === true) close();
             else if (typeof out === 'string') err.textContent = out;
         });
+        document.body.appendChild(backdrop);
         document.body.appendChild(ov);
         const first = ov.querySelector('input,select,textarea');
         if (first) first.focus();
@@ -462,7 +471,7 @@ const Resilient = {
             icon.id = 'rs-lock-icon';
             icon.type = 'button';
             icon.dataset.rs = 'lock';
-            icon.style.cssText = 'position:fixed;right:12px;bottom:12px;z-index:900;border:1px solid rgba(var(--accent-rgb),.3);background:var(--surface-raised, var(--paper-bg));color:inherit;border-radius:50%;width:34px;height:34px;cursor:pointer;opacity:.7';
+            icon.style.cssText = 'position:fixed;right:12px;bottom:12px;z-index:900;border:1px solid rgba(var(--accent-rgb),.3);background:var(--surface-raised, var(--paper-bg));color:var(--ink-black);border-radius:50%;width:34px;height:34px;cursor:pointer;opacity:.7';
             document.body.appendChild(icon);
         }
         const open = this.privateState.unlocked;
@@ -647,6 +656,7 @@ const Resilient = {
                     ${metrics.filter(m => m.kind !== 'single').map(m => `<option value="${m.id}" ${d.slip_metric === m.id ? 'selected' : ''}>${this.esc(m.name)}</option>`).join('')}
                 </select></label>
             <div class="mt-2"><button type="button" class="btn btn-paper btn-sm" data-rs="pin-setup">${this.privateState.has_pin ? 'Change PIN' : 'Set a PIN for private items'}</button></div>`;
+        body.querySelectorAll('input[data-set]:not([type=checkbox]), select[data-set]').forEach(el => el.classList.add('form-control', 'form-control-sm', 'd-inline-block', 'w-auto'));
         body.addEventListener('change', (e) => this._saveSetting(e), { once: false });
         body.querySelector('[data-rs="pin-setup"]').addEventListener('click', () => this.pinSetupDialog());
     },

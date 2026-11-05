@@ -17,9 +17,9 @@ const Trackers = {
         s.id = 'trackers-css';
         s.textContent = `
         .tracker-grid{display:flex;flex-wrap:wrap;gap:14px}
-        .tracker-card{flex:1 1 300px;max-width:480px;border:1px solid rgba(var(--accent-rgb),.3);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+        .tracker-card{flex:1 1 300px;max-width:480px;border:1px solid rgba(var(--accent-rgb),.3);border-radius:var(--radius-md,12px);background:var(--surface-raised, transparent);color:var(--ink-black);padding:12px 14px;display:flex;flex-direction:column;gap:6px}
         .tracker-card.tr-over{border-color:#c0392b}
-        .tracker-card.tr-met{border-color:#2e8b57}
+        .tracker-card.tr-met{border-color:var(--ink-brown)}
         .tracker-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
         .tracker-head h5{margin:0;font-size:1rem}
         .tracker-value{font-size:1.4rem;font-weight:600}
@@ -129,7 +129,7 @@ const Trackers = {
         }];
         if (hasTarget) {
             datasets.push({
-                type: 'line', data: daily.map(d => d.target), borderColor: '#2e8b57',
+                type: 'line', data: daily.map(d => d.target), borderColor: css.getPropertyValue('--ink-gray').trim() || '#888',
                 borderDash: [5, 4], borderWidth: 1.5, pointRadius: 0, fill: false,
             });
         }
@@ -228,7 +228,7 @@ const Trackers = {
             return true;
         } });
         const ov = Resilient.dialog(m ? `Edit ${m.name}` : 'New tracker', body, buttons);
-        ov.querySelector('.rs-dialog').style.cssText += ';max-height:90vh;overflow:auto;width:min(94vw,420px)';
+        
     },
 
     // ── Habit checklist ──────────────────────────────────────
