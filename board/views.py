@@ -1906,7 +1906,16 @@ def _compute_productivity_score(user_id, target_date, now=None, include_private=
             habits_done += 1
 
     denominator = max(habits_due, habits_done)
-    habit_score = (habits_done / denominator * 5) if denominator > 0 else 5.0
+    habit_score = (habits_done / denominator * 4) if denominator > 0 else 4.0
+
+    # Routine: blocks done out of blocks that came due. Skipped and dropped
+    # (running late) blocks are a deliberate choice and stay out of the count;
+    # a block in progress only counts once it is done or missed.
+    from board.days import resolve_day
+    blocks = resolve_day(user_id, target_date, now=now)['blocks']
+    routine_done = sum(1 for b in blocks if b['status'] == 'done')
+    routine_due = routine_done + sum(1 for b in blocks if b['status'] == 'missed')
+    routine_score = (routine_done / routine_due * 3) if routine_due else 3.0
 
     todos_due = Task.objects.filter(user_id=user_id, is_deleted=False, deadline__date=target_date).count()
     todos_done_deadline = Task.objects.filter(user_id=user_id, is_deleted=False, deadline__date=target_date, is_done=True).count()
@@ -1914,22 +1923,25 @@ def _compute_productivity_score(user_id, target_date, now=None, include_private=
         user_id=user_id, is_deleted=False, deadline__isnull=True, is_done=True, updated_at__date=target_date
     ).count()
     total_todos_done = todos_done_deadline + todos_done_no_deadline
-    todo_score = (total_todos_done / max(todos_due, total_todos_done) * 2) if max(todos_due, total_todos_done) > 0 else 2.0
+    todo_score = (total_todos_done / max(todos_due, total_todos_done) * 1.5) if max(todos_due, total_todos_done) > 0 else 1.5
 
     daily_data = DailyData.objects.filter(user_id=user_id, date=target_date).first()
-    journal_score = 2.0 if (daily_data and daily_data.journal and daily_data.journal.strip()) else 0.0
-    sleep_score = 1.0 if (daily_data and daily_data.sleep_hours is not None) else 0.0
+    journal_score = 1.0 if (daily_data and daily_data.journal and daily_data.journal.strip()) else 0.0
+    sleep_score = 0.5 if (daily_data and daily_data.sleep_hours is not None) else 0.0
 
-    total = round(habit_score + todo_score + journal_score + sleep_score, 1)
+    total = round(habit_score + routine_score + todo_score + journal_score + sleep_score, 1)
     return {
         'total': total,
         'habit': round(habit_score, 1),
+        'routine': round(routine_score, 1),
         'todo': round(todo_score, 1),
         'journal': round(journal_score, 1),
         'sleep': round(sleep_score, 1),
         'breakdown': {
             'habits_done': habits_done,
             'habits_due': habits_due,
+            'routine_done': routine_done,
+            'routine_due': routine_due,
             'todos_done': total_todos_done,
             'todos_due': todos_due,
             'journaled': bool(journal_score),

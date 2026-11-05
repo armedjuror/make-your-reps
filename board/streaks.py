@@ -26,7 +26,9 @@ HISTORY_DAYS = 800
 
 def had_activity(user_id, target_date):
     """Today's rule: any counted action on the date."""
-    from board.models import DailyData, Task
+    from board.models import BlockLog, BlockStatus, DailyData, Task
+    if BlockLog.objects.filter(user_id=user_id, date=target_date, status=BlockStatus.DONE).exists():
+        return True
     if HabitLog.objects.filter(habit__user_id=user_id, habit__is_system=False,
                                date=target_date, is_done=True).exists():
         return True

@@ -251,6 +251,7 @@ const Gamification = {
         const perfect = d.total >= 10;
         const stats = [];
         if (b.habits_due || b.habits_done) stats.push(`${b.habits_done}/${Math.max(b.habits_due, b.habits_done)} habits`);
+        if (b.routine_due) stats.push(`${b.routine_done}/${b.routine_due} routine`);
         if (b.todos_due || b.todos_done) stats.push(`${b.todos_done} task${b.todos_done === 1 ? '' : 's'} done`);
         if (b.journaled) stats.push('Journaled');
         if (b.sleep_logged) stats.push('Sleep logged');
@@ -325,14 +326,14 @@ const Gamification = {
     checkPerfectDay(score) {
         if (typeof SharePoster === 'undefined' || !score || score.total < 10) return;
         const b = score.breakdown || {};
-        if (!(b.habits_done > 0 || b.todos_done > 0)) return;   // a 10 earned by doing nothing isn't a win
+        if (!(b.habits_done > 0 || b.todos_done > 0 || b.routine_done > 0)) return;   // a 10 earned by doing nothing isn't a win
         const today = new Date();
         const key = `mr_perfect_day_${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
         try { if (localStorage.getItem(key)) return; localStorage.setItem(key, '1'); } catch (e) { /* show anyway */ }
         const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
         SharePoster.celebrate(this.daySpec(iso, score), {
             heading: 'A perfect 10/10 day!',
-            message: 'Habits, tasks, journal and sleep, all done. That deserves a poster.',
+            message: 'Habits, routine, tasks, journal and sleep, all done. That deserves a poster.',
         });
     },
 

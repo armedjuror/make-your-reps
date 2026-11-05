@@ -861,3 +861,27 @@ class PrivacyTests(Base):
                              content_type=self.j)
         self.assertEqual(r.status_code, 400)
 
+
+
+class RoutineScoreTests(Base):
+    def score(self):
+        return self.client.get('/board/api/productivity_score/?date=2026-11-05').json()['data']
+
+    def test_routine_counts_done_over_due_and_leaves_skipped_out(self):
+        self.routine()
+        self.log(self.read, 'done')
+        self.log(self.dsa, 'skipped')
+        # 10:00: Wake (5:00-7:00) missed, DSA skipped, Reading done, Office still running.
+        d = self.score()
+        self.assertEqual((d['breakdown']['routine_done'], d['breakdown']['routine_due']), (1, 2))
+        self.assertEqual(d['routine'], 1.5)
+
+    def test_no_routine_due_gives_full_routine_points(self):
+        self.assertEqual(self.score()['routine'], 3.0)
+        self.assertEqual(self.score()['total'], 8.5)   # all but journal (1) and sleep (0.5)
+
+    def test_a_done_routine_block_keeps_the_activity_streak(self):
+        self.routine()
+        self.log(self.wake, 'done', day=TODAY - timedelta(days=1))
+        close_pending_days(self.user.id, now=NOW)
+        self.assertEqual(DaySummary.objects.get(user=self.user, date=TODAY - timedelta(days=1)).outcome, 'legacy')

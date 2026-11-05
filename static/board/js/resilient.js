@@ -210,8 +210,8 @@ const Resilient = {
         }
         if (!entry) return '';
         return `<div class="timeline-actions">
-            <button type="button" class="btn btn-paper btn-sm btn-primary" data-rs="block" data-st="done" data-entry="${this.esc(entry)}"><i class="fas fa-check me-1"></i>Done</button>
-            <button type="button" class="btn btn-paper btn-sm ms-1" data-rs="block" data-st="skipped" data-entry="${this.esc(entry)}">Skip</button>
+            <button type="button" class="btn btn-paper btn-sm btn-primary rs-icon-btn" data-rs="block" data-st="done" data-entry="${this.esc(entry)}" title="Done" aria-label="Mark done"><i class="fas fa-check"></i></button>
+            <button type="button" class="btn btn-paper btn-sm rs-icon-btn ms-1" data-rs="block" data-st="skipped" data-entry="${this.esc(entry)}" title="Skip" aria-label="Skip"><i class="fas fa-forward"></i></button>
         </div>`;
     },
 

@@ -215,3 +215,10 @@ select.form-input option { background: var(--surface-raised, var(--paper-bg)); c
     #pane-home .default-pane-content { padding-left: 12px; padding-right: 12px; }
     #pane-home .timeline-item { padding-top: 6px; padding-bottom: 6px; }
 }
+
+/* Routine Done / Skip on the timeline: icon-only, square */
+.timeline-actions .rs-icon-btn {
+    width: 30px; height: 30px; padding: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: .78rem; line-height: 1;
+}
