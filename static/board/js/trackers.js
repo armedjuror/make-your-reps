@@ -77,7 +77,7 @@ const Trackers = {
         this.charts = {};
         const items = this.metrics;
         if (!items.length) {
-            grid.innerHTML = '<div class="tracker-empty">No trackers yet. Add one to log things like water, walks or cigarettes and see how they trend.</div>';
+            grid.innerHTML = '<div class="tracker-empty">No trackers yet. Add one to log things like water, walks or coffee and see how they trend.</div>';
             return;
         }
         grid.innerHTML = items.map(m => {
@@ -177,7 +177,7 @@ const Trackers = {
         const sel = (name, val, opts) => `<select data-f="${name}">${opts.map(([a, b]) =>
             `<option value="${a}" ${String(val) === a ? 'selected' : ''}>${b}</option>`).join('')}</select>`;
         const body = `
-            <label>Name</label><input data-f="name" maxlength="64" value="${v(m && m.name)}" placeholder="Water, Walk, Cigarettes">
+            <label>Name</label><input data-f="name" maxlength="64" value="${v(m && m.name)}" placeholder="Water, Walk, Coffee">
             <label>Unit</label><input data-f="unit" maxlength="16" value="${v(m && m.unit)}" placeholder="l, min, count">
             <label>What are you tracking?</label>
             ${sel('kind', m ? m.kind : 'additive', [['counter', 'A count (+1 each time)'], ['additive', 'An amount that adds up through the day'], ['single', 'One value per day (like sleep)']])}

@@ -540,7 +540,7 @@ class MetricKind(models.TextChoices):
 
 class Metric(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='metrics')
-    name = models.CharField(max_length=64)          # Walk, Cigarettes, Water, Sleep
+    name = models.CharField(max_length=64)          # Walk, Coffee, Water, Sleep
     unit = models.CharField(max_length=16, blank=True)
     kind = models.CharField(max_length=8, choices=MetricKind.choices, default=MetricKind.ADDITIVE)
     direction = models.CharField(max_length=8, default='at_least')  # at_least / at_most

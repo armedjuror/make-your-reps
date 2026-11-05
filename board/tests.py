@@ -276,7 +276,7 @@ class DayApiTests(Base):
         self.assertEqual(self.client.put('/board/api/day_plans/2026-11-05/reset/', {}, content_type='application/json').status_code, 409)
 
     def test_slip_on_a_chosen_metric_logs_plus_one(self):
-        m = Metric.objects.create(user=self.user, name='Cigarettes', kind='counter', direction='at_most',
+        m = Metric.objects.create(user=self.user, name='Coffee', kind='counter', direction='at_most',
                                   target=3, quick_steps=[1], is_private=True)
         self.detail.slip_metric = m
         self.detail.save()
@@ -534,7 +534,7 @@ class MetricTests(Base):
     def test_counter_logs_one_entry_with_fields_and_note_into_its_journal(self):
         self.client.post('/board/api/private/pin/', {'pin': '4821'}, content_type='application/json')
         self.client.post('/board/api/private/unlock/', {'pin': '4821'}, content_type='application/json')
-        m = self.make(name='Cigarettes', kind='counter', unit='', direction='at_most', target=3,
+        m = self.make(name='Coffee', kind='counter', unit='', direction='at_most', target=3,
                       quick_steps=[1], is_private=True,
                       fields=[{'key': 'trigger', 'label': 'Trigger', 'type': 'choice',
                                'options': ['after meal', 'stress'], 'allow_other': True},
@@ -565,7 +565,7 @@ class MetricTests(Base):
         self.assertFalse(MetricEntry.objects.exists())
 
     def test_at_most_habit_is_settled_at_day_close_and_target_light_applies_on_light_days(self):
-        m = self.make(name='Cigarettes', kind='counter', direction='at_most', target=3, target_light=5,
+        m = self.make(name='Coffee', kind='counter', direction='at_most', target=3, target_light=5,
                       quick_steps=[1], unit='')
         y = TODAY - timedelta(days=1)
         h = self.habit(user=self.user, habit='Limit', identity='x', metric=m,
@@ -582,7 +582,7 @@ class MetricTests(Base):
         self.assertTrue(HabitLog.objects.get(habit=h, date=d2).is_done)      # 4 <= 5 on a light day
 
     def test_breach_brings_the_reset_card(self):
-        m = self.make(name='Cigarettes', kind='counter', direction='at_most', target=1, quick_steps=[1], unit='')
+        m = self.make(name='Coffee', kind='counter', direction='at_most', target=1, quick_steps=[1], unit='')
         j = 'application/json'
         self.client.post(f'/board/api/metrics/{m.id}/log/', {}, content_type=j)
         self.assertFalse(any(x['id'].startswith('reset') for x in self.client.get('/board/api/timeline/?date=2026-11-05').json()['data']))
@@ -636,11 +636,11 @@ class MetricTests(Base):
 class PrivacyTests(Base):
     def setUp(self):
         super().setUp()
-        self.secret = self.habit(user=self.user, habit='Quit smoking', identity='x', is_private=True,
+        self.secret = self.habit(user=self.user, habit='Quit sugar', identity='x', is_private=True,
                                            created_at=at(8, day=TODAY - timedelta(days=3)))
         self.plain = self.habit(user=self.user, habit='Read', identity='x',
                                           created_at=at(8, day=TODAY - timedelta(days=3)))
-        self.metric = Metric.objects.create(user=self.user, name='Cigarettes', kind='counter', quick_steps=[1],
+        self.metric = Metric.objects.create(user=self.user, name='Coffee', kind='counter', quick_steps=[1],
                                             is_private=True)
         self.j = 'application/json'
 
@@ -674,7 +674,7 @@ class PrivacyTests(Base):
 
     def test_unlock_shows_them_and_lock_hides_them_again(self):
         self.assertEqual(self.unlock().status_code, 200)
-        self.assertEqual(sorted(self.names()), ['Quit smoking', 'Read'])
+        self.assertEqual(sorted(self.names()), ['Quit sugar', 'Read'])
         self.assertEqual(len(self.client.get('/board/api/metrics/').json()['data']), 1)
         self.client.post('/board/api/private/lock/', {}, content_type=self.j)
         self.assertEqual(self.names(), ['Read'])
@@ -695,18 +695,18 @@ class PrivacyTests(Base):
 
     def test_timeline_hides_private_habit_events_until_unlocked(self):
         from board.models import TimelineEvent
-        TimelineEvent.objects.create(user=self.user, timestamp=at(9), event_type='habit', event='Time to: Quit smoking',
+        TimelineEvent.objects.create(user=self.user, timestamp=at(9), event_type='habit', event='Time to: Quit sugar',
                                      reference={'model': 'Habit', 'id': self.secret.id}, action={'mark_done': [True, False]})
         events = lambda: [e['event'] for e in self.client.get('/board/api/timeline/?date=2026-11-05').json()['data']]
         self.client.post('/board/api/private/pin/', {'pin': '4821'}, content_type=self.j)
-        self.assertNotIn('Time to: Quit smoking', events())
+        self.assertNotIn('Time to: Quit sugar', events())
         self.assertNotIn('Reminder', events())
         self.secret.private_reminder = True
         self.secret.save()
         self.assertIn('Reminder', events())
-        self.assertNotIn('Time to: Quit smoking', events())
+        self.assertNotIn('Time to: Quit sugar', events())
         self.client.post('/board/api/private/unlock/', {'pin': '4821'}, content_type=self.j)
-        self.assertIn('Time to: Quit smoking', events())
+        self.assertIn('Time to: Quit sugar', events())
 
     def test_score_and_achievements_leave_private_habits_out_while_locked(self):
         HabitLog.objects.create(habit=self.plain, date=TODAY, is_done=True)
