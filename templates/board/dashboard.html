@@ -346,18 +346,17 @@
                         </div>
                         <button class="btn btn-paper btn-sm btn-primary mt-3" id="edit-routine-btn">Edit Routine</button>
                     </div>
-
-                    <!-- Sleep Tracker -->
+                </div>
+            </div>
+            <!-- Trackers: a multi-row grid under habits and routines -->
+            <div class="row mt-2">
+                <div class="col-12">
                     <div class="section">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h3 class="section-title mb-0" id="section-title-sleep">Sleep Tracker</h3>
-                            <button class="btn btn-paper btn-sm btn-primary" id="add-sleep-btn">
-                                <i class="fas fa-plus"></i> Add Entry
-                            </button>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h3 class="section-title mb-0" id="section-title-trackers">Trackers</h3>
+                            <button class="btn btn-paper btn-primary btn-sm" id="new-tracker-btn">New Tracker <i class="fa fa-add"></i></button>
                         </div>
-                        <div class="sleep-graph">
-                            <canvas id="sleepChart"></canvas>
-                        </div>
+                        <div class="tracker-grid" id="trackerGrid"></div>
                     </div>
                 </div>
             </div>
@@ -1195,13 +1194,14 @@ Write freely here, like you're writing in your personal journal..." id="journal-
 
     <!-- Routine Edit Modal -->
     <div class="modal fade" id="routineModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title"><div class="modal-icon info"><i class="fas fa-edit"></i></div> Edit Routine</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
+                    <p class="small mb-2"><b>Essential</b> stays on every day, even Disrupted days. <b>Anchor</b> stays on Light days. <b>Flexible</b> only appears on Normal days. <b>Fixed</b> blocks do not move when you run late. Duration is optional; a block otherwise runs until the next one starts.</p>
                     <div id="routineEntries">
                         <!-- Dynamic routine entry rows -->
                     </div>
@@ -1543,6 +1543,7 @@ Write freely here, like you're writing in your personal journal..." id="journal-
     <script src="{% static 'board/js/pomodoro.js' %}"></script>
     <script src="{% static 'board/js/dashboard.js' %}"></script>
     <script src="{% static 'board/js/resilient.js' %}"></script>
+    <script src="{% static 'board/js/trackers.js' %}"></script>
     <script src="{% static 'board/js/timeline.js' %}"></script>
     <script src="{% static 'board/js/default-pane.js' %}"></script>
     <script src="{% static 'board/js/tracker-pane.js' %}"></script>

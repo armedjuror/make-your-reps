@@ -287,11 +287,25 @@ function createHabitElement(habitEl){
     button.innerHTML = '<i class="fa fa-cog"></i>';
     button.onclick = () => showHabitSettings(`${habitEl.id}`, `${habitEl.habit}`, `${habitEl.detail}`, `${habitEl.identity}`, habitEl.notify_at || null);
 
+    // Checklist button when the habit has steps
+    let stepsBtn = null;
+    if (habitEl.step_count > 0) {
+        stepsBtn = document.createElement('button');
+        stepsBtn.type = 'button';
+        stepsBtn.className = 'btn btn-paper btn-sm ms-1';
+        stepsBtn.title = 'Checklist';
+        stepsBtn.dataset.tr = 'habit-steps';
+        stepsBtn.dataset.habit = habitEl.id;
+        stepsBtn.dataset.name = habitEl.habit;
+        stepsBtn.innerHTML = '<i class="fas fa-list-check"></i>';
+    }
+
     // Append all elements to habit row
     habitRow.appendChild(habitName);
     habitRow.appendChild(habitDays);
     habitRow.appendChild(habitRemark);
     habitRow.appendChild(button);
+    if (stepsBtn) habitRow.appendChild(stepsBtn);
 
     // Append habit row to container
     return habitRow

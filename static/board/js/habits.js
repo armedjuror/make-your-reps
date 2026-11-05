@@ -73,8 +73,9 @@ const Habits = {
             showError('Please select at least one day for this habit.');
             return;
         }
-        apiClient.post('board/api/habits/', {habit, detail, identity, notify_at, frequency}).then(res => {
+        apiClient.post('board/api/habits/', Object.assign({habit, detail, identity, notify_at, frequency}, Trackers.habitExtras())).then(async res => {
             if (res.status === 'success') {
+                await Trackers.afterHabitCreated(res.data.id);
                 bootstrap.Modal.getInstance(document.getElementById('habitModal')).hide();
                 showSuccess('Habit created!');
                 if (panesLoaded.trackers) loadHabits();

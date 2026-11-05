@@ -124,14 +124,15 @@ const Resilient = {
 
     _mountBar() {
         if (document.getElementById('day-bar')) return;
-        const list = document.getElementById('timeline-list');
-        if (!list || !list.parentElement) return;
+        const row = document.querySelector('.timeline-bar');
+        if (!row) return;
         const bar = document.createElement('div');
         bar.id = 'day-bar';
-        const metrics = document.createElement('div');
-        metrics.id = 'metric-strip';
-        list.parentElement.insertBefore(bar, list);
-        list.parentElement.insertBefore(metrics, list);
+        bar.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;align-items:center';
+        row.appendChild(bar);
+        const note = document.createElement('div');
+        note.id = 'day-note';
+        row.insertAdjacentElement('afterend', note);
     },
 
     // ── Day bar ──────────────────────────────────────────────
@@ -143,28 +144,29 @@ const Resilient = {
 
     renderBar(date) {
         const bar = document.getElementById('day-bar');
+        const note = document.getElementById('day-note');
         if (!bar) return;
         const d = this.day;
-        if (!d) { bar.innerHTML = ''; return; }
+        if (!d) { bar.innerHTML = ''; if (note) note.innerHTML = ''; return; }
         const today = this.isToday(d.date);
         const editable = d.date >= this.logicalToday();
         const tpl = d.template === 'holiday' ? 'Holiday' : 'Workday';
         const mode = d.mode.charAt(0).toUpperCase() + d.mode.slice(1);
-        let html = '<div class="rs-bar">';
-        html += `<button type="button" class="rs-chip rs-${this.esc(d.mode)}" data-rs="menu-day" ${editable ? '' : 'disabled'}>${tpl} &middot; ${mode} <i class="fas fa-chevron-down" style="font-size:.6rem"></i></button>`;
+        let html = `<button type="button" class="rs-chip rs-${this.esc(d.mode)}" data-rs="menu-day" ${editable ? '' : 'disabled'}>${tpl} &middot; ${mode} <i class="fas fa-chevron-down" style="font-size:.6rem"></i></button>`;
         if (today) {
             html += '<button type="button" class="rs-chip" data-rs="menu-late"><i class="fas fa-person-running"></i> Running late</button>';
             html += '<button type="button" class="rs-chip" data-rs="slip"><i class="fas fa-heart-crack"></i> I slipped</button>';
         }
-        if (editable) html += '<button type="button" class="rs-chip" data-rs="travel"><i class="fas fa-plane"></i> I&rsquo;m travelling&hellip;</button>';
-        html += '</div>';
-        if (d.banner) html += `<div class="rs-banner">${this.esc(d.banner)}</div>`;
-        if (d.warning === 'no_essential') html += '<div class="rs-warn">No essential blocks are set for this day, so the first anchor stands in. Mark an essential in your routine.</div>';
+        if (editable) html += '<button type="button" class="rs-chip" data-rs="travel"><i class="fas fa-plane"></i> Travelling&hellip;</button>';
+        bar.innerHTML = html;
+        let n = '';
+        if (d.banner) n += `<div class="rs-banner">${this.esc(d.banner)}</div>`;
+        if (d.warning === 'no_essential') n += '<div class="rs-warn">No essential blocks are set for this day, so the first anchor stands in. Mark an essential in your routine.</div>';
         if (today && d.shifts && d.shifts.length) {
             const total = d.shifts.reduce((a, s) => a + (s.minutes || 0), 0);
-            html += `<div class="rs-banner">Running ${total} min late. <button type="button" class="rs-link" data-rs="late-undo">Undo</button></div>`;
+            n += `<div class="rs-banner">Running ${total} min late. <button type="button" class="rs-link" data-rs="late-undo">Undo</button></div>`;
         }
-        bar.innerHTML = html;
+        if (note) note.innerHTML = n;
     },
 
     _closeMenus() { document.querySelectorAll('.rs-menu').forEach(m => m.remove()); },
@@ -209,6 +211,10 @@ const Resilient = {
         if (event.event_type === 'routine') return this._blockActions(event);
         if (id.startsWith('day-checkin-')) return this._checkinActions(event);
         if (id.startsWith('reset-')) return this._resetActions(event);
+        if (id.startsWith('metric-') && event.reference) {
+            if (event.action_response) return '<div class="timeline-actions"><span class="badge-done"><i class="fas fa-check"></i> Logged</span></div>';
+            return `<div class="timeline-actions"><button type="button" class="btn btn-paper btn-sm btn-primary" data-rs="metric-open" data-metric="${this.esc(event.reference.id)}"><i class="fas fa-plus me-1"></i>Log</button></div>`;
+        }
         return '';
     },
 
@@ -383,33 +389,9 @@ const Resilient = {
     async loadMetrics() {
         const res = await apiClient.get('board/api/metrics/', { silent: true });
         if (res.status === 'success') {
-            this.metrics = res.data.filter(m => !m.is_system || m.name);
-            this.renderMetrics();
+            this.metrics = res.data;
+            if (typeof Trackers !== 'undefined') Trackers.onMetrics(this.metrics);
         }
-    },
-
-    _fmt(n) { return Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100); },
-
-    renderMetrics() {
-        const el = document.getElementById('metric-strip');
-        if (!el) return;
-        const items = this.metrics.filter(m => m.kind !== 'single' || m.target != null || m.today);
-        if (!items.length) { el.innerHTML = ''; return; }
-        el.innerHTML = `<div class="rs-metrics">${items.map(m => {
-            const t = m.today_target;
-            const over = m.direction === 'at_most' && t != null && m.today > t;
-            const met = m.direction === 'at_least' && t != null && m.today >= t;
-            const goal = t != null ? ` / ${this._fmt(t)}` : '';
-            const steps = m.kind === 'counter' || m.kind === 'additive'
-                ? (m.quick_steps || [1]).map(s => `<button type="button" data-rs="metric-add" data-metric="${m.id}" data-val="${s}">+${this._fmt(s)}</button>`).join('')
-                : '';
-            return `<div class="rs-metric ${over ? 'rs-over' : ''} ${met ? 'rs-met' : ''}">
-                <span>${this.esc(m.name)} <b>${this._fmt(m.today)}</b>${goal} ${this.esc(m.unit || '')}</span>
-                ${steps}
-                <button type="button" data-rs="metric-open" data-metric="${m.id}" aria-label="Log ${this.esc(m.name)}">&hellip;</button>
-                <button type="button" data-rs="metric-undo" data-metric="${m.id}" aria-label="Undo last ${this.esc(m.name)}">&#8630;</button>
-            </div>`;
-        }).join('')}</div>`;
     },
 
     async logMetric(id, value, extra) {
@@ -589,7 +571,7 @@ const Resilient = {
             apiClient.get(`board/api/habits/${habit.id}/steps/`, { silent: true }),
         ]);
         const h = hres.status === 'success' ? hres.data : {};
-        const steps = sres.status === 'success' ? sres.data : [];
+        const steps = sres.status === 'success' ? sres.data.steps : [];
         const sel = (key, val, opts) => `<select data-hopt="${key}" class="form-control form-control-sm d-inline-block" style="width:auto">${
             opts.map(([v, l]) => `<option value="${v}" ${val === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
         box.dataset.habit = habit.id;
@@ -691,8 +673,3 @@ const Resilient = {
         }
     },
 };
-
-document.addEventListener('DOMContentLoaded', () => {
-    // timeline.js calls Resilient.init() from Timeline.init(); this covers pages without a timeline
-    if (document.getElementById('timeline-list')) Resilient.init();
-});

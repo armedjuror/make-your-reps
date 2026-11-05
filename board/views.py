@@ -1180,6 +1180,24 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
                 if freeze:
                     data.append(freeze)
 
+            # Tracker reminders: one card per tracker with a reminder time (Sleep has its own below)
+            from board.day_views import hidden_ids as _hidden_ids
+            from board import metrics as _mx
+            _, hidden_metrics = _hidden_ids(request, user_id)
+            for m in Metric.objects.filter(user_id=user_id, remind_at__isnull=False, is_system=False).exclude(id__in=hidden_metrics):
+                m_ts = timezone.make_aware(datetime.combine(parsed_date, m.remind_at))
+                logged = _mx.day_value(m, parsed_date) > 0
+                data.append({
+                    'id': f'metric-{m.id}-{parsed_date}',
+                    'timestamp': m_ts.isoformat(),
+                    'event_type': TimelineEventType.TEXT,
+                    'event': f'Log {m.name}',
+                    'reference': {'model': 'Metric', 'id': m.id},
+                    'action': None if logged else {'metric': ['log']},
+                    'action_response': {'metric': 'logged'} if logged else None,
+                    'created_at': m_ts.isoformat(), 'updated_at': m_ts.isoformat(),
+                })
+
             # Inject sleep tracker reminder at 7:00 AM
             sleep_track_ts = timezone.make_aware(datetime.combine(parsed_date, time(7, 0)))
             data.append({

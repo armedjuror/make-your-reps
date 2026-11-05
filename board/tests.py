@@ -497,6 +497,18 @@ class MetricTests(Base):
         defaults.update(kw)
         return Metric.objects.create(**defaults)
 
+    def test_tracker_reminder_card_on_timeline_until_logged(self):
+        m = self.client.post('/board/api/metrics/', {'name': 'Water', 'kind': 'additive', 'unit': 'l',
+                                                      'remind_at': '10:30'}, content_type='application/json').json()['data']
+        self.assertEqual(m['remind_at'], '10:30')
+        r = self.client.get('/board/api/timeline/?date=2026-11-05').json()
+        card = next(x for x in r['data'] if x['id'] == f"metric-{m['id']}-2026-11-05")
+        self.assertEqual(card['action'], {'metric': ['log']})
+        self.client.post(f"/board/api/metrics/{m['id']}/log/", {'value': 1}, content_type='application/json')
+        r = self.client.get('/board/api/timeline/?date=2026-11-05').json()
+        card = next(x for x in r['data'] if x['id'] == f"metric-{m['id']}-2026-11-05")
+        self.assertIsNone(card['action'])
+
     def test_additive_sums_and_marks_a_linked_habit_done_at_target(self):
         m = self.make()
         h = self.habit(user=self.user, habit='Walk', identity='w', metric=m,
@@ -715,3 +727,4 @@ class PrivacyTests(Base):
         r = self.client.post('/board/api/accountability_partners/', {'habit_id': self.secret.id, 'email': 'x@example.com'},
                              content_type=self.j)
         self.assertEqual(r.status_code, 400)
+

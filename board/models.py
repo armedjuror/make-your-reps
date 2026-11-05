@@ -550,6 +550,7 @@ class Metric(models.Model):
     fields = models.JSONField(default=list)  # [{key, label, type: choice|scale|text, options?, allow_other?, max?}]
     is_private = models.BooleanField(default=False)
     is_system = models.BooleanField(default=False)  # e.g. the Sleep metric
+    remind_at = models.TimeField(null=True, blank=True)  # daily reminder on the timeline
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

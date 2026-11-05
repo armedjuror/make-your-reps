@@ -395,6 +395,8 @@ def metric_json(metric, request=None):
         'target_light': float(metric.target_light) if metric.target_light is not None else None,
         'quick_steps': [float(x) for x in metric.quick_steps],
         'fields': metric.fields, 'is_private': metric.is_private, 'is_system': metric.is_system,
+        'remind_at': metric.remind_at.strftime('%H:%M') if metric.remind_at else None,
+        'habit_ids': list(Habit.objects.filter(user_id=metric.user_id, metric_id=metric.id).values_list('id', flat=True)),
         'today': float(mx.day_value(metric, today)),
         'today_target': float(target) if target is not None else None,
         'chips': mx.chips(metric),
@@ -428,6 +430,16 @@ def apply_metric_payload(metric, data):
         metric.fields = mx.clean_fields(data['fields'])
     if 'is_private' in data:
         metric.is_private = bool(data['is_private'])
+    if 'remind_at' in data:
+        v = data['remind_at']
+        if v in (None, ''):
+            metric.remind_at = None
+        else:
+            from datetime import datetime as _dt
+            try:
+                metric.remind_at = _dt.strptime(str(v)[:5], '%H:%M').time()
+            except ValueError:
+                raise ValueError('remind_at must be HH:MM')
 
 
 class MetricsView(APIView):

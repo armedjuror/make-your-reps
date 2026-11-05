@@ -12,7 +12,7 @@ let sleepChart = null;
 function initTrackersPane() {
     loadHabits();
     loadRoutines();
-    initSleepChart();
+    Trackers.init();
     loadSleepAndJournalData();
 
     // Auto-select the routine from today's day template (weekend days are configurable)
@@ -239,6 +239,7 @@ function saveSleepEntry() {
                 sleepChart.update();
             }
             General.loadProductivityScore();
+            if (typeof Resilient !== 'undefined') Resilient.loadMetrics();
         } else {
             showError(res.error || 'Failed to save sleep entry');
         }

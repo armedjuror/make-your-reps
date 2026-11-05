@@ -145,7 +145,6 @@ function bindEvents() {
     document.getElementById('workday_routine_button').addEventListener('click', () => showRoutine('workday'));
     document.getElementById('holiday_routine_button').addEventListener('click', () => showRoutine('holiday'));
     document.getElementById('edit-routine-btn').addEventListener('click', () => editRoutine());
-    document.getElementById('add-sleep-btn').addEventListener('click', () => openSleepModal());
 
     // Journal pane
     document.getElementById('journal-prev-month').addEventListener('click', () => JournalPane.prevMonth());
