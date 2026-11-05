@@ -61,17 +61,20 @@ const RoutineEditor = {
     addRow(entry = {}) {
         const container = document.getElementById('routineEntries');
         const row = document.createElement('div');
+        row.className = 'routine-entry-row d-flex gap-2 mb-2 align-items-center flex-wrap';
         if (entry.id) row.dataset.id = entry.id;
         const tier = entry.tier || 'flexible';
-        const opt = (v, l, cur) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${l}</option>`;
-        row.className = 'routine-entry-row convo-line';
         row.innerHTML = `
-            At <input type="time" class="form-input routine-time" value="${esc((entry.time || '').substring(0, 5))}">
-            I <input type="text" class="form-input routine-title" placeholder="do DSA" value="${esc(entry.title || '')}">,
-            it&rsquo;s <select class="form-input routine-tier">${opt('essential', 'essential', tier)}${opt('anchor', 'an anchor', tier)}${opt('flexible', 'flexible', tier)}</select>
-            and <select class="form-input routine-fixed">${opt('', 'moves when I&rsquo;m late', entry.fixed_time ? 'fixed' : '')}${opt('fixed', 'stays fixed', entry.fixed_time ? 'fixed' : '')}</select>,
-            for <input type="number" min="1" max="720" class="form-input rs-num routine-duration" placeholder="until next" value="${esc(entry.duration_min || '')}"> min
-            <button type="button" class="tl-link routine-remove ms-2">remove</button>
+            <input type="time" class="form-control routine-time" style="width:130px;" value="${esc((entry.time || '').substring(0, 5))}">
+            <input type="text" class="form-control routine-title" style="flex:1;min-width:140px" placeholder="Activity name" value="${esc(entry.title || '')}">
+            <select class="form-control routine-tier" style="width:120px;" title="Essential stays on every day. Anchor stays on Light days. Flexible only on Normal days.">
+                <option value="essential" ${tier === 'essential' ? 'selected' : ''}>Essential</option>
+                <option value="anchor" ${tier === 'anchor' ? 'selected' : ''}>Anchor</option>
+                <option value="flexible" ${tier === 'flexible' ? 'selected' : ''}>Flexible</option>
+            </select>
+            <label class="small d-flex align-items-center gap-1 mb-0" title="Fixed blocks do not move when you run late"><input type="checkbox" class="routine-fixed" ${entry.fixed_time ? 'checked' : ''}> Fixed</label>
+            <input type="number" min="1" max="720" class="form-control routine-duration" style="width:90px;" placeholder="min" title="Duration in minutes" value="${esc(entry.duration_min || '')}">
+            <button type="button" class="btn btn-paper btn-danger btn-sm routine-remove"><i class="fas fa-times"></i></button>
         `;
         row.querySelector('.routine-remove').addEventListener('click', () => row.remove());
         container.appendChild(row);
@@ -87,7 +90,7 @@ const RoutineEditor = {
                 const item = {
                     time, title,
                     tier: row.querySelector('.routine-tier').value,
-                    fixed_time: row.querySelector('.routine-fixed').value === 'fixed',
+                    fixed_time: row.querySelector('.routine-fixed').checked,
                     duration_min: row.querySelector('.routine-duration').value
                         ? Number(row.querySelector('.routine-duration').value) : null,
                 };
@@ -236,7 +239,7 @@ function saveSleepEntry() {
                 sleepChart.update();
             }
             General.loadProductivityScore();
-            if (typeof Resilient !== 'undefined') Resilient.loadMetrics();
+            if (typeof Resilient !== 'undefined') { Resilient.loadMetrics(); Resilient.refreshSoon(); }
         } else {
             showError(res.error || 'Failed to save sleep entry');
         }

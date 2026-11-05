@@ -95,9 +95,10 @@ select.form-control option { background: var(--surface-raised, var(--paper-bg));
 }
 
 /* ── Conversational forms (extends .conversational-form / .form-input from the app) ── */
-.rs-lead { color: var(--ink-black); margin-bottom: 10px; line-height: 1.5; }
-.conversational-form .form-input.rs-num { min-width: 70px; width: 90px; }
-.conversational-form .form-input.rs-wide { min-width: 240px; width: min(100%, 380px); }
+.rs-lead { color: var(--ink-black); margin-bottom: 12px; line-height: 1.5; min-height: 1.5em; }
+.conversational-form .form-input, .paragraph-form .form-input { min-width: 4ch; max-width: 100%; }
+.conversational-form .convo-line[hidden] { display: none; }
+.conversational-form .convo-line.rs-new { animation: fadeSlideIn .3s ease; }
 .conversational-form select.form-input { min-width: 0; width: auto; cursor: pointer; padding-right: 4px; }
 select.form-input option { background: var(--surface-raised, var(--paper-bg)); color: var(--ink-black); }
 .conversational-form .form-input[type="date"], .conversational-form .form-input[type="time"], .conversational-form .form-input[type="datetime-local"] { min-width: 0; }
@@ -105,6 +106,15 @@ select.form-input option { background: var(--surface-raised, var(--paper-bg)); c
 .conversational-form .form-check { padding-left: 1.8em; }
 .rs-howto { font-size: .8rem; color: var(--ink-gray); line-height: 1.4; }
 #rs-habit-options h6, #rs-habit-options + * h6 { color: var(--ink-black); }
-.routine-entry-row { padding: 2px 0; border-bottom: 1px dashed rgba(var(--accent-rgb), .2); }
-.routine-entry-row .form-input { margin-bottom: 4px; }
-#routineEntries { font-size: 1rem; line-height: 2.3; color: var(--ink-brown); }
+
+/* Habit settings sections */
+.rs-habit-section { margin-top: 18px; }
+.rs-habit-section h6 { color: var(--ink-black); }
+#rs-habit-sections { margin-top: 8px; }
+
+/* Journal pane: tracker notes under the day's journal */
+.tracker-note-group { margin-bottom: 12px; }
+.tracker-note-group h6 { color: var(--ink-brown); font-weight: 700; margin-bottom: 4px; }
+.tracker-note { color: var(--ink-black); line-height: 1.6; }
+.tracker-note-time { color: var(--ink-gray); font-size: .8rem; margin-right: 6px; }
+.tracker-note-meta { color: var(--ink-gray); font-size: .8rem; margin-left: 6px; }

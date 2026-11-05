@@ -174,7 +174,7 @@ function bindEvents() {
     document.getElementById('habit-toggle-edit-btn').addEventListener('click', toggleEditForm);
     document.getElementById('habit-hallmark-btn').addEventListener('click', hallmarkHabit);
     document.getElementById('habit-delete-btn').addEventListener('click', deleteHabit);
-    document.getElementById('habit-accountability-btn').addEventListener('click', togglePartnerSection);
+    document.getElementById('habit-partner-edit').addEventListener('click', togglePartnerSection);
     document.getElementById('assign-partner-btn').addEventListener('click', assignPartner);
     document.getElementById('habit-cancel-edit-btn').addEventListener('click', cancelEdit);
     document.getElementById('habit-save-changes-btn').addEventListener('click', saveHabitChanges);

@@ -222,6 +222,24 @@ class DayApiTests(Base):
         self.assertTrue(any(i.startswith('sleep-tracker-') for i in first_two[1:3]))
         self.assertLess(order.index('sleep-tracker-2026-11-05'), 3)
 
+    def test_sleep_and_journal_cards_show_done_once_logged(self):
+        card = lambda prefix: next(x for x in self.client.get('/board/api/timeline/?date=2026-11-05').json()['data']
+                                   if x['id'].startswith(prefix))
+        self.assertIsNone(card('sleep-tracker-')['action_response'])
+        self.assertIsNone(card('journal-reminder-')['action_response'])
+        self.client.put('/board/api/daily_data/2026-11-05/', {'journal': 'Good day', 'sleep_hours': 7},
+                        content_type='application/json')
+        self.assertTrue(card('sleep-tracker-')['action_response'])
+        self.assertTrue(card('journal-reminder-')['action_response'])
+
+    def test_tracker_notes_listed_by_date_for_the_journal_pane(self):
+        m = self.client.post('/board/api/metrics/', {'name': 'Water', 'kind': 'additive'},
+                             content_type='application/json').json()['data']
+        self.client.post(f"/board/api/metrics/{m['id']}/log/", {'value': 1, 'note': 'after the run'},
+                         content_type='application/json')
+        r = self.client.get('/board/api/journal_entries/?date=2026-11-05').json()['data']
+        self.assertEqual([(e['journal_name'], e['text']) for e in r], [('Water', 'after the run')])
+
     def test_checkin_disappears_once_a_day_is_chosen(self):
         self.client.put('/board/api/day_plans/2026-11-05/', {'mode': 'normal', 'source': 'checkin'},
                         content_type='application/json')

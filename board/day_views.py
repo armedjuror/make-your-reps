@@ -795,6 +795,31 @@ class JournalEntriesView(APIView):
         return Response({'status': 'success', 'data': entry_json(e)}, status=http.HTTP_201_CREATED)
 
 
+class JournalEntriesByDateView(APIView):
+    """
+    Entries from tracker journals (notes logged with a tracker) for a date or a
+    range, for the Journal pane. The default journal is the pane's own editor,
+    so it is left out here.
+    """
+
+    @auth
+    def get(self, request, user_id):
+        start = parse_date(request.GET.get('date') or request.GET.get('from') or '')
+        end = parse_date(request.GET.get('date') or request.GET.get('to') or '') or start
+        if not start or end < start or (end - start).days > 62:
+            return fail('date, or from/to of at most 62 days, is required')
+        qs = (JournalEntry.objects.filter(journal__in=_visible_journals(request, user_id).filter(is_default=False),
+                                          date__gte=start, date__lte=end)
+              .select_related('journal', 'journal__metric', 'metric_entry').order_by('date', 'at'))
+        out = []
+        for e in qs:
+            item = entry_json(e)
+            item['journal_name'] = e.journal.name
+            item['unit'] = e.journal.metric.unit if e.journal.metric_id else ''
+            out.append(item)
+        return ok(out)
+
+
 class JournalEntryDetailView(APIView):
     @auth
     def put(self, request, user_id, pk):

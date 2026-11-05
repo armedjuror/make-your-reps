@@ -991,76 +991,12 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                             <i class="fas fa-user-friends me-2"></i>
                             <span>Accountability Partner: </span>
                             <span id="partnerDisplay" class="ms-2 text-brown">None assigned</span>
+                                <button type="button" class="tl-link ms-2" id="habit-partner-edit">edit</button>
                         </div>
                         <div class="d-flex align-items-center mt-2">
                             <i class="fas fa-bell me-2"></i>
                             <span>Reminder: </span>
                             <span id="reminderDisplay" class="ms-2 text-brown">None</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="editHabitForm" style="display: none;">
-                    <h6 class="mb-3">Edit your habit:</h6>
-                    <div class="paragraph-form">
-                        I will
-                        <input type="text"
-                               class="form-input habit-input"
-                               name="habit"
-                               id="editHabit"
-                               placeholder="read a page"
-                               required>
-                        <input type="text"
-                               class="form-input when-where-input"
-                               name="whenWhere"
-                               id="editWhenWhere"
-                               placeholder="when I wake up"
-                               required>
-                        so that I can become
-                        <input type="text"
-                               class="form-input identity-input"
-                               name="identity"
-                               id="editIdentity"
-                               placeholder="a wise person"
-                               required>
-                    </div>
-                    <div class="paragraph-form mt-2">
-                        Remind me at
-                        <input type="time" class="form-input" id="editNotify" aria-label="Reminder time">
-                        <small class="text-brown ms-1">(optional, leave empty for no reminder)</small>
-                    </div>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="habit-actions mt-4">
-                    <div class="row">
-                        <div class="col-lg-4 col-md-6 mb-3">
-                            <button type="button" class="btn habit-action-btn" id="habit-toggle-edit-btn">
-                                <i class="fas fa-edit"></i>
-                                <span class="btn-text">Adjust Habit</span>
-                                <small class="btn-subtitle">Modify your habit details</small>
-                            </button>
-                        </div>
-                        <div class="col-lg-4 col-md-6 mb-3">
-                            <button type="button" class="btn habit-action-btn partner-btn" id="habit-accountability-btn">
-                                <i class="fas fa-user-friends"></i>
-                                <span class="btn-text">Accountability</span>
-                                <small class="btn-subtitle">Manage partners</small>
-                            </button>
-                        </div>
-                        <div class="col-lg-4 col-md-6 mb-3">
-                            <button type="button" class="btn habit-action-btn" id="habit-hallmark-btn">
-                                <i class="fas fa-star"></i>
-                                <span class="btn-text">Hallmark Habit</span>
-                                <small class="btn-subtitle">Mark as successfully formed</small>
-                            </button>
-                        </div>
-                        <div class="col-lg-4 col-md-6 mb-3">
-                            <button type="button" class="btn habit-action-btn" id="habit-delete-btn">
-                                <i class="fas fa-trash"></i>
-                                <span class="btn-text">Delete Habit</span>
-                                <small class="btn-subtitle">Remove this habit</small>
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -1090,15 +1026,71 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                     </div>
                 </div>
 
+                <!-- Partner Section Actions -->
+                <div id="partnerActions" class="text-end mt-3" style="display: none;">
+                    <button type="button" class="btn btn-paper" id="partner-close-btn">Close</button>
+                </div>
+
+                <div id="editHabitForm" style="display: none;">
+                    <h6 class="mb-3">Edit your habit:</h6>
+                    <div class="paragraph-form">
+                        I will
+                        <input type="text"
+                               class="form-input habit-input"
+                               name="habit"
+                               id="editHabit"
+                               placeholder="read a page"
+                               required>
+                        <input type="text"
+                               class="form-input when-where-input"
+                               name="whenWhere"
+                               id="editWhenWhere"
+                               placeholder="when I wake up"
+                               required>
+                        so that I can become
+                        <input type="text"
+                               class="form-input identity-input"
+                               name="identity"
+                               id="editIdentity"
+                               placeholder="a wise person"
+                               required>
+                    </div>
+                </div>
+
+                <!-- Steps, reminder, hard days and privacy (resilient.js) -->
+                <div id="rs-habit-sections"></div>
+
+                <!-- Action Buttons -->
+                <div class="habit-actions mt-4">
+                    <div class="row">
+                        <div class="col-lg-4 col-md-6 mb-3">
+                            <button type="button" class="btn habit-action-btn" id="habit-toggle-edit-btn">
+                                <i class="fas fa-edit"></i>
+                                <span class="btn-text">Adjust Habit</span>
+                                <small class="btn-subtitle">Modify your habit details</small>
+                            </button>
+                        </div>
+                        <div class="col-lg-4 col-md-6 mb-3">
+                            <button type="button" class="btn habit-action-btn" id="habit-hallmark-btn">
+                                <i class="fas fa-star"></i>
+                                <span class="btn-text">Hallmark Habit</span>
+                                <small class="btn-subtitle">Mark as successfully formed</small>
+                            </button>
+                        </div>
+                        <div class="col-lg-4 col-md-6 mb-3">
+                            <button type="button" class="btn habit-action-btn" id="habit-delete-btn">
+                                <i class="fas fa-trash"></i>
+                                <span class="btn-text">Delete Habit</span>
+                                <small class="btn-subtitle">Remove this habit</small>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Save/Cancel buttons for edit mode -->
                 <div id="editActions" class="text-end mt-3" style="display: none;">
                     <button type="button" class="btn btn-paper me-2" id="habit-cancel-edit-btn">Cancel</button>
                     <button type="button" class="btn btn-paper btn-primary" id="habit-save-changes-btn">Save Changes</button>
-                </div>
-
-                <!-- Partner Section Actions -->
-                <div id="partnerActions" class="text-end mt-3" style="display: none;">
-                    <button type="button" class="btn btn-paper" id="partner-close-btn">Close</button>
                 </div>
             </div>
         </div>
@@ -1173,9 +1165,10 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="conversational-form">
-                        <div class="convo-line">On <input type="date" class="form-input" id="sleepDate"></div>
-                        <div class="convo-line">I slept for <input type="number" class="form-input rs-num" id="sleepHours" placeholder="7" step="0.5" min="0" max="24" required> hours.</div>
+                    <div class="rs-lead" data-rs-msg>How did you sleep?</div>
+                    <div class="conversational-form" data-rs-convo>
+                        <div class="convo-line" data-need data-msg="Which night is this for? It defaults to last night.">On <input type="date" class="form-input" id="sleepDate"></div>
+                        <div class="convo-line" data-need data-msg="Roughly how many hours? Halves are fine, like 6.5.">I slept for <input type="number" class="form-input" id="sleepHours" placeholder="7" step="0.5" min="0" max="24" required> hours.</div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -1195,7 +1188,7 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="rs-lead"><b>Essential</b> blocks stay on every day, even Disrupted ones. <b>Anchors</b> stay on Light days. <b>Flexible</b> ones only show on Normal days. Leave the minutes empty and a block runs until the next one starts.</div>
+                    <p class="small mb-2"><b>Essential</b> stays on every day, even Disrupted days. <b>Anchor</b> stays on Light days. <b>Flexible</b> only appears on Normal days. <b>Fixed</b> blocks do not move when you run late. Duration is optional; a block otherwise runs until the next one starts.</p>
                     <div id="routineEntries">
                         <!-- Dynamic routine entry rows -->
                     </div>
@@ -1220,11 +1213,12 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="conversational-form">
-                        <div class="convo-line">Save <input type="text" class="form-input" id="rlName" placeholder="GitHub"></div>
-                        <div class="convo-line">at <input type="url" class="form-input rs-wide" id="rlUrl" placeholder="https://github.com"></div>
-                        <div class="convo-line">with the icon <input type="url" class="form-input rs-wide" id="rlIcon" placeholder="https://github.com/favicon.ico"> <small class="text-brown ms-1">(optional)</small></div>
-                        <div class="convo-line form-check form-switch">
+                    <div class="rs-lead" data-rs-msg>What would you like to save?</div>
+                    <div class="conversational-form" data-rs-convo data-rs-reveal="filled">
+                        <div class="convo-line" data-need data-msg="Give it a short name you&rsquo;ll recognise.">Save <input type="text" class="form-input" id="rlName" placeholder="GitHub"></div>
+                        <div class="convo-line" data-need data-msg="Paste the link.">at <input type="url" class="form-input" id="rlUrl" placeholder="https://github.com"></div>
+                        <div class="convo-line" data-msg="Optional. Leave it empty and we&rsquo;ll use the site&rsquo;s own icon. Tab to skip.">with the icon <input type="url" class="form-input" id="rlIcon" placeholder="https://github.com/favicon.ico"></div>
+                        <div class="convo-line form-check form-switch" data-msg="Show it on the Today page for quick access?">
                             <input class="form-check-input" type="checkbox" id="rlFeatured" checked>
                             <label class="form-check-label" for="rlFeatured">and show it on Home.</label>
                         </div>
@@ -1303,10 +1297,11 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="conversational-form">
-                        <div class="convo-line">I want to <input type="text" class="form-input rs-wide" id="editTaskName" placeholder="finish the report"></div>
-                        <div class="convo-line">before <input type="datetime-local" class="form-input" id="editTaskDeadline"> <small class="text-brown ms-1">(clear it for no deadline)</small></div>
-                        <div class="convo-line">in <select class="form-input" id="editTaskGroup"></select></div>
+                    <div class="rs-lead" data-rs-msg>Change anything below.</div>
+                    <div class="conversational-form" data-rs-convo data-rs-reveal="filled">
+                        <div class="convo-line" data-need data-msg="What&rsquo;s the task?">I want to <input type="text" class="form-input" id="editTaskName" placeholder="finish the report"></div>
+                        <div class="convo-line" data-msg="When should it be done by? Clear it for no deadline.">before <input type="datetime-local" class="form-input" id="editTaskDeadline"></div>
+                        <div class="convo-line" data-msg="Which group does it belong to?">in <select class="form-input" id="editTaskGroup"></select></div>
                     </div>
                     <input type="hidden" id="editTaskId" value="">
                 </div>
@@ -1344,8 +1339,9 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="conversational-form">
-                        <div class="convo-line">Call this group <input type="text" class="form-input" id="groupNameInput" placeholder="work" autofocus></div>
+                    <div class="rs-lead" data-rs-msg>Groups keep related tasks together, like Work or Home.</div>
+                    <div class="conversational-form" data-rs-convo>
+                        <div class="convo-line" data-need>Call this group <input type="text" class="form-input" id="groupNameInput" placeholder="work" autofocus></div>
                     </div>
                     <input type="hidden" id="groupEditId" value="">
                 </div>

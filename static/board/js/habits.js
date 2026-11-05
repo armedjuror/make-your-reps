@@ -227,7 +227,6 @@ function toggleEditForm() {
         document.getElementById('editHabit').value = currentHabitData.habit;
         document.getElementById('editWhenWhere').value = currentHabitData.whenWhere;
         document.getElementById('editIdentity').value = currentHabitData.identity;
-        document.getElementById('editNotify').value = currentHabitData.notifyAt || '';
 
         editForm.style.display = 'block';
         editActions.style.display = 'block';
@@ -247,15 +246,12 @@ function saveHabitChanges() {
     const habit = document.getElementById('editHabit').value.trim();
     const whenWhere = document.getElementById('editWhenWhere').value.trim();
     const identity = document.getElementById('editIdentity').value.trim();
-    const notifyAt = document.getElementById('editNotify').value || '';
 
     if (habit && whenWhere && identity) {
         // Update current data
         currentHabitData.habit = habit;
         currentHabitData.whenWhere = whenWhere;
         currentHabitData.identity = identity;
-        currentHabitData.notifyAt = notifyAt;
-        showReminder(notifyAt);
 
         // Update display
         document.getElementById('currentHabit').textContent = habit;
@@ -275,7 +271,6 @@ function saveHabitChanges() {
                 'habit': habit,
                 'detail': whenWhere,
                 'identity': identity,
-                'notify_at': notifyAt || null,
             }
         ).then((response) => {
                 currentHabitData = {};

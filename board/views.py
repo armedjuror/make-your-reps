@@ -1204,6 +1204,10 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
             _stamps = sorted(t for t in (parse_datetime(str(d['timestamp'])) for d in data) if t)
             sleep_track_ts = (_stamps[0] + timedelta(seconds=1)) if _stamps \
                 else timezone.make_aware(datetime.combine(parsed_date, time(7, 0)))
+            # Already logged? Then the card shows as done (sleep for a day is logged that morning)
+            _dd = DailyData.objects.filter(user_id=user_id, date=parsed_date).first()
+            _slept = bool(_dd and _dd.sleep_hours) or _mx.day_value(_mx.ensure_sleep_metric(user_id), parsed_date) > 0
+            _journaled = bool(_dd and (_dd.journal or '').strip())
             data.append({
                 'id': f'sleep-tracker-{parsed_date}',
                 'timestamp': sleep_track_ts.isoformat(),
@@ -1211,7 +1215,7 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
                 'event': "Good morning! How many hours did you sleep last night?",
                 'reference': None,
                 'action': {'log_sleep': [True, False]},
-                'action_response': None,
+                'action_response': {'log_sleep': True} if _slept else None,
                 'created_at': sleep_track_ts.isoformat(),
                 'updated_at': sleep_track_ts.isoformat(),
             })
@@ -1235,7 +1239,7 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
                 'event': "Time to reflect! Write a few lines in your journal.",
                 'reference': None,
                 'action': {'open_journal': [True, False]},
-                'action_response': None,
+                'action_response': {'open_journal': True} if _journaled else None,
                 'created_at': journal_ts.isoformat(),
                 'updated_at': journal_ts.isoformat(),
             })

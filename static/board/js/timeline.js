@@ -432,7 +432,8 @@ const Timeline = {
     },
 
     renderAction(event) {
-        if (typeof event.id === 'string' || event.event_type === 'routine') return Resilient.actions(event);
+        // Only the resilient-day items (blocks, check-in, reset, tracker reminders) are handled there
+        if (Resilient.owns(event)) return Resilient.actions(event);
         if (!event.action) return '';
         if (event.action_response) {
             // Already responded
@@ -505,7 +506,8 @@ const Timeline = {
         let label = '';
         for (const key of keys) {
             const val = resp[key];
-            if (val === true) label = '<span class="badge-done"><i class="fas fa-check"></i> Done</span>';
+            const doneText = { open_journal: 'Journaled', log_sleep: 'Logged' }[key] || 'Done';
+            if (val === true) label = `<span class="badge-done"><i class="fas fa-check"></i> ${doneText}</span>`;
             else if (val === false) label = '<span class="badge-skipped">Skipped</span>';
             else label = `<span class="badge-done">${val}</span>`;
         }

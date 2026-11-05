@@ -39,6 +39,12 @@ const Resilient = {
         return res;
     },
 
+    /** Debounced timeline refresh, for saves that happen while typing (the journal). */
+    refreshSoon() {
+        clearTimeout(this._soon);
+        this._soon = setTimeout(() => this._refresh(), 1500);
+    },
+
     async _refresh() {
         if (typeof Timeline === 'undefined') return;
         // A load already in flight would make loadEvents() return early and leave the old day on screen
@@ -172,6 +178,12 @@ const Resilient = {
     },
 
     // ── Timeline items ───────────────────────────────────────
+    /** Items whose buttons this module draws; everything else keeps the timeline's own buttons. */
+    owns(event) {
+        const id = String(event.id);
+        return event.event_type === 'routine' || id.startsWith('day-checkin-') || id.startsWith('reset-') || /^metric-\d+-/.test(id);
+    },
+
     /** Buttons for string-id items (blocks and cards). */
     actions(event) {
         const id = String(event.id);
@@ -301,20 +313,93 @@ const Resilient = {
      * with you ("Remind me at ___"), built from the app's own .conversational-form,
      * .convo-line and .form-input, like the New Habit and New Task modals.
      */
-    say(...lines) { return `<div class="conversational-form">${lines.filter(Boolean).map(l => `<div class="convo-line">${l}</div>`).join('')}</div>`; },
+    /**
+     * Lines are strings, or {html, msg, need}. msg is what the assistant says
+     * when you're on that line; need means the line must be answered before the
+     * next one appears (other lines can be skipped with Tab or Enter).
+     */
+    say(...lines) {
+        const out = lines.filter(Boolean).map(l => {
+            const o = typeof l === 'string' ? { html: l } : l;
+            return `<div class="convo-line"${o.msg ? ` data-msg="${this.esc(o.msg)}"` : ''}${o.need ? ' data-need' : ''}>${o.html}</div>`;
+        });
+        return `<div class="conversational-form" data-rs-convo>${out.join('')}</div>`;
+    },
+
+    _textInputs(line) {
+        return [...line.querySelectorAll('input.form-input')].filter(i => !['checkbox', 'radio', 'hidden'].includes(i.type));
+    },
+    _filled(line) { return this._textInputs(line).every(i => i.value.trim() !== ''); },
+
+    /**
+     * Wire a conversational form: fields grow with their text, later lines appear
+     * once the current one is answered, and the message above follows the line
+     * you're on. revealAll shows every line (editing something that exists).
+     */
+    convo(form, { revealAll = false } = {}) {
+        if (!form) return;
+        const lines = [...form.querySelectorAll(':scope > .convo-line')];
+        const msgEl = form.closest('.modal-body, .rs-convo-host')?.querySelector('[data-rs-msg]');
+        const lead = msgEl ? msgEl.innerHTML : '';
+        const update = (focusNew) => {
+            let open = true, firstNew = null;
+            lines.forEach(line => {
+                const wasHidden = line.hidden;
+                line.hidden = !open && !revealAll;
+                if (wasHidden && !line.hidden) { line.classList.add('rs-new'); firstNew = firstNew || line; }
+                const passed = this._filled(line) || (!('need' in line.dataset) && line.dataset.touched === '1');
+                if (!passed) open = false;
+            });
+            if (focusNew && firstNew) {
+                const f = firstNew.querySelector('input:not([type=hidden]), select, textarea');
+                if (f) setTimeout(() => f.focus(), 30);
+            }
+            resizeInputs(form);
+        };
+        lines.forEach(l => { delete l.dataset.touched; l.classList.remove('rs-new'); });
+        if (!form.dataset.rsBound) {
+            form.dataset.rsBound = '1';
+            form.addEventListener('input', () => update(false));
+            form.addEventListener('change', () => update(false));
+            form.addEventListener('focusin', (e) => {
+                const line = e.target.closest('.convo-line');
+                if (msgEl && line && line.dataset.msg) msgEl.innerHTML = line.dataset.msg;
+            });
+            form.addEventListener('focusout', (e) => {
+                const line = e.target.closest('.convo-line');
+                if (!line) return;
+                const leaving = !e.relatedTarget || !line.contains(e.relatedTarget);
+                if (leaving) { line.dataset.touched = '1'; update(!e.relatedTarget || !form.contains(e.relatedTarget)); }
+            });
+            form.addEventListener('keydown', (e) => {
+                if (e.key !== 'Enter' || e.target.tagName !== 'INPUT') return;
+                const line = e.target.closest('.convo-line');
+                const next = lines[lines.indexOf(line) + 1];
+                if (!next) return;   // last line: let Enter do nothing special
+                e.preventDefault();
+                if ('need' in line.dataset && !this._filled(line)) return;
+                line.dataset.touched = '1';
+                update(true);
+                if (!next.hidden) { const f = next.querySelector('input:not([type=hidden]), select'); if (f) f.focus(); }
+            });
+        }
+        if (msgEl && lead) msgEl.innerHTML = lead;
+        update(false);
+    },
+
     /** An inline choice inside a sentence. opts: [[value, label], ...] */
     pick(attrs, val, opts) {
         return `<select class="form-input" ${attrs}>${opts.map(([v, l]) => `<option value="${v}" ${String(val) === String(v) ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
     },
     hint(text) { return `<small class="text-brown ms-1">${text}</small>`; },
     /** Assistant line shown above the sentence, like #habit_message. */
-    lead(text) { return `<div class="rs-lead">${text}</div>`; },
+    lead(text) { return `<div class="rs-lead" data-rs-msg>${text}</div>`; },
 
     /**
      * A real Bootstrap modal built like the app's own (modal-content, modal-icon,
      * btn-paper, form-control), so style.css themes it. Removed when hidden.
      */
-    dialog(title, bodyHtml, buttons, icon = 'fa-pen') {
+    dialog(title, bodyHtml, buttons, icon = 'fa-pen', { revealAll = false } = {}) {
         const el = document.createElement('div');
         el.className = 'modal fade rs-modal';
         el.tabIndex = -1;
@@ -328,7 +413,12 @@ const Resilient = {
         document.body.appendChild(el);
         const modal = new bootstrap.Modal(el);
         el.addEventListener('hidden.bs.modal', () => { modal.dispose(); el.remove(); });
-        el.addEventListener('shown.bs.modal', () => { const f = el.querySelector('.modal-body input:not([type=checkbox]):not([type=hidden]),.modal-body textarea'); if (f) f.focus(); });
+        el.querySelectorAll('[data-rs-convo]').forEach(f => this.convo(f, { revealAll }));
+        el.addEventListener('shown.bs.modal', () => {
+            resizeInputs(el);
+            const f = el.querySelector('.modal-body .convo-line:not([hidden]) input:not([type=checkbox]):not([type=hidden])');
+            if (f) f.focus();
+        });
         el.addEventListener('click', async (ev) => {
             const btn = ev.target.closest('button[data-idx]');
             if (!btn) return;
@@ -348,7 +438,8 @@ const Resilient = {
 
     slipDialog() {
         this.dialog('I slipped', this.lead('That&rsquo;s okay. One slip doesn&rsquo;t undo your progress, and this stays private.') +
-            this.say(`What happened was <input type="text" class="form-input rs-wide" id="rs-slip-note" maxlength="280" placeholder="optional, just for you">`), [
+            this.say({ html: `What happened was <input type="text" class="form-input" id="rs-slip-note" maxlength="280" placeholder="optional, just for you">`,
+                       msg: 'A word about what led to it helps you spot the pattern later. Only you can see it.' }), [
             { label: 'Cancel' },
             { label: 'Log it', primary: true, run: async (ov) => {
                 const res = await apiClient.post('board/api/lapses/', { note: ov.querySelector('#rs-slip-note').value });
@@ -362,8 +453,10 @@ const Resilient = {
     travelDialog() {
         const t = this.logicalToday();
         this.dialog('I\u2019m travelling', this.lead('Travel days run on essentials only, then a few Light days help you ease back in.') +
-            this.say(`I&rsquo;m travelling from <input type="date" class="form-input" id="rs-t-from" value="${t}" min="${t}">`,
-                     `until <input type="date" class="form-input" id="rs-t-to" value="${t}" min="${t}">`), [
+            this.say({ html: `I&rsquo;m travelling from <input type="date" class="form-input" id="rs-t-from" value="${t}" min="${t}">`, need: true,
+                       msg: 'Which day do you leave?' },
+                     { html: `until <input type="date" class="form-input" id="rs-t-to" value="${t}" min="${t}">`, need: true,
+                       msg: 'And the last day you&rsquo;re away? Light days follow it automatically.' }), [
             { label: 'Cancel' },
             { label: 'Set travel', primary: true, run: async (ov) => {
                 const start = ov.querySelector('#rs-t-from').value, end = ov.querySelector('#rs-t-to').value;
@@ -402,10 +495,10 @@ const Resilient = {
         if (!m) return;
         const unit = this.esc(m.unit || '');
         const name = this.esc(m.name.toLowerCase());
-        const num = '<input id="rs-m-val" type="number" step="any" class="form-input rs-num" placeholder="0">';
-        const first = m.kind === 'counter' ? `One more ${name}.`
-            : m.kind === 'single' ? `Today my ${name} was ${num} ${unit}`
-            : `Add ${num} ${unit} to my ${name}`;
+        const num = '<input id="rs-m-val" type="number" step="any" class="form-input" placeholder="0">';
+        const first = m.kind === 'counter' ? { html: `One more ${name}.` }
+            : m.kind === 'single' ? { html: `Today my ${name} was ${num} ${unit}`, need: true, msg: `How much ${name} today?` }
+            : { html: `Add ${num} ${unit} to my ${name}`, need: true, msg: `How much ${name} are you adding?` };
         const fields = (m.fields || []).map((f, i) => {
             const key = f.key || f.name;
             const raw = f.label || key;
@@ -413,12 +506,14 @@ const Resilient = {
             const chips = ((m.chips || {})[key] || []).slice(0, 6);
             const pick = chips.length ? ` <span class="freq-days">${chips.map(c => `<button type="button" class="freq-day-btn" data-chip="${i}" data-v="${this.esc(c)}">${this.esc(c)}</button>`).join('')}</span>` : '';
             const input = f.type === 'scale'
-                ? `<input data-field="${this.esc(key)}" type="number" min="1" max="${f.max || 10}" class="form-input rs-num" placeholder="1&ndash;${f.max || 10}">`
+                ? `<input data-field="${this.esc(key)}" type="number" min="1" max="${f.max || 10}" class="form-input" placeholder="1&ndash;${f.max || 10}">`
                 : `<input data-field="${this.esc(key)}" type="text" maxlength="64" class="form-input" placeholder="${f.type === 'choice' && f.options ? this.esc(f.options.slice(0, 2).join(', ')) : ''}">`;
-            return `${label}? ${input}${pick}`;
+            return { html: `${label}? ${input}${pick}`, msg: chips.length ? 'Tap one of your usual answers, or type a new one. Tab to skip.' : 'Optional. Press Tab to skip.' };
         });
         const ov = this.dialog(`Log ${m.name}`,
-            this.say(first, ...fields, `and a note: <input id="rs-m-note" type="text" maxlength="280" class="form-input rs-wide" placeholder="optional">`), [
+            this.lead(m.kind === 'counter' ? `Logging one more ${name}.` : `Let&rsquo;s log your ${name}.`) +
+            this.say(first, ...fields, { html: `and a note: <input id="rs-m-note" type="text" maxlength="280" class="form-input" placeholder="optional">`,
+                                         msg: `Notes go to your ${this.esc(m.name)} journal, which you can read in the Journal pane.` }), [
             { label: 'Cancel' },
             { label: 'Log', primary: true, run: async (o) => {
                 const data = {};
@@ -489,7 +584,7 @@ const Resilient = {
     },
 
     unlockDialog() {
-        this.dialog('Unlock private items', this.say('My PIN is <input id="rs-pin" type="password" inputmode="numeric" autocomplete="off" class="form-input rs-num" placeholder="&bull;&bull;&bull;&bull;">'), [
+        this.dialog('Unlock private items', this.lead('Enter your PIN to show private habits and trackers.') + this.say({ html: 'My PIN is <input id="rs-pin" type="password" inputmode="numeric" autocomplete="off" class="form-input" placeholder="&bull;&bull;&bull;&bull;">', need: true }), [
             { label: 'Forgot PIN', run: async () => { this.resetPinDialog(); return true; } },
             { label: 'Unlock', primary: true, run: async (o) => {
                 const res = await apiClient.post('board/api/private/unlock/', { pin: o.querySelector('#rs-pin').value });
@@ -505,8 +600,10 @@ const Resilient = {
     pinSetupDialog() {
         this.dialog('Set a PIN for private items',
             this.lead('Private habits and trackers stay hidden until you unlock them with this PIN.') +
-            this.say('My new PIN is <input id="rs-pin" type="password" inputmode="numeric" autocomplete="off" class="form-input rs-num" placeholder="4&ndash;12 digits">',
-                     'and once more: <input id="rs-pin2" type="password" inputmode="numeric" autocomplete="off" class="form-input rs-num" placeholder="repeat">'), [
+            this.say({ html: 'My new PIN is <input id="rs-pin" type="password" inputmode="numeric" autocomplete="off" class="form-input" placeholder="4&ndash;12 digits">', need: true,
+                       msg: 'Pick 4 to 12 digits you&rsquo;ll remember.' },
+                     { html: 'and once more: <input id="rs-pin2" type="password" inputmode="numeric" autocomplete="off" class="form-input" placeholder="repeat it">', need: true,
+                       msg: 'Type it again so we know it&rsquo;s right.' }), [
             { label: 'Cancel' },
             { label: 'Save PIN', primary: true, run: async (o) => {
                 const pin = o.querySelector('#rs-pin').value;
@@ -522,8 +619,10 @@ const Resilient = {
 
     resetPinDialog() {
         this.dialog('Reset PIN', this.lead('Tap &ldquo;Send code&rdquo; and we&rsquo;ll email you a code.') +
-            this.say('The code I got is <input id="rs-code" type="text" autocomplete="one-time-code" class="form-input rs-num" placeholder="123456">',
-                     'and my new PIN is <input id="rs-pin" type="password" inputmode="numeric" autocomplete="off" class="form-input rs-num" placeholder="4&ndash;12 digits">'), [
+            this.say({ html: 'The code I got is <input id="rs-code" type="text" autocomplete="one-time-code" class="form-input" placeholder="123456">', need: true,
+                       msg: 'Check your email for the code.' },
+                     { html: 'and my new PIN is <input id="rs-pin" type="password" inputmode="numeric" autocomplete="off" class="form-input" placeholder="4&ndash;12 digits">', need: true,
+                       msg: 'Pick 4 to 12 digits.' }), [
             { label: 'Send code', run: async (o) => {
                 const res = await apiClient.post('board/api/private/reset/request/', {});
                 return res.status === 'success' ? 'Code sent. Check your email.' : (res.error || 'Could not send a code');
@@ -553,6 +652,8 @@ const Resilient = {
         modal.addEventListener('click', (e) => {
             const b = e.target.closest('[data-hstep]');
             if (b) this._habitStepAction(b);
+            const d = e.target.closest('[data-hday]');
+            if (d) this._toggleHabitDay(d);
         });
     },
 
@@ -564,32 +665,63 @@ const Resilient = {
         if (!box) {
             box = document.createElement('div');
             box.id = 'rs-habit-options';
-            box.className = 'mt-4 pt-3 border-top';
-            const body = modal.querySelector('.modal-body') || modal;
-            body.appendChild(box);
+            const host = document.getElementById('rs-habit-sections') || modal.querySelector('.modal-body');
+            host.appendChild(box);
         }
-        const [hres, sres] = await Promise.all([
+        const [hres, sres, mres] = await Promise.all([
             apiClient.get(`board/api/habits/${habit.id}/`, { silent: true }),
             apiClient.get(`board/api/habits/${habit.id}/steps/`, { silent: true }),
+            apiClient.get('board/api/metrics/', { silent: true }),
         ]);
         const h = hres.status === 'success' ? hres.data : {};
         const steps = sres.status === 'success' ? sres.data.steps : [];
-        const mres = await apiClient.get('board/api/metrics/', { silent: true });
         const metrics = mres.status === 'success' ? mres.data : [];
+        const freq = (h.frequency && h.frequency.length) ? h.frequency : [0, 1, 2, 3, 4, 5, 6];
+        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const P = (k, v, o) => this.pick(`data-hopt="${k}"`, v, o);
         box.dataset.habit = habit.id;
-        box.innerHTML = `<h6 class="mb-2">On hard days and privacy:</h6>` + this.say(
-            `On Light days this habit is ${this.pick('data-hopt="on_light"', h.on_light || 'required', [['required', 'still required'], ['excused', 'excused']])}`,
-            `and on Disrupted days it&rsquo;s ${this.pick('data-hopt="on_disrupted"', h.on_disrupted || 'excused', [['excused', 'excused'], ['required', 'still required']])}.`,
-            `Keep it ${this.pick('data-hopt="is_private"', h.is_private ? 'true' : 'false', [['false', 'visible'], ['true', 'private until I unlock']])}`,
-            h.is_private ? `and while locked, remind me with ${this.pick('data-hopt="private_reminder"', h.private_reminder ? 'true' : 'false', [['false', 'nothing'], ['true', 'a plain &ldquo;Reminder&rdquo;']])}.` : '',
-            `Track it with ${this.pick('data-hopt="metric"', h.metric ?? '', [['', 'no tracker'], ...metrics.map(m => [m.id, this.esc(m.name)])])}.`,
-        ) + `<h6 class="mt-3 mb-2">Steps:</h6>` + this.say(
-            steps.length ? `Count it done when ${this.pick('data-hopt="complete_when"', h.complete_when || 'all', [['all', 'all the steps'], ['any', 'any step'], ['final', 'the last step']])} ${h.complete_when === 'any' || h.complete_when === 'final' ? 'is' : 'are'} ticked.` : '',
-            ...steps.map((st, i) => `${i + 1}. ${this.esc(st.name)} <button type="button" class="tl-link ms-1" data-hstep="del" data-id="${st.id}">remove</button>`),
-            `${steps.length ? 'Then' : 'First'} I <input type="text" id="rs-new-step" class="form-input" maxlength="80" placeholder="${steps.length ? 'add another step' : 'add a step'}"> <button type="button" class="btn btn-paper btn-sm" data-hstep="add">Add</button>`,
-        );
+        const section = (title, body) => `<div class="rs-habit-section"><h6 class="mb-2">${title}</h6>${body}</div>`;
+        box.innerHTML =
+            section('Steps:', this.say(
+                steps.length ? `Count it done when ${P('complete_when', h.complete_when || 'all', [['all', 'all the steps'], ['any', 'any step'], ['final', 'the last step']])} ${h.complete_when === 'any' || h.complete_when === 'final' ? 'is' : 'are'} ticked.` : '',
+                ...steps.map((st, i) => `${i + 1}. ${this.esc(st.name)} <button type="button" class="tl-link ms-1" data-hstep="del" data-id="${st.id}">remove</button>`),
+                `${steps.length ? 'Then' : 'First'} I <input type="text" id="rs-new-step" class="form-input" maxlength="80" placeholder="${steps.length ? 'add another step' : 'add a step'}"> <button type="button" class="btn btn-paper btn-sm" data-hstep="add">Add</button>`,
+            )) +
+            section('Reminder:', this.say(
+                `Remind me at <input type="time" class="form-input" data-hopt="notify_at" value="${this.esc((h.notify_at || '').slice(0, 5))}"> ${this.hint('(empty for none)')}`,
+                `on every <span class="freq-days">${days.map((d, i) => `<button type="button" class="freq-day-btn ${freq.includes(i) ? 'active' : ''}" data-hday="${i}">${d}</button>`).join('')}</span>`,
+                `and log it in ${P('metric', h.metric ?? '', [['', 'no tracker'], ...metrics.map(m => [m.id, this.esc(m.name)])])}.`,
+            )) +
+            section('On hard days:', this.say(
+                `On Light days this habit is ${P('on_light', h.on_light || 'required', [['required', 'still required'], ['excused', 'excused']])}`,
+                `and on Disrupted days it&rsquo;s ${P('on_disrupted', h.on_disrupted || 'excused', [['excused', 'excused'], ['required', 'still required']])}.`,
+            )) +
+            section('Privacy:', this.say(
+                `Keep it ${P('is_private', h.is_private ? 'true' : 'false', [['false', 'visible'], ['true', 'private until I unlock']])}`,
+                h.is_private ? `and while locked, remind me with ${P('private_reminder', h.private_reminder ? 'true' : 'false', [['false', 'nothing'], ['true', 'a plain &ldquo;Reminder&rdquo;']])}.` : '',
+            ));
+        resizeInputs(box);
         const input = box.querySelector('#rs-new-step');
         input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); box.querySelector('[data-hstep="add"]').click(); } });
+    },
+
+    async _toggleHabitDay(btn) {
+        const id = document.getElementById('rs-habit-options').dataset.habit;
+        btn.classList.toggle('active');
+        const days = [...document.querySelectorAll('#rs-habit-options [data-hday].active')].map(b => Number(b.dataset.hday));
+        if (!days.length) { btn.classList.add('active'); return this.habitMessage('A habit needs at least one day.', 'warning'); }
+        const res = await this._call('patch', `board/api/habits/${id}/`, { frequency: days });
+        if (res.status === 'success') { this.habitMessage('Days saved.'); if (typeof loadHabits === 'function') loadHabits(); }
+        else btn.classList.toggle('active');
+    },
+
+    /** Uses the settings modal's own message slot, like the rest of that modal. */
+    habitMessage(text, kind = 'success') {
+        const el = document.getElementById('habit_settings_message');
+        if (!el) return;
+        el.innerHTML = `<div class="alert alert-${kind}"><i class="fas ${kind === 'success' ? 'fa-check' : 'fa-circle-exclamation'} me-2"></i>${this.esc(text)}</div>`;
+        clearTimeout(this._hmsg);
+        this._hmsg = setTimeout(() => { el.innerHTML = ''; }, 2500);
     },
 
     async _saveHabitOption(el) {
@@ -598,9 +730,15 @@ const Resilient = {
         let value = el.value;
         if (key === 'is_private' || key === 'private_reminder') value = value === 'true';
         if (key === 'metric') value = value ? Number(value) : null;
+        if (key === 'notify_at') value = value || null;
         const res = await this._call('patch', `board/api/habits/${id}/`, { [key]: value });
         if (res.status === 'success') {
+            this.habitMessage('Saved.');
             if (typeof loadHabits === 'function') loadHabits();
+            if (key === 'notify_at' && typeof showReminder === 'function') {
+                if (typeof currentHabitData !== 'undefined') currentHabitData.notifyAt = value || '';
+                showReminder(value || '');
+            }
             if (key === 'is_private' || key === 'complete_when') this.renderHabitOptions();
             if (key === 'metric') this.loadMetrics();
         }
@@ -689,3 +827,33 @@ const Resilient = {
         }
     },
 };
+
+/**
+ * Size .form-input fields to their text (or placeholder), so sentence forms read
+ * naturally. habits.js already calls resizeInputs() when it opens the edit form.
+ */
+function resizeInputs(root = document) {
+    const canvas = resizeInputs._c || (resizeInputs._c = document.createElement('canvas'));
+    const ctx = canvas.getContext('2d');
+    root.querySelectorAll('input.form-input').forEach(el => {
+        if (!['text', 'url', 'email', 'number', 'password', 'search', ''].includes(el.type)) return;
+        const cs = getComputedStyle(el);
+        ctx.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+        const text = el.value || el.placeholder || '';
+        const shown = el.type === 'password' ? '\u2022'.repeat(text.length) : text;
+        const pad = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + (el.type === 'number' ? 28 : 14);
+        el.style.width = `${Math.max(40, Math.ceil(ctx.measureText(shown).width + pad))}px`;
+    });
+}
+
+document.addEventListener('input', (e) => {
+    if (e.target.matches && e.target.matches('input.form-input')) resizeInputs(e.target.parentElement || document);
+});
+// The app's own modals that are sentence forms (Sleep, Reading list, Edit task, Group, New Habit, New Task)
+document.addEventListener('shown.bs.modal', (e) => {
+    resizeInputs(e.target);
+    e.target.querySelectorAll('[data-rs-convo]').forEach(f => {
+        if (f.closest('.rs-modal')) return;   // dialogs built here wire themselves
+        Resilient.convo(f, { revealAll: f.dataset.rsReveal === 'filled' && Resilient._textInputs(f).some(i => i.value.trim()) });
+    });
+});

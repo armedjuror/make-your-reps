@@ -163,18 +163,25 @@ const Trackers = {
         const v = (x, d = '') => esc(x == null ? d : x);
         const R = Resilient;
         const linked = m && m.habit_ids && m.habit_ids.length ? m.habit_ids[0] : '';
-        const body = R.lead(m ? 'Change anything below.' : 'What would you like to keep an eye on? Water, walks, coffee, pages read&hellip;') + R.say(
-            `I want to track <input data-f="name" class="form-input" maxlength="64" value="${v(m && m.name)}" placeholder="water">
-             in <input data-f="unit" class="form-input rs-num" maxlength="16" value="${v(m && m.unit)}" placeholder="litres">`,
-            `Each entry is ${R.pick('data-f="kind"', m ? m.kind : 'additive', [['additive', 'an amount that adds up'], ['counter', 'one more (a count)'], ['single', 'the day&rsquo;s one value']])}.`,
-            `I&rsquo;m aiming for ${R.pick('data-f="direction"', m ? m.direction : 'at_least', [['at_least', 'at least'], ['at_most', 'at most']])}
-             <input data-f="target" type="number" step="any" class="form-input rs-num" value="${v(m && m.target)}" placeholder="3"> a day`,
-            `or <input data-f="target_light" type="number" step="any" class="form-input rs-num" value="${v(m && m.target_light)}" placeholder="2"> on Light days ${R.hint('(optional)')}`,
-            `Give me quick buttons for <input data-f="quick_steps" class="form-input" value="${v(m && (m.quick_steps || []).join(', '))}" placeholder="0.5, 1">`,
-            `Remind me at <input data-f="remind_at" type="time" class="form-input" value="${v(m && m.remind_at)}"> every day ${R.hint('(optional)')}`,
-            `and link it to ${R.pick('data-f="habit"', linked, [['', 'no habit'], ...habits.map(h => [h.id, esc(h.habit)])])}.`,
-            `When I log, also ask me <input data-f="fields" class="form-input rs-wide" value="${v(this._fieldsToText(m && m.fields))}" placeholder="where: home, office; mood: scale 5">`,
-            `Keep it ${R.pick('data-f="is_private"', m && m.is_private ? 'true' : 'false', [['false', 'visible'], ['true', 'private until I unlock']])}.`,
+        const body = R.lead(m ? 'Change anything below.' : 'What would you like to keep an eye on?') + R.say(
+            { need: true, msg: 'Pick one thing, like water, walks, coffee or pages read. The unit is optional.',
+              html: `I want to track <input data-f="name" class="form-input" maxlength="64" value="${v(m && m.name)}" placeholder="water">
+                     in <input data-f="unit" class="form-input" maxlength="16" value="${v(m && m.unit)}" placeholder="litres">` },
+            { msg: 'Water adds up through the day, coffee is counted one cup at a time, sleep is one number for the day. The target is optional; Tab to skip.',
+              html: `Each entry is ${R.pick('data-f="kind"', m ? m.kind : 'additive', [['additive', 'an amount that adds up'], ['counter', 'one more (a count)'], ['single', 'the day&rsquo;s one value']])},
+                     and I&rsquo;m aiming for ${R.pick('data-f="direction"', m ? m.direction : 'at_least', [['at_least', 'at least'], ['at_most', 'at most']])}
+                     <input data-f="target" type="number" step="any" class="form-input" value="${v(m && m.target)}" placeholder="3"> a day` },
+            { msg: 'On Light days you can aim lower. Leave it empty to keep the same target.',
+              html: `or <input data-f="target_light" type="number" step="any" class="form-input" value="${v(m && m.target_light)}" placeholder="2"> on Light days` },
+            { msg: 'These become one-tap buttons on the card, so logging takes a second.',
+              html: `Give me quick buttons for <input data-f="quick_steps" class="form-input" value="${v(m && (m.quick_steps || []).join(', '))}" placeholder="0.5, 1">` },
+            { msg: 'A reminder puts a &ldquo;Log&rdquo; card on your timeline at that time. Or link it to a habit you already have.',
+              html: `Remind me at <input data-f="remind_at" type="time" class="form-input" value="${v(m && m.remind_at)}"> every day,
+                     and link it to ${R.pick('data-f="habit"', linked, [['', 'no habit'], ...habits.map(h => [h.id, esc(h.habit)])])}.` },
+            { msg: 'Want to note a detail each time you log, like where you were or how you felt? Write it as &ldquo;where: home, office; mood: scale 5&rdquo;. Each one becomes a quick question when you log.',
+              html: `Each time I log, I also want to note <input data-f="fields" class="form-input" value="${v(this._fieldsToText(m && m.fields))}" placeholder="where: home, office">` },
+            { msg: 'Private trackers stay hidden until you unlock them with your PIN.',
+              html: `Keep it ${R.pick('data-f="is_private"', m && m.is_private ? 'true' : 'false', [['false', 'visible'], ['true', 'private until I unlock']])}.` },
         );
         const buttons = [{ label: 'Cancel' }];
         if (m && !m.is_system) buttons.unshift({ label: 'Delete', run: async () => {
@@ -209,7 +216,7 @@ const Trackers = {
             if (typeof Resilient._refresh === 'function') Resilient._refresh();
             return true;
         } });
-        Resilient.dialog(m ? `Edit ${m.name}` : 'New tracker', body, buttons, 'fa-chart-line');
+        Resilient.dialog(m ? `Edit ${m.name}` : 'New tracker', body, buttons, 'fa-chart-line', { revealAll: !!m });
     },
 
     // ── Habit checklist ──────────────────────────────────────
@@ -247,10 +254,15 @@ const Trackers = {
         box.className = 'convo-line convo-step-2';
         box.style.display = 'none';
         box.innerHTML =
-            `<div>On Light days it&rsquo;s ${R.pick('data-hc="on_light"', 'required', [['required', 'still required'], ['excused', 'excused']])}
+            `<div data-msg="Light days are for busy or low-energy days, Disrupted for travel or sickness. Should this habit still count then?">On Light days it&rsquo;s ${R.pick('data-hc="on_light"', 'required', [['required', 'still required'], ['excused', 'excused']])}
              and on Disrupted days ${R.pick('data-hc="on_disrupted"', 'excused', [['excused', 'excused'], ['required', 'still required']])}.</div>
-             <div>Keep it ${R.pick('data-hc="is_private"', 'false', [['false', 'visible'], ['true', 'private until I unlock']])}.</div>
-             <div>The steps are <input type="text" data-hc="steps" class="form-input rs-wide" placeholder="glute bridges, plank, bird dog"> ${R.hint('(optional)')}</div>`;
+             <div data-msg="Private habits stay hidden until you unlock them with your PIN.">Keep it ${R.pick('data-hc="is_private"', 'false', [['false', 'visible'], ['true', 'private until I unlock']])}.</div>
+             <div data-msg="Break it into small steps, separated by commas. You can tick each one off. Optional.">The steps are <input type="text" data-hc="steps" class="form-input" placeholder="glute bridges, plank, bird dog"></div>`;
+        box.addEventListener('focusin', (e) => {
+            const line = e.target.closest('[data-msg]');
+            const msg = document.getElementById('habit_message');
+            if (line && msg) msg.innerHTML = line.dataset.msg;
+        });
         form.appendChild(box);
         // Shown together with the reminder and days lines, after the identity is filled in
         const step = document.getElementById('habitFrequencyStep');
@@ -276,5 +288,39 @@ const Trackers = {
         const names = ta.value.split(/[,\n]/).map(x => x.trim()).filter(Boolean);
         for (const name of names) await apiClient.post(`board/api/habits/${habitId}/steps/`, { name });
         document.querySelectorAll('#rs-habit-create [data-hc]').forEach(el => { el.value = el.tagName === 'SELECT' ? el.options[0].value : ''; });
+    },
+
+    // ── Journal pane: notes logged with trackers ─────────────
+    /** Shown under the day's journal, grouped by tracker (each tracker has its own journal). */
+    async journalNotes(dateStr) {
+        const editor = document.getElementById('journal-editor');
+        if (!editor) return;
+        let box = document.getElementById('tracker-notes');
+        if (!box) {
+            box = document.createElement('div');
+            box.id = 'tracker-notes';
+            box.className = 'tracker-notes';
+            editor.insertAdjacentElement('afterend', box);
+        }
+        const res = await apiClient.get(`board/api/journal_entries/?date=${dateStr}`, { silent: true });
+        const items = res.status === 'success' ? res.data : [];
+        if (!items.length) { box.innerHTML = ''; return; }
+        const groups = {};
+        items.forEach(e => (groups[e.journal_name] = groups[e.journal_name] || []).push(e));
+        const clock = document.body.getAttribute('data-clock') || '12h';
+        const t = (iso) => new Date(iso).toLocaleTimeString(clock === '24h' ? 'en-GB' : 'en-US',
+            { hour: clock === '24h' ? '2-digit' : 'numeric', minute: '2-digit', hour12: clock !== '24h' });
+        const detail = (e) => {
+            if (!e.metric) return '';
+            const { value, previous, ...rest } = e.metric;
+            const bits = Object.entries(rest).map(([k, v]) => `${esc(k)}: ${esc(v)}`);
+            return `<span class="tracker-note-meta">${esc(this._fmt(value))}${e.unit ? ' ' + esc(e.unit) : ''}${bits.length ? ' &middot; ' + bits.join(' &middot; ') : ''}</span>`;
+        };
+        box.innerHTML = `<h3 class="section-title mt-4 mb-2">From your trackers</h3>` +
+            Object.entries(groups).map(([name, list]) => `
+                <div class="tracker-note-group">
+                    <h6>${esc(name)}</h6>
+                    ${list.map(e => `<div class="tracker-note"><span class="tracker-note-time">${t(e.at)}</span> ${esc(e.text)} ${detail(e)}</div>`).join('')}
+                </div>`).join('');
     },
 };

@@ -13,7 +13,7 @@ from board.day_views import (
     DayPlansView, DayPlanDetailView, BlockLogView, RunningLateView, ResetView, SlipView, TravelView,
     MetricsView, MetricDetailView, MetricLogView, MetricInsightsView,
     HabitStepsView, HabitStepDetailView, HabitStepLogView,
-    JournalsView, JournalDetailView, JournalEntriesView, JournalEntryDetailView,
+    JournalsView, JournalDetailView, JournalEntriesView, JournalEntryDetailView, JournalEntriesByDateView,
     PrivateStatusView, PrivatePinView, PrivateUnlockView, PrivateLockView,
     PrivateResetRequestView, PrivateResetConfirmView,
 )
@@ -73,6 +73,7 @@ urlpatterns = [
     path('api/journal_books/', JournalsView.as_view(), name='journal-books'),
     path('api/journal_books/<int:pk>/', JournalDetailView.as_view(), name='journal-book'),
     path('api/journal_books/<int:pk>/entries/', JournalEntriesView.as_view(), name='journal-book-entries'),
+    path('api/journal_entries/', JournalEntriesByDateView.as_view(), name='journal-entries-by-date'),
     path('api/journal_entries/<int:pk>/', JournalEntryDetailView.as_view(), name='journal-entry'),
     # Privacy mode
     path('api/private/status/', PrivateStatusView.as_view(), name='private-status'),
