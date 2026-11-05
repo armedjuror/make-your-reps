@@ -1,3 +1,4 @@
+import logging
 import os
 from datetime import datetime, time, timedelta
 
@@ -1011,6 +1012,15 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
             except ValueError:
                 pass
 
+        # Refresh Google Calendar events for the requested date before reading the DB,
+        # so newly created/edited/deleted events show up without relying on webhooks.
+        if parsed_date:
+            try:
+                from board.calendar_views import sync_calendar_events_for_user_date
+                sync_calendar_events_for_user_date(User.objects.get(id=user_id), parsed_date)
+            except Exception:
+                logging.getLogger(__name__).exception('Calendar sync failed for user %s', user_id)
+
         queryset = queryset.order_by('-timestamp')[:limit]
         data = list(self.get_serializer(queryset, many=True).data)
 
@@ -1083,23 +1093,6 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
                     'created_at': sleep_ts.isoformat(),
                     'updated_at': sleep_ts.isoformat(),
                 })
-
-            # Sync Google Calendar events if none are stored yet for this date
-            has_meeting_events = any(e['event_type'] == TimelineEventType.MEETING for e in data)
-            if not has_meeting_events:
-                try:
-                    user = User.objects.get(id=user_id)
-                    from board.calendar_views import sync_calendar_events_for_user_date
-                    sync_calendar_events_for_user_date(user, parsed_date)
-                    # Re-fetch MEETING events that were just upserted
-                    meeting_qs = self.get_queryset().filter(
-                        user_id=user_id,
-                        event_type=TimelineEventType.MEETING,
-                        timestamp__date=parsed_date,
-                    )
-                    data.extend(self.get_serializer(meeting_qs, many=True).data)
-                except Exception:
-                    pass
 
         return Response({
             'status': 'success',

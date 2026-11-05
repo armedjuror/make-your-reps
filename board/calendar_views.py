@@ -1,4 +1,5 @@
 """Views for Google Calendar integration: OAuth, webhook, calendar management."""
+import logging
 import uuid
 from datetime import datetime, timedelta, date, timezone as dt_timezone
 from urllib.parse import urlencode
@@ -23,6 +24,7 @@ from board.calendar_client import (
 GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
 GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
 GOOGLE_USERINFO_URL = 'https://www.googleapis.com/oauth2/v3/userinfo'
+logger = logging.getLogger(__name__)
 _CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar openid email'
 
 
@@ -81,14 +83,15 @@ class CalendarCallbackView(APIView):
             return redirect('/board/?calendar=error&pane=settings')
 
         expiry = timezone.now() + timedelta(seconds=token_data.get('expires_in', 3600))
+        defaults = {
+            'access_token': token_data['access_token'],
+            'token_expiry': expiry,
+        }
+        # Google omits refresh_token on repeat consent; don't wipe the stored one.
+        if token_data.get('refresh_token'):
+            defaults['refresh_token'] = token_data['refresh_token']
         token_obj, _ = GoogleCalendarToken.objects.update_or_create(
-            user=user,
-            google_email=google_email,
-            defaults={
-                'access_token': token_data['access_token'],
-                'refresh_token': token_data.get('refresh_token', ''),
-                'token_expiry': expiry,
-            },
+            user=user, google_email=google_email, defaults=defaults,
         )
         _sync_calendar_list(token_obj)
         return redirect('/board/?calendar=connected&pane=settings')
@@ -221,7 +224,10 @@ def calendar_webhook(request, cal_id):
     except LinkedCalendar.DoesNotExist:
         return HttpResponse(status=200)
 
-    _upsert_calendar_events_for_day(cal, date.today())
+    try:
+        _upsert_calendar_events_for_day(cal, timezone.localdate())
+    except Exception:
+        logger.exception('Calendar webhook sync failed for calendar %s', cal_id)
     return HttpResponse(status=200)
 
 
@@ -237,9 +243,10 @@ def sync_calendar_events_for_user_date(user, target_date):
     ).select_related('token')
     for cal in enabled:
         try:
+            _renew_webhook_if_needed(cal)
             _upsert_calendar_events_for_day(cal, target_date)
         except Exception:
-            pass
+            logger.exception('Calendar sync failed for %s / %s', cal.token.google_email, cal.calendar_id)
 
 
 def push_habit_to_calendar(user, habit):
@@ -313,6 +320,16 @@ def _sync_calendar_list(token_obj):
             _register_calendar_webhook(cal)
 
 
+def _renew_webhook_if_needed(cal):
+    """Re-register the push channel when missing or within a day of expiring."""
+    if cal.webhook_channel_id and cal.webhook_expiry and \
+            cal.webhook_expiry > timezone.now() + timedelta(days=1):
+        return
+    if cal.webhook_channel_id:
+        stop_webhook(cal.token, cal.webhook_channel_id, cal.webhook_resource_id)
+    _register_calendar_webhook(cal)
+
+
 def _register_calendar_webhook(cal):
     channel_id = str(uuid.uuid4())
     webhook_url = f"{settings.SITE_URL}/board/api/calendar/webhook/{cal.id}/"
@@ -347,10 +364,11 @@ def _upsert_calendar_events_for_day(cal, target_date):
     """Fetch events for target_date and upsert into TimelineEvent (type=MEETING)."""
     user = cal.token.user
     events = fetch_events_for_day(cal.token, cal.calendar_id, target_date)
+    seen_ids = set()
 
     for event in events:
         gcal_id = event.get('id')
-        if not gcal_id:
+        if not gcal_id or event.get('status') == 'cancelled':
             continue
 
         ts = _parse_gcal_timestamp(event)
@@ -378,10 +396,12 @@ def _upsert_calendar_events_for_day(cal, target_date):
         # action: {'join': url} triggers the existing Join button in timeline.js
         action = {'join': conf_link} if conf_link else None
 
+        seen_ids.add(gcal_id)
         existing = TimelineEvent.objects.filter(
             user=user,
             event_type=TimelineEventType.MEETING,
             reference__gcal_event_id=gcal_id,
+            reference__calendar_id=cal.calendar_id,
         ).first()
 
         if existing:
@@ -399,3 +419,11 @@ def _upsert_calendar_events_for_day(cal, target_date):
                 reference=reference,
                 action=action,
             )
+
+    # Drop stored events for this day that were deleted/moved in Google.
+    TimelineEvent.objects.filter(
+        user=user,
+        event_type=TimelineEventType.MEETING,
+        timestamp__date=target_date,
+        reference__calendar_id=cal.calendar_id,
+    ).exclude(reference__gcal_event_id__in=seen_ids).delete()

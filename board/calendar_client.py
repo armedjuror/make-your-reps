@@ -1,4 +1,5 @@
 """Google Calendar API client — token refresh, event fetch, event push, webhook management."""
+import logging
 from datetime import datetime, timedelta
 from urllib.parse import quote
 
@@ -10,6 +11,7 @@ from django.utils import timezone
 GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
 CALENDAR_BASE = 'https://www.googleapis.com/calendar/v3'
 _TIMEOUT = 10
+logger = logging.getLogger(__name__)
 
 
 def _refresh_if_needed(token_obj):
@@ -41,26 +43,38 @@ def list_calendars(token_obj):
         headers=_auth_headers(token_obj),
         timeout=_TIMEOUT,
     )
-    return resp.json().get('items', []) if resp.status_code == 200 else []
+    if resp.status_code != 200:
+        logger.warning('Google calendarList failed for %s: %s %s',
+                       token_obj.google_email, resp.status_code, resp.text[:300])
+        return []
+    return resp.json().get('items', [])
 
 
 def fetch_events_for_day(token_obj, calendar_id, target_date):
-    """Return list of Google Calendar event dicts for target_date (date object)."""
-    day_start = datetime.combine(target_date, datetime.min.time()).strftime('%Y-%m-%dT00:00:00Z')
-    day_end = datetime.combine(target_date, datetime.min.time()).strftime('%Y-%m-%dT23:59:59Z')
+    """Return Google Calendar event dicts for target_date (date object, local timezone).
+
+    Raises on any Google API failure so callers don't mistake an error for "no events".
+    """
+    tz = timezone.get_current_timezone()
+    day_start = timezone.make_aware(datetime.combine(target_date, datetime.min.time()), tz)
+    day_end = day_start + timedelta(days=1)
     resp = requests.get(
         f'{CALENDAR_BASE}/calendars/{quote(calendar_id, safe="")}/events',
         headers=_auth_headers(token_obj),
         params={
-            'timeMin': day_start,
-            'timeMax': day_end,
+            'timeMin': day_start.isoformat(),
+            'timeMax': day_end.isoformat(),
             'singleEvents': True,
             'orderBy': 'startTime',
-            'maxResults': 50,
+            'maxResults': 250,
         },
         timeout=_TIMEOUT,
     )
-    return resp.json().get('items', []) if resp.status_code == 200 else []
+    if resp.status_code != 200:
+        logger.warning('Google events fetch failed for %s (%s): %s %s',
+                       calendar_id, token_obj.google_email, resp.status_code, resp.text[:300])
+        resp.raise_for_status()
+    return resp.json().get('items', [])
 
 
 def create_event(token_obj, calendar_id, summary, start_dt, end_dt, description=''):
@@ -76,7 +90,11 @@ def create_event(token_obj, calendar_id, summary, start_dt, end_dt, description=
         },
         timeout=_TIMEOUT,
     )
-    return resp.json() if resp.status_code in (200, 201) else None
+    if resp.status_code not in (200, 201):
+        logger.warning('Google event create failed for %s: %s %s',
+                       calendar_id, resp.status_code, resp.text[:300])
+        return None
+    return resp.json()
 
 
 def register_webhook(token_obj, calendar_id, webhook_url, channel_id):
@@ -93,7 +111,11 @@ def register_webhook(token_obj, calendar_id, webhook_url, channel_id):
         },
         timeout=_TIMEOUT,
     )
-    return resp.json() if resp.status_code == 200 else None
+    if resp.status_code != 200:
+        logger.warning('Google webhook registration failed for %s: %s %s',
+                       calendar_id, resp.status_code, resp.text[:300])
+        return None
+    return resp.json()
 
 
 def stop_webhook(token_obj, channel_id, resource_id):
