@@ -16,8 +16,9 @@ const Timeline = {
     init() {
         this.events = [];
         this.hasMore = true;
-        this.currentDate = getDate(new Date());
+        this.currentDate = Resilient.logicalToday();
         this.updateDateLabel();
+        Resilient.init();
         this.loadEvents();
         this.setupScroll();
         if (!this._bound) { this._bound = true; this._bindListEvents(); }
@@ -29,7 +30,7 @@ const Timeline = {
     updateDateLabel() {
         const el = document.getElementById('timeline-date-label');
         if (!el) return;
-        const today = getDate(new Date());
+        const today = Resilient.logicalToday();
         const yesterday = getDate(new Date(Date.now() - 86400000));
         const tomorrow = getDate(new Date(Date.now() + 86400000));
         if (this.currentDate === today) el.textContent = 'Today';
@@ -74,7 +75,7 @@ const Timeline = {
 
         if (res.status === 'success') {
             // Auto-generate if no real events exist yet for this date
-            const realTypes = ['habit', 'todo', 'meeting', 'accountability_habit', 'accountability_invite', 'friend_request'];
+            const realTypes = ['routine', 'habit', 'todo', 'meeting', 'accountability_habit', 'accountability_invite', 'friend_request'];
             const hasRealEvents = res.data.some(e => realTypes.includes(e.event_type));
             if (!before && !hasRealEvents && !this.generatedDates.has(this.currentDate)) {
                 this.generatedDates.add(this.currentDate);
@@ -82,6 +83,7 @@ const Timeline = {
                 await this.loadEvents();
                 return;
             }
+            if (!before && res.day) Resilient.setDay(res.day, this.currentDate);
             this.events = this.events.concat(res.data);
             this.hasMore = res.has_more;
             this.render();
@@ -173,7 +175,7 @@ const Timeline = {
         };
         return `
             <div class="tl-resched">
-                <input type="date" class="tl-date" data-tl-date min="${getDate(new Date())}" value="${this.esc(d)}" aria-label="New date">
+                <input type="date" class="tl-date" data-tl-date min="${Resilient.logicalToday()}" value="${this.esc(d)}" aria-label="New date">
                 ${quick('Tomorrow', 1)}${quick('In a week', 7)}
                 <button type="button" class="btn btn-paper btn-sm btn-primary" data-tl-action="resched-go" data-target="${this.esc(target)}">${verb}</button>
                 <button type="button" class="tl-link" data-tl-action="resched-cancel">Cancel</button>
@@ -192,12 +194,12 @@ const Timeline = {
         const ts = new Date(event.timestamp);
         const responded = event.action_response ? 'responded' : '';
         return `
-            <div class="timeline-item ${this.esc('timeline-type-' + event.event_type)} ${responded} ${extraClass}" data-id="${event.id}">
+            <div class="timeline-item ${this.esc('timeline-type-' + event.event_type)} ${responded} ${event.status ? this.esc('tl-st-' + event.status) : ''} ${extraClass}" data-id="${this.esc(event.id)}">
                 <div class="timeline-time">${this._fmtTime(ts)}</div>
                 <div class="timeline-icon"><i class="${this.getTypeIcon(event.event_type)}"></i></div>
                 <div class="timeline-content">
                     ${label ? `<div class="timeline-label">${label}</div>` : ''}
-                    <div class="timeline-event-text">${this.esc(event.event)}${event.group ? ` <span class="timeline-group">${this.esc(event.group.name)}</span>` : ''}</div>
+                    <div class="timeline-event-text">${this.esc(event.event)}${Resilient.note(event)}${event.group ? ` <span class="timeline-group">${this.esc(event.group.name)}</span>` : ''}</div>
                     ${this._actionsFor(event, extraClass)}
                 </div>
             </div>`;
@@ -335,7 +337,7 @@ const Timeline = {
             if (act === 'resched-quick') this.reschedDate = btn.dataset.date;
             if (act === 'resched-go') {
                 const date = this.reschedDate;
-                if (!date || date < getDate(new Date())) return;
+                if (!date || date < Resilient.logicalToday()) return;
                 const t = btn.dataset.target;
                 btn.disabled = true;
                 if (t === 'all') this.snoozeAllOverdue(date); else this.snooze(Number(t), date);
@@ -417,6 +419,7 @@ const Timeline = {
     },
 
     renderAction(event) {
+        if (typeof event.id === 'string' || event.event_type === 'routine') return Resilient.actions(event);
         if (!event.action) return '';
         if (event.action_response) {
             // Already responded

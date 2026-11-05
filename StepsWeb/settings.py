@@ -242,6 +242,11 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'board.tasks.send_reengagement_emails',
         'schedule': crontab(hour=9, minute=0),
     },
+    # Closes finished days into DaySummary (streak source of truth), per user day_start
+    'close-days': {
+        'task': 'board.tasks.close_days',
+        'schedule': crontab(minute='*/15'),
+    },
 }
 
 CORS_ALLOWED_ORIGIN_REGEXES = [

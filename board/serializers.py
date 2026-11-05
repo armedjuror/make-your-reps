@@ -33,9 +33,31 @@ def get_habit_log(habit, target_month, target_year):
 
 
 class UserDetailSerializer(serializers.ModelSerializer):
+    has_private_pin = serializers.SerializerMethodField()
+
     class Meta:
         model = UserDetail
-        exclude = ('created_at', 'updated_at')
+        # The PIN hash never leaves the server. The freeze bank is earned, not set by the client.
+        exclude = ('created_at', 'updated_at', 'private_pin_hash')
+        read_only_fields = ['freezes']
+
+    def get_has_private_pin(self, obj):
+        return bool(obj.private_pin_hash)
+
+    def validate_weekend_days(self, value):
+        if any(not isinstance(d, int) or d < 0 or d > 6 for d in value) or len(set(value)) != len(value):
+            raise serializers.ValidationError('weekend_days must be unique weekdays 0 (Mon) to 6 (Sun)')
+        return sorted(value)
+
+    def validate_travel_ramp_days(self, value):
+        if value > 7:
+            raise serializers.ValidationError('travel_ramp_days must be 7 or less')
+        return value
+
+    def validate_private_unlock_minutes(self, value):
+        if not 1 <= value <= 120:
+            raise serializers.ValidationError('private_unlock_minutes must be 1 to 120')
+        return value
 
 
 class TaskGroupSerializer(serializers.ModelSerializer):
@@ -77,12 +99,22 @@ class HabitLogSerializer(serializers.ModelSerializer):
 class HabitSerializer(serializers.ModelSerializer):
     stats = serializers.SerializerMethodField()
     remark = serializers.SerializerMethodField()
+    on_light = serializers.ChoiceField(choices=['required', 'excused'], required=False)
+    on_disrupted = serializers.ChoiceField(choices=['required', 'excused'], required=False)
+    complete_when = serializers.ChoiceField(choices=['all', 'any'], required=False)
+    step_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Habit
         fields = ['id', 'habit', 'detail', 'identity', 'frequency',
-                  'notify_at', 'status', 'created_at', 'stats', 'remark']
+                  'notify_at', 'status', 'created_at', 'stats', 'remark',
+                  'on_light', 'on_disrupted', 'metric', 'current_stage', 'complete_when',
+                  'is_private', 'private_reminder', 'step_count']
         read_only_fields = ['created_at', 'user']
+
+    def get_step_count(self, obj):
+        # Uses the prefetch cache when the view provided one.
+        return len(obj.steps.all())
 
     def _get_recent_logs(self, obj):
         """Get logs dict for the last 60 days, using prefetched data when available."""

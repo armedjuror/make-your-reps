@@ -19,7 +19,22 @@ const Gamification = {
         const ln = document.getElementById('gami-level-name');
         const pts = document.getElementById('gami-points');
         const fill = document.getElementById('gami-xp-fill');
-        if (s) s.textContent = d.current_streak;
+        if (s) {
+            s.textContent = d.current_streak;
+            // Freeze balance sits next to the streak
+            let f = document.getElementById('gami-freezes');
+            if (!f && s.parentElement) {
+                f = document.createElement('span');
+                f.id = 'gami-freezes';
+                f.style.cssText = 'font-size:.75em;opacity:.75;margin-left:6px';
+                s.insertAdjacentElement('afterend', f);
+            }
+            if (f) {
+                const n = d.freezes ?? 0;
+                f.innerHTML = `<i class="fas fa-snowflake"></i> ${esc(n)}`;
+                f.title = `${n} streak freeze${n === 1 ? '' : 's'} available`;
+            }
+        }
         if (ln) ln.textContent = d.level_name;
         if (pts) pts.textContent = d.total_points.toLocaleString();
         if (fill) fill.style.width = d.xp_pct + '%';

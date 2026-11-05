@@ -233,6 +233,13 @@ function showInfo(message, title="Did you know?") {
     infoModal.show();
 }
 
+/** Escape text for safe use inside innerHTML. */
+function esc(str) {
+    const d = document.createElement('div');
+    d.textContent = str == null ? '' : String(str);
+    return d.innerHTML;
+}
+
 function getDate(date){
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }

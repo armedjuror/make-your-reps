@@ -15,13 +15,9 @@ function initTrackersPane() {
     initSleepChart();
     loadSleepAndJournalData();
 
-    // Auto-select routine based on day
-    const today = new Date().getDay();
-    if (today === 0 || today === 6) {
-        document.getElementById('holiday_routine_button').click();
-    } else {
-        document.getElementById('workday_routine_button').click();
-    }
+    // Auto-select the routine from today's day template (weekend days are configurable)
+    const tpl = (typeof Resilient !== 'undefined' && Resilient.day && Resilient.day.template) || 'workday';
+    document.getElementById(tpl === 'holiday' ? 'holiday_routine_button' : 'workday_routine_button').click();
 }
 
 
@@ -49,7 +45,8 @@ function loadRoutines() {
                     const h12 = hour % 12 || 12;
                     timeStr = `${h12}:${m} ${ampm}`;
                 }
-                return `<div class="routine-item"><strong>${timeStr}</strong> — ${entry.title}</div>`;
+                const tier = entry.tier && entry.tier !== 'flexible' ? ` <small class="rs-tier">${esc(entry.tier)}</small>` : '';
+                return `<div class="routine-item"><strong>${timeStr}</strong> — ${esc(entry.title)}${tier}</div>`;
             }).join('');
         } else {
             container.innerHTML = '<h6 class="text-center mt-4 mb-4">No routine set. Click Edit to add one.</h6>';
@@ -60,15 +57,26 @@ function loadRoutines() {
 // ── Routine Editor ──
 
 const RoutineEditor = {
-    addRow() {
+    /** One editor row; `entry` carries id, time, title, tier, fixed_time, duration_min when editing. */
+    addRow(entry = {}) {
         const container = document.getElementById('routineEntries');
         const row = document.createElement('div');
-        row.className = 'routine-entry-row d-flex gap-2 mb-2 align-items-center';
+        row.className = 'routine-entry-row d-flex gap-2 mb-2 align-items-center flex-wrap';
+        if (entry.id) row.dataset.id = entry.id;
+        const tier = entry.tier || 'flexible';
         row.innerHTML = `
-            <input type="time" class="form-control routine-time" style="width:130px;">
-            <input type="text" class="form-control routine-title" placeholder="Activity name">
-            <button class="btn btn-paper btn-danger btn-sm" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+            <input type="time" class="form-control routine-time" style="width:130px;" value="${esc((entry.time || '').substring(0, 5))}">
+            <input type="text" class="form-control routine-title" style="flex:1;min-width:140px" placeholder="Activity name" value="${esc(entry.title || '')}">
+            <select class="form-control routine-tier" style="width:120px;" title="Essential stays on every day. Anchor stays on Light days. Flexible only on Normal days.">
+                <option value="essential" ${tier === 'essential' ? 'selected' : ''}>Essential</option>
+                <option value="anchor" ${tier === 'anchor' ? 'selected' : ''}>Anchor</option>
+                <option value="flexible" ${tier === 'flexible' ? 'selected' : ''}>Flexible</option>
+            </select>
+            <label class="small d-flex align-items-center gap-1 mb-0" title="Fixed blocks do not move when you run late"><input type="checkbox" class="routine-fixed" ${entry.fixed_time ? 'checked' : ''}> Fixed</label>
+            <input type="number" min="1" max="720" class="form-control routine-duration" style="width:90px;" placeholder="min" title="Duration in minutes" value="${esc(entry.duration_min || '')}">
+            <button type="button" class="btn btn-paper btn-danger btn-sm routine-remove"><i class="fas fa-times"></i></button>
         `;
+        row.querySelector('.routine-remove').addEventListener('click', () => row.remove());
         container.appendChild(row);
     },
 
@@ -79,7 +87,15 @@ const RoutineEditor = {
             const time = row.querySelector('.routine-time').value;
             const title = row.querySelector('.routine-title').value.trim();
             if (time && title) {
-                entries.push({ time, title });
+                const item = {
+                    time, title,
+                    tier: row.querySelector('.routine-tier').value,
+                    fixed_time: row.querySelector('.routine-fixed').checked,
+                    duration_min: row.querySelector('.routine-duration').value
+                        ? Number(row.querySelector('.routine-duration').value) : null,
+                };
+                if (row.dataset.id) item.id = Number(row.dataset.id);
+                entries.push(item);
             }
         });
 
@@ -105,16 +121,7 @@ function editRoutine() {
         container.innerHTML = '';
 
         if (res.status === 'success' && res.data.length > 0) {
-            res.data.forEach(entry => {
-                const row = document.createElement('div');
-                row.className = 'routine-entry-row d-flex gap-2 mb-2 align-items-center';
-                row.innerHTML = `
-                    <input type="time" class="form-control routine-time" style="width:130px;" value="${entry.time.substring(0, 5)}">
-                    <input type="text" class="form-control routine-title" placeholder="Activity name" value="${entry.title}">
-                    <button class="btn btn-paper btn-danger btn-sm" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
-                `;
-                container.appendChild(row);
-            });
+            res.data.forEach(entry => RoutineEditor.addRow(entry));
         } else {
             // Add a blank row
             RoutineEditor.addRow();
