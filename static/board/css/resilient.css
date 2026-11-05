@@ -161,3 +161,10 @@ body[data-clock="24h"] .timeline-item .timeline-time, body[data-clock="24h"] .ti
 .rs-tour-text { color: var(--ink-black); font-size: .9rem; line-height: 1.5; }
 .rs-tour-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
 .rs-tour-count { font-size: .75rem; color: var(--ink-gray); }
+
+/* Greeting keeps its height before the first words are painted (no layout jump) */
+#greeting-text:empty::before { content: '\00a0'; }
+
+/* Row content fills the line (the extension's dashboard.css has this rule commented
+   out), so actions sit at the right end and the highlighted card spans the row. */
+.timeline-item .timeline-content { flex: 1 1 auto; min-width: 0; }

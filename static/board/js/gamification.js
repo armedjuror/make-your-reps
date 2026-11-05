@@ -9,6 +9,10 @@ const Gamification = {
         const res = await apiClient.get('board/api/gamification/');
         if (res.status !== 'success') return;
         this.data = res.data;
+        try {
+            const { current_streak, level_name, total_points, xp_pct, freezes } = res.data;
+            localStorage.setItem('mr_gami', JSON.stringify({ current_streak, level_name, total_points, xp_pct, freezes }));
+        } catch (e) { /* storage unavailable */ }
         this.renderStatusBar();
     },
 
@@ -405,3 +409,12 @@ document.addEventListener('DOMContentLoaded', () => {
         Gamification.load();
     });
 });
+
+// First paint: the last streak, level and points seen, instead of 0 / Newcomer,
+// until the live numbers arrive.
+(function () {
+    try {
+        const cached = JSON.parse(localStorage.getItem('mr_gami') || 'null');
+        if (cached && !Gamification.data) { Gamification.data = cached; Gamification.renderStatusBar(); Gamification.data = null; }
+    } catch (e) { /* nothing cached yet */ }
+})();
