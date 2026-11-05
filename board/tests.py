@@ -898,3 +898,16 @@ class RoutineScoreTests(Base):
         self.log(self.wake, 'done', day=TODAY - timedelta(days=1))
         close_pending_days(self.user.id, now=NOW)
         self.assertEqual(DaySummary.objects.get(user=self.user, date=TODAY - timedelta(days=1)).outcome, 'legacy')
+
+    def test_at_most_trackers_earn_by_default_and_at_least_on_reaching_target(self):
+        tea = Metric.objects.create(user=self.user, name='Tea', unit='cups', direction='at_most', target=2)
+        walk = Metric.objects.create(user=self.user, name='Walk', unit='km', direction='at_least', target=3,
+                                     remind_at=time(20))   # reminder not passed at 10:00
+        Metric.objects.filter(user=self.user).update(created_at=NOW - timedelta(days=3))
+        b = lambda: (self.score()['breakdown']['trackers_done'], self.score()['breakdown']['trackers_due'])
+        self.assertEqual(b(), (1, 1))                      # under the limit; walk not due yet
+        MetricEntry.objects.create(metric=tea, date=TODAY, at=NOW, value=3)
+        self.assertEqual(b(), (0, 1))                      # over the limit: point taken
+        MetricEntry.objects.create(metric=walk, date=TODAY, at=NOW, value=3)
+        self.assertEqual(b(), (1, 2))                      # target reached: walk earns its share
+        self.assertEqual(self.score()['tracker'], 0.5)

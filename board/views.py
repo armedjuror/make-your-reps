@@ -1929,10 +1929,13 @@ def _compute_productivity_score(user_id, target_date, now=None, include_private=
     journal_score = 1.0 if (daily_data and daily_data.journal and daily_data.journal.strip()) else 0.0
     sleep_logged = bool(daily_data and daily_data.sleep_hours is not None)
 
-    # Trackers: logged out of the ones that came due. A tracker is due once its
-    # reminder has passed (every day for past dates); one without a reminder
-    # only counts when logged. Slips never earn points.
-    from board.metrics import reminder_time
+    # Trackers, one share each:
+    #   at most + limit:  counts every day, earned by default, lost once over the limit
+    #   at least + target: earned once the target is reached; counts against the day
+    #                      once its reminder has passed (or the day is over)
+    #   no target:        earned by logging; counts once its reminder has passed
+    # A tracker that hasn't come due and isn't earned stays out. Slips never count.
+    from board.metrics import day_value, effective_target, reminder_time
     from board.models import Metric, MetricEntry
     detail = UserDetail.objects.filter(user_id=user_id).first()
     trackers = Metric.objects.filter(user_id=user_id, created_at__date__lte=target_date).exclude(system_key='slip')
@@ -1941,14 +1944,22 @@ def _compute_productivity_score(user_id, target_date, now=None, include_private=
     logged_ids = set(MetricEntry.objects.filter(metric__in=trackers, date=target_date)
                      .values_list('metric_id', flat=True))
     now_t = timezone.localtime(now).time() if (is_today and now) else None
-    trackers_due = 0
+    trackers_due = trackers_done = 0
     for m in trackers:
         at = reminder_time(m, detail)
-        if at is not None and (now_t is None or at <= now_t):
-            trackers_due += 1
-    trackers_done = len(logged_ids)
-    t_den = max(trackers_due, trackers_done)
-    tracker_score = (trackers_done / t_den * 1) if t_den else 1.0
+        came_due = now_t is None or (at is not None and at <= now_t)
+        target = effective_target(m, user_id, target_date)
+        if target is not None and m.direction == 'at_most':
+            due, earned = True, day_value(m, target_date) <= target
+        elif target is not None:
+            earned = day_value(m, target_date) >= target
+            due = earned or came_due
+        else:
+            earned = m.id in logged_ids
+            due = earned or (at is not None and came_due)
+        trackers_due += due
+        trackers_done += earned and due
+    tracker_score = (trackers_done / trackers_due * 1) if trackers_due else 1.0
 
     total = round(habit_score + routine_score + todo_score + tracker_score + journal_score, 1)
     return {
