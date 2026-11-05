@@ -350,7 +350,7 @@ const Trackers = {
         }
         const unit = m && m.unit ? ' ' + esc(m.unit) : '';
         const body = entries.length
-            ? Resilient.lead(`${entries.length} note${entries.length > 1 ? 's' : ''} logged with ${esc(m ? m.name : 'this tracker')}.`) +
+            ? Resilient.lead(`${entries.length} entr${entries.length > 1 ? 'ies' : 'y'} logged with ${esc(m ? m.name : 'this tracker')}.`) +
               entries.map(e => {
                   const { value, previous, ...rest } = e.metric || {};
                   const bits = Object.entries(rest).map(([k, v]) => `${esc(k)}: ${esc(v)}`);
@@ -358,7 +358,7 @@ const Trackers = {
                   return `<div class="tracker-note mb-2"><span class="tracker-note-time">${when}</span> ${esc(e.text)}
                       ${e.metric ? `<span class="tracker-note-meta">${esc(this._fmt(value))}${unit}${bits.length ? ' &middot; ' + bits.join(' &middot; ') : ''}</span>` : ''}</div>`;
               }).join('')
-            : Resilient.lead(`No notes yet. When you log ${esc(m ? m.name.toLowerCase() : 'this tracker')}, add a note in the last line (&ldquo;and a note: &hellip;&rdquo;) and it lands here and in the Journal pane.`);
+            : Resilient.lead(`Nothing here yet. When you log ${esc(m ? m.name.toLowerCase() : 'this tracker')}, answer its questions or add a note, and it lands here and in the Journal pane.`);
         Resilient.dialog(`${m ? m.name : 'Tracker'} journal`, body, [{ label: 'Close' }], 'fa-book');
     },
 
@@ -378,8 +378,8 @@ const Trackers = {
         const items = res.status === 'success' ? res.data : [];
         if (!items.length) {
             box.innerHTML = `<h3 class="section-title mt-4 mb-2">From your trackers</h3>
-                <p class="tracker-empty">No tracker notes on this day. When you log a tracker, add a note in the last line
-                (&ldquo;and a note: &hellip;&rdquo;) and it shows up here. Each tracker&rsquo;s full journal is under the
+                <p class="tracker-empty">Nothing from your trackers on this day. When you log a tracker, answer its questions or add a note
+                and it shows up here. Each tracker&rsquo;s full journal is under the
                 <i class="fas fa-book"></i> button on its card in Habits.</p>`;
             return;
         }

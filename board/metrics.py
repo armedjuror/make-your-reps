@@ -122,7 +122,8 @@ def log_entry(metric, *, value=None, data=None, note='', at=None):
     """
     Log against a metric. counter: +1 entry. additive: adds ``value`` as a new
     entry. single: one row per day, logging again overwrites it and keeps the
-    old value in ``data.previous``. A note becomes a JournalEntry.
+    old value in ``data.previous``. A note or answers to the
+    tracker's questions become a JournalEntry.
     """
     user_id = metric.user_id
     at = at or timezone.now()
@@ -150,7 +151,9 @@ def log_entry(metric, *, value=None, data=None, note='', at=None):
         entry = MetricEntry.objects.create(metric=metric, date=day, at=at, value=value, data=data)
 
     note = (note or '').strip()
-    if note:
+    answers = {k: v for k, v in (entry.data or {}).items() if k != 'previous'}
+    # A note or an answer to one of the tracker's questions goes in its journal
+    if note or answers:
         journal = journal_for_metric(metric)
         # A single-kind note replaces the day's note rather than stacking.
         JournalEntry.objects.filter(metric_entry=entry).delete()
@@ -164,6 +167,7 @@ def undo_last(metric, target_date):
     entry = MetricEntry.objects.filter(metric=metric, date=target_date).order_by('-at', '-id').first()
     if not entry:
         return False
+    JournalEntry.objects.filter(metric_entry=entry).delete()
     entry.delete()
     sync_metric_habits(metric, target_date)
     return True

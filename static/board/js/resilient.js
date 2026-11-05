@@ -513,7 +513,7 @@ const Resilient = {
         const ov = this.dialog(`Log ${m.name}`,
             this.lead(m.kind === 'counter' ? `Logging one more ${name}.` : `Let&rsquo;s log your ${name}.`) +
             this.say(first, ...fields, { html: `and a note: <input id="rs-m-note" type="text" maxlength="280" class="form-input" placeholder="optional">`,
-                                         msg: `Notes go to your ${this.esc(m.name)} journal, which you can read in the Journal pane.` }), [
+                                         msg: `Notes and answers go to your ${this.esc(m.name)} journal: the book button on its card, or the Journal pane.` }), [
             { label: 'Cancel' },
             { label: 'Log', primary: true, run: async (o) => {
                 const data = {};

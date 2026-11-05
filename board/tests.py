@@ -232,6 +232,17 @@ class DayApiTests(Base):
         self.assertTrue(card('sleep-tracker-')['action_response'])
         self.assertTrue(card('journal-reminder-')['action_response'])
 
+    def test_answers_without_a_note_still_reach_the_journal_and_undo_removes_them(self):
+        m = self.client.post('/board/api/metrics/', {'name': 'Water', 'kind': 'additive',
+                             'fields': [{'key': 'where', 'label': 'where I was', 'type': 'text'}]},
+                             content_type='application/json').json()['data']
+        self.client.post(f"/board/api/metrics/{m['id']}/log/", {'value': 1, 'data': {'where': 'gym'}},
+                         content_type='application/json')
+        r = self.client.get('/board/api/journal_entries/?date=2026-11-05').json()['data']
+        self.assertEqual([(e['text'], e['metric']['where']) for e in r], [('', 'gym')])
+        self.client.delete(f"/board/api/metrics/{m['id']}/log/")
+        self.assertEqual(self.client.get('/board/api/journal_entries/?date=2026-11-05').json()['data'], [])
+
     def test_tracker_notes_listed_by_date_for_the_journal_pane(self):
         m = self.client.post('/board/api/metrics/', {'name': 'Water', 'kind': 'additive'},
                              content_type='application/json').json()['data']
