@@ -41,6 +41,8 @@ const Resilient = {
 
     async _refresh() {
         if (typeof Timeline === 'undefined') return;
+        // A load already in flight would make loadEvents() return early and leave the old day on screen
+        for (let i = 0; i < 40 && Timeline.loading; i++) await new Promise(r => setTimeout(r, 50));
         Timeline.events = [];
         Timeline.hasMore = true;
         await Timeline.loadEvents();
@@ -201,7 +203,10 @@ const Resilient = {
     async setDayPlan(patch) {
         if (!this.day) return;
         const res = await this._call('put', `board/api/day_plans/${this.day.date}/`, patch);
-        if (res.status === 'success') await this._refresh();
+        if (res.status === 'success') {
+            this.setDay(res.data, this.day.date);   // chip updates at once
+            await this._refresh();
+        }
     },
 
     // ── Timeline items ───────────────────────────────────────
@@ -261,7 +266,6 @@ const Resilient = {
     note(event) {
         if (event.event_type !== 'routine') return '';
         let out = '';
-        if (event.tier) out += `<span class="rs-tier">${this.esc(event.tier)}</span>`;
         if (event.shifted_from) out += `<span class="rs-note">moved from ${this.esc(event.shifted_from)}</span>`;
         if (event.status === 'missed') out += '<span class="rs-note">missed</span>';
         return out;

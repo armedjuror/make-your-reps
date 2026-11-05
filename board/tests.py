@@ -203,6 +203,16 @@ class DayApiTests(Base):
         self.assertTrue(item['ends_at'])  # blocks run until the next one starts
         self.assertTrue(any(x['id'] == 'day-checkin-2026-11-05' for x in r['data']))
 
+    def test_changing_day_template_changes_the_timeline_blocks(self):
+        w = self.entry('Office', 9, rtype='workday')
+        h = self.entry('Long walk', 9, rtype='holiday')
+        ids = lambda: {x['id'] for x in self.client.get('/board/api/timeline/?date=2026-11-05').json()['data']}
+        self.assertIn(f'routine-{w.id}', ids())
+        self.assertNotIn(f'routine-{h.id}', ids())
+        self.client.put('/board/api/day_plans/2026-11-05/', {'template': 'holiday'}, content_type='application/json')
+        self.assertIn(f'routine-{h.id}', ids())
+        self.assertNotIn(f'routine-{w.id}', ids())
+
     def test_checkin_disappears_once_a_day_is_chosen(self):
         self.client.put('/board/api/day_plans/2026-11-05/', {'mode': 'normal', 'source': 'checkin'},
                         content_type='application/json')
