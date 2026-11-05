@@ -944,3 +944,24 @@ window.addEventListener('scroll', () => {
     const root = document.scrollingElement;
     if (root && root.scrollTop && getComputedStyle(document.body).overflowY === 'hidden') root.scrollTop = 0;
 }, { passive: true });
+
+// Where the visible tab starts, so CSS can size it to end at the bottom of the
+// screen (the pill and the bookmark strip above it change height).
+(function () {
+    const fit = () => {
+        const root = document.documentElement;
+        if (window.innerWidth > 1200) { root.style.removeProperty('--pane-top'); return; }
+        const pane = [...document.querySelectorAll('.pane')].find(p => p.offsetParent !== null);
+        if (pane) root.style.setProperty('--pane-top', `${Math.max(0, Math.round(pane.getBoundingClientRect().top))}px`);
+    };
+    window.addEventListener('resize', fit);
+    document.addEventListener('DOMContentLoaded', () => {
+        fit();
+        const strip = document.querySelector('.bookmark-strip');
+        if (strip && typeof ResizeObserver !== 'undefined') new ResizeObserver(fit).observe(strip);
+        if (typeof MutationObserver !== 'undefined') {
+            const mo = new MutationObserver(fit);
+            document.querySelectorAll('.pane').forEach(p => mo.observe(p, { attributes: true, attributeFilter: ['style'] }));
+        }
+    });
+})();
