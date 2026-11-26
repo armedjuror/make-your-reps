@@ -42,6 +42,20 @@ def default_weekend():
     return [5, 6]
 
 
+class BoardScoped(models.Model):
+    """Shareable items belong to a board. Saved without one, they go on the creator's personal board."""
+    board = models.ForeignKey('squads.Board', on_delete=models.CASCADE, related_name='+')
+
+    class Meta:
+        abstract = True
+
+    def save(self, *args, **kwargs):
+        if not self.board_id and self.user_id:
+            from squads.models import Board
+            self.board = Board.personal_for(self.user_id)
+        super().save(*args, **kwargs)
+
+
 class StreakRule(models.TextChoices):
     ACTIVITY = 'activity'   # today's rule: any counted action keeps the streak
     ROUTINE = 'routine'     # the day must meet its routine bar
@@ -157,14 +171,26 @@ class TaskGroup(models.Model):
         return f'{self.user} - {self.name}'
 
 
-class Task(models.Model):
+class TodoCompletionMode(models.TextChoices):
+    SHARED = 'shared'       # anyone on the squad closes it
+    ASSIGNED = 'assigned'   # only the assignee closes it
+
+
+class Task(BoardScoped):
     id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)   # creator
     group = models.ForeignKey(TaskGroup, on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks')
     task_name = models.TextField()
     deadline = models.DateTimeField(null=True, blank=True)
     is_done = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
+    # Squad todos
+    completion_mode = models.CharField(max_length=8, choices=TodoCompletionMode.choices,
+                                       default=TodoCompletionMode.SHARED)
+    assignee = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL,
+                                 related_name='assigned_squad_todos')
+    completed_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL,
+                                     related_name='+')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -194,10 +220,10 @@ class HabitStatus(models.TextChoices):
     COMPLETED = 'completed'
 
 
-class Habit(models.Model):
+class Habit(BoardScoped):
     id = models.AutoField(primary_key=True)
     habit = models.CharField(max_length=255)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)   # creator
     detail = models.TextField(blank=True)
     identity = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -218,6 +244,11 @@ class Habit(models.Model):
     is_private = models.BooleanField(default=False)
     is_system = models.BooleanField(default=False)                      # hidden system habit (Reset)
     private_reminder = models.BooleanField(default=False)               # locked: show a bare 'Reminder' instead of nothing
+    # Squads: a squad habit is the shared definition; members log a linked personal copy
+    assignees = models.ManyToManyField(User, blank=True, related_name='assigned_squad_habits')  # empty = all
+    is_core = models.BooleanField(default=False)   # decides whether a member is "in" for the day
+    linked_squad_habit = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL,
+                                           related_name='linked_items')
 
     def _streaks(self):
         """(current, max), cached on the instance. Views may set ``_streak_ctx`` to share one context."""
@@ -243,11 +274,21 @@ class LogStatus(models.TextChoices):
     PENDING = 'pending'
 
 
+class LogSource(models.TextChoices):
+    MANUAL = 'manual'
+    STRAVA = 'strava'
+    LINKED = 'linked'
+    FOCUS = 'focus'
+
+
 class HabitLog(models.Model):
     id = models.AutoField(primary_key=True)
     habit = models.ForeignKey(Habit, on_delete=models.CASCADE)
     date = models.DateField()
     is_done = models.BooleanField(default=False)
+    source = models.CharField(max_length=8, choices=LogSource.choices, default=LogSource.MANUAL)
+    logged_at = models.DateTimeField(null=True, blank=True)
+    late = models.BooleanField(default=False)   # logged after that day's midnight
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -543,8 +584,8 @@ class MetricKind(models.TextChoices):
     SINGLE = 'single'
 
 
-class Metric(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='metrics')
+class Metric(BoardScoped):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='metrics')   # creator
     name = models.CharField(max_length=64)          # Walk, Coffee, Water, Sleep
     unit = models.CharField(max_length=16, blank=True)
     kind = models.CharField(max_length=8, choices=MetricKind.choices, default=MetricKind.ADDITIVE)
@@ -557,6 +598,8 @@ class Metric(models.Model):
     is_system = models.BooleanField(default=False)  # built-in, cannot be deleted
     system_key = models.CharField(max_length=8, blank=True, default='')  # 'sleep' or 'slip'
     remind_at = models.TimeField(null=True, blank=True)  # daily reminder on the timeline
+    linked_squad_tracker = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL,
+                                             related_name='linked_items')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -572,6 +615,8 @@ class MetricEntry(models.Model):
     at = models.DateTimeField()      # auto now, editable for back-logging
     value = models.DecimalField(max_digits=8, decimal_places=2)
     data = models.JSONField(default=dict)  # {trigger: 'after meal', urge: 4}; single: {previous: 6.5}
+    source = models.CharField(max_length=8, default='manual')   # manual / strava / linked
+    late = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['at', 'id']

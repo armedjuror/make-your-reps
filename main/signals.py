@@ -91,6 +91,10 @@ def user_signed_up_handler(sender, request, user, **kwargs):
         Task(user=user, task_name="Read for 20 minutes"),
         Task(user=user, task_name="Go for a 10-minute walk"),
     ]
+    from squads.models import Board
+    personal = Board.personal_for(user)
+    for t in tasks_to_create:
+        t.board = personal
     Task.objects.bulk_create(tasks_to_create)
 
     # UserDetail

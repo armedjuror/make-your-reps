@@ -84,6 +84,10 @@ def delete_account(request):
         return redirect('/')
     if request.method == 'POST':
         user = request.user
+        # Squads: hand owned squads to a member and keep contributions as 'Former member'
+        # before the delete cascades (Django collects cascades before pre_delete runs).
+        from squads.safety import anonymise_user
+        anonymise_user(user)
         logout(request)
         user.delete()
         return redirect('/')

@@ -1,0 +1,10 @@
+<script>
+document.querySelectorAll('.sq-share-actions [data-channel]').forEach(function (a) {
+    a.addEventListener('click', function () {
+        var box = a.closest('.sq-share-actions');
+        fetch('/squads/api/shared/', { method: 'POST', credentials: 'include',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '' },
+            body: JSON.stringify({ type: box.dataset.shareType, channel: a.dataset.channel }) }).catch(function () {});
+    });
+});
+</script>

@@ -1,0 +1,34 @@
+{% extends 'squads/base.html' %}
+{% block title %}Join {{ preview.name }} · makeyourreps{% endblock %}
+{% block meta %}{% with og_title=preview.emoji|add:' '|add:preview.name og_description='Join our squad on makeyourreps · free to join' %}{% include 'squads/_og.html' %}{% endwith %}{% endblock %}
+{% block content %}
+<section class="sq-card sq-join">
+    <div class="sq-join-emoji">{{ preview.emoji|default:"✨" }}</div>
+    <h1>{{ preview.name }}</h1>
+    <p class="sq-muted">{{ preview.member_count }} member{{ preview.member_count|pluralize }}{% if preview.streak %} · 🔥 {{ preview.streak }}-day streak{% endif %}</p>
+    {% if preview.members %}<div class="sq-avatars">{% for m in preview.members %}<span class="sq-avatar" title="{{ m }}">{{ m|slice:":1"|upper }}</span>{% endfor %}</div>{% endif %}
+    {% if preview.items %}
+    <div class="sq-takeon">
+        <div class="sq-label">You'd take on</div>
+        <ul>{% for it in preview.items %}<li>{{ it.habit }}{% if it.is_core %} <span class="sq-chip">core</span>{% else %} <span class="sq-chip sq-chip-quiet">optional</span>{% endif %}</li>{% endfor %}</ul>
+    </div>
+    {% endif %}
+    <p class="sq-free"><i class="fas fa-check-circle"></i> Free to join</p>
+    {% if error %}<div class="sq-error">{{ error }}</div>{% endif %}
+    {% if not preview.valid %}
+        <div class="sq-error">This invite link has expired. Ask for a new one.</div>
+    {% elif already %}
+        <a class="btn btn-paper btn-primary" href="/board/#squad/{{ invite.board_id }}">Open the squad</a>
+    {% elif logged_in %}
+        <form method="post">{% csrf_token %}<button class="btn btn-paper btn-primary btn-lg" type="submit">Join {{ preview.name }}</button></form>
+    {% else %}
+        {% load socialaccount %}
+        <div class="sq-auth">
+            <form action="{% provider_login_url 'google' %}?client_type=web&next={{ next|urlencode }}" method="POST">{% csrf_token %}
+                <button class="btn btn-paper btn-primary w-100" type="submit"><i class="fa-brands fa-google me-2"></i>Continue with Google</button>
+            </form>
+            <a class="btn btn-paper w-100" href="{{ login_url }}"><i class="fas fa-envelope me-2"></i>Continue with email</a>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends 'squads/base.html' %}
+{% block title %}Continue with email · makeyourreps{% endblock %}
+{% block content %}
+<section class="sq-card sq-join" id="otp-box">
+    <h1>Continue with email</h1>
+    <p class="sq-muted">We'll email you a 6-digit code. No password.</p>
+    <form id="otp-email-form" class="sq-otp-form">
+        <input class="form-control" type="email" id="otp-email" placeholder="you@example.com" autocomplete="email" required>
+        <button class="btn btn-paper btn-primary w-100" type="submit">Send code</button>
+    </form>
+    <form id="otp-code-form" class="sq-otp-form" hidden>
+        <input class="form-control sq-otp-code" id="otp-code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="123456" autocomplete="one-time-code" required>
+        <button class="btn btn-paper btn-primary w-100" type="submit">Log in</button>
+        <button class="btn btn-link btn-sm" type="button" id="otp-resend">Send a new code</button>
+    </form>
+    <div class="sq-error" id="otp-error" hidden></div>
+    {% load socialaccount %}
+    <div class="sq-or">or</div>
+    <form action="{% provider_login_url 'google' %}?client_type=web&next={{ google_next }}" method="POST">{% csrf_token %}
+        <button class="btn btn-paper w-100" type="submit"><i class="fa-brands fa-google me-2"></i>Continue with Google</button>
+    </form>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+    var NEXT = "{{ next|escapejs }}";
+    var email = '';
+    var err = document.getElementById('otp-error');
+    function show(msg) { err.textContent = msg; err.hidden = !msg; }
+    async function post(url, body) {
+        var r = await fetch(url, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        return r.json();
+    }
+    async function send() {
+        show('');
+        var res = await post('/auth/otp/request/', { email: email });
+        if (res.status !== 'success') return show(res.error || 'Could not send the code');
+        document.getElementById('otp-email-form').hidden = true;
+        document.getElementById('otp-code-form').hidden = false;
+        document.getElementById('otp-code').focus();
+    }
+    document.getElementById('otp-email-form').addEventListener('submit', function (e) {
+        e.preventDefault(); email = document.getElementById('otp-email').value.trim(); send();
+    });
+    document.getElementById('otp-resend').addEventListener('click', send);
+    document.getElementById('otp-code-form').addEventListener('submit', async function (e) {
+        e.preventDefault(); show('');
+        var res = await post('/auth/otp/verify/', { email: email, code: document.getElementById('otp-code').value.trim(), next: NEXT });
+        if (res.status !== 'success') return show(res.error || 'Wrong code');
+        window.location.href = res.data.next || '/board/';
+    });
+})();
+</script>
+{% endblock %}

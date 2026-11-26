@@ -1,0 +1,11 @@
+{% extends 'squads/base.html' %}
+{% block title %}RSVP saved{% endblock %}
+{% block content %}
+<section class="sq-card sq-join">
+    <div class="sq-join-emoji">{% if response == 'yes' %}🙌{% else %}👍{% endif %}</div>
+    <h1>{% if response == 'yes' %}See you there{% else %}Thanks for letting them know{% endif %}</h1>
+    <p class="sq-muted">{{ session.board.emoji }} {{ session.board.name }} · {{ session.start_at|date:"D j M, g:i A" }}</p>
+    <p class="sq-muted">RSVP is optional: the session runs either way.</p>
+    <a class="btn btn-paper btn-primary" href="/squads/focus/{{ session.id }}/room/">Open the live room</a>
+</section>
+{% endblock %}

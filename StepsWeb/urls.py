@@ -21,6 +21,8 @@ from django.contrib import admin
 from django.http import HttpResponse
 from django.urls import path, include
 
+from squads.urls import api as squads_api, public as squads_public
+
 
 def sw_view(request):
     sw_path = os.path.join(settings.BASE_DIR, 'static', 'sw.js')
@@ -38,6 +40,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('allauth.urls')),
     path('board/', include('board.urls')),
+    path('squads/api/', include(squads_api)),
+    *squads_public,
     path('', include('main.urls')),
     path('login/', include('main.urls')),
 ]

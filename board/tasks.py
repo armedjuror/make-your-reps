@@ -12,6 +12,7 @@ from board.models import (
     TimelineEventType, UserDetail,
     AccountabilityPartner, AccountabilityPartnerStatus,
 )
+from squads.scoping import visible_items
 
 
 @shared_task
@@ -38,9 +39,7 @@ def generate_daily_timeline(user_id=None):
 
 def _generate_habit_events(user, today, weekday):
     """Create timeline events for habits scheduled today with notify_at set."""
-    habits = Habit.objects.filter(
-        user=user,
-        status=HabitStatus.ACTIVE.value,
+    habits = visible_items(user, Habit, squads=False).filter(status=HabitStatus.ACTIVE.value,
         is_system=False,
     )
     for habit in habits:
@@ -79,7 +78,7 @@ def _generate_habit_events(user, today, weekday):
 def _generate_todo_events(user, today):
     """Create timeline events for todos due today or overdue."""
     # Due today
-    for todo in Task.objects.filter(user=user, is_deleted=False, is_done=False, deadline__date=today):
+    for todo in visible_items(user, Task).filter(is_deleted=False, is_done=False, deadline__date=today):
         exists = TimelineEvent.objects.filter(
             user=user,
             event_type=TimelineEventType.TODO,
@@ -98,7 +97,7 @@ def _generate_todo_events(user, today):
             )
 
     # Overdue (deadline before today, still pending)
-    for todo in Task.objects.filter(user=user, is_deleted=False, is_done=False, deadline__date__lt=today):
+    for todo in visible_items(user, Task).filter(is_deleted=False, is_done=False, deadline__date__lt=today):
         days = (today - todo.deadline.date()).days
         label = f"{days} day" if days == 1 else f"{days} days"
         exists = TimelineEvent.objects.filter(

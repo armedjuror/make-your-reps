@@ -1,0 +1,11 @@
+{% extends 'squads/base.html' %}
+{% block title %}Discover challenges · makeyourreps{% endblock %}
+{% block content %}
+<h1 class="sq-h1">Discover challenges</h1>
+<section class="sq-card"><h2 class="sq-h2">Starting soon</h2>
+    {% for c in starting_soon %}{% include 'squads/_challenge_row.html' %}{% empty %}<p class="sq-muted">Nothing starting soon.</p>{% endfor %}
+</section>
+<section class="sq-card"><h2 class="sq-h2">Most joined</h2>
+    {% for c in most_joined %}{% include 'squads/_challenge_row.html' %}{% empty %}<p class="sq-muted">No public challenges yet.</p>{% endfor %}
+</section>
+{% endblock %}

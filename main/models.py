@@ -166,3 +166,17 @@ class AnnouncementLog(models.Model):
 
     def __str__(self):
         return f'{self.subject} — {self.sent_at:%Y-%m-%d %H:%M}'
+
+
+class EmailOTP(models.Model):
+    """A 6-digit login code. Only a keyed hash is stored."""
+    email = models.EmailField(db_index=True)
+    code_hash = models.CharField(max_length=64)
+    expires_at = models.DateTimeField()
+    attempts = models.PositiveSmallIntegerField(default=0)
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    used_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-created_at']

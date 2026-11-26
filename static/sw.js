@@ -134,3 +134,27 @@ if (typeof window !== 'undefined') {
       }
     });
 }
+
+// ── Squads: web push ──
+self.addEventListener('push', (event) => {
+    let data = {};
+    try { data = event.data ? event.data.json() : {}; } catch (e) { data = { title: 'makeyourreps', body: event.data && event.data.text() }; }
+    event.waitUntil(self.registration.showNotification(data.title || 'makeyourreps', {
+        body: data.body || '',
+        icon: '/static/images/logo.png',
+        badge: '/static/images/logo.png',
+        tag: data.tag || undefined,
+        data: { url: data.url || '/board/' },
+    }));
+});
+
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    const url = (event.notification.data && event.notification.data.url) || '/board/';
+    event.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+        for (const c of list) {
+            if (c.url.includes('/board/') && 'focus' in c) { c.navigate(url); return c.focus(); }
+        }
+        return clients.openWindow(url);
+    }));
+});

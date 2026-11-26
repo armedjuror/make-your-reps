@@ -130,12 +130,20 @@ const Timeline = {
         const sel = document.getElementById('timeline-group-filter');
         if (!sel) return;
         const groups = new Map();
-        events.forEach(e => { if (e.group) groups.set(String(e.group.id), e.group.name); });
-        if (this.groupFilter && !groups.has(this.groupFilter)) this.groupFilter = '';
-        sel.hidden = groups.size === 0;
+        const squads = new Map();
+        events.forEach(e => {
+            if (e.group) groups.set(String(e.group.id), e.group.name);
+            if (e.squad) squads.set('sq:' + e.squad.id, `${e.squad.emoji || ''} ${e.squad.name}`.trim());
+        });
+        if (this.groupFilter && !groups.has(this.groupFilter) && !squads.has(this.groupFilter)) this.groupFilter = '';
+        sel.hidden = groups.size === 0 && squads.size === 0;
         const opts = ['<option value="">All groups</option>']
             .concat([...groups].sort((a, b) => a[1].localeCompare(b[1]))
-                .map(([id, name]) => `<option value="${this.esc(id)}">${this.esc(name)}</option>`));
+                .map(([id, name]) => `<option value="${this.esc(id)}">${this.esc(name)}</option>`))
+            .concat(squads.size ? ['<optgroup label="Squads">'] : [])
+            .concat([...squads].sort((a, b) => a[1].localeCompare(b[1]))
+                .map(([id, name]) => `<option value="${this.esc(id)}">${this.esc(name)}</option>`))
+            .concat(squads.size ? ['</optgroup>'] : []);
         const html = opts.join('');
         if (sel.dataset.sig !== html) { sel.innerHTML = html; sel.dataset.sig = html; }
         sel.value = this.groupFilter;
@@ -202,7 +210,7 @@ const Timeline = {
                 <div class="timeline-content">
                     ${label ? `<div class="timeline-label">${label}</div>` : ''}
                     <div class="tl-line">
-                        <div class="timeline-event-text">${this.esc(event.event)}${Resilient.note(event)}${event.group ? ` <span class="timeline-group">${this.esc(event.group.name)}</span>` : ''}</div>
+                        <div class="timeline-event-text">${this.esc(event.event)}${Resilient.note(event)}${event.group ? ` <span class="timeline-group">${this.esc(event.group.name)}</span>` : ''}${event.squad ? ` <span class="timeline-squad" title="${this.esc(event.squad.name)}">${this.esc(event.squad.emoji || '')} ${this.esc(event.squad.label || event.squad.name)}</span>` : ''}</div>
                         ${this._actionsFor(event, extraClass)}
                     </div>
                 </div>
@@ -217,7 +225,11 @@ const Timeline = {
         this._syncGroupSelect(events);
         const types = this.FILTER_TYPES[this.filter];
         if (types) events = events.filter(e => types.includes(e.event_type));
-        if (this.groupFilter) events = events.filter(e => e.group && String(e.group.id) === this.groupFilter);
+        if (this.groupFilter && this.groupFilter.startsWith('sq:')) {
+            events = events.filter(e => e.squad && 'sq:' + e.squad.id === this.groupFilter);
+        } else if (this.groupFilter) {
+            events = events.filter(e => e.group && String(e.group.id) === this.groupFilter);
+        }
 
         if (events.length === 0) {
             list.innerHTML = `<div class="timeline-empty">${this.filter === 'all'

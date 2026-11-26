@@ -60,6 +60,7 @@ INSTALLED_APPS = [
 
     'main',
     'board',
+    'squads',
 ]
 
 MIDDLEWARE = [
@@ -270,3 +271,45 @@ CSRF_COOKIE_SAMESITE = 'None'
 CSRF_COOKIE_SECURE = True
 
 ACCOUNT_ADAPTER = 'StepsWeb.adapters.CustomAccountAdapter'
+
+# ── Squads ──
+# Hosted makeyourreps.com enforces PLAN_LIMITS; self-hosted installs are unlimited.
+HOSTED = os.environ.get('HOSTED', '0') == '1'
+# Values pending the pricing decision. None = unlimited.
+PLAN_LIMITS = {
+    'free': {
+        'squad_members': 4, 'squads_owned': 1, 'challenge_link': 1, 'challenge_public': 0,
+        'challenge_participants': 50, 'focus_sessions_per_week': 1, 'history_days': 30,
+    },
+    'pro': {
+        'squad_members': 8, 'squads_owned': 3, 'challenge_link': None, 'challenge_public': 1,
+        'challenge_participants': 200, 'focus_sessions_per_week': 7, 'history_days': 365,
+    },
+    'squad': {
+        'squad_members': 20, 'squads_owned': None, 'challenge_link': None, 'challenge_public': None,
+        'challenge_participants': None, 'focus_sessions_per_week': None, 'history_days': None,
+    },
+}
+# Each build track ships behind its own flag; a Config row flag_<name> = on/off overrides.
+FEATURE_FLAGS = {
+    name: os.environ.get(f'FLAG_{name.upper()}', '1') == '1'
+    for name in ('squads', 'squad_items', 'otp_login', 'notifications', 'streaks', 'leaderboard',
+                 'focus', 'challenges', 'share', 'plan_limits', 'safety')
+}
+# Web push (generate with: python manage.py squads_vapid)
+VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY', '')
+VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY', '')
+VAPID_CLAIMS_EMAIL = os.environ.get('VAPID_CLAIMS_EMAIL', 'mailto:hello@makeyourreps.com')
+# Email OTP
+OTP_TTL_MINUTES = 10
+OTP_MAX_ATTEMPTS = 5
+OTP_PER_EMAIL_PER_HOUR = 5
+OTP_PER_IP_PER_HOUR = 20
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True   # Google and OTP for one email = one account
+
+CELERY_BEAT_SCHEDULE.update({
+    # Day evaluation: squads and challenge participants whose day passed its late-log cutoff
+    'squads-evaluate-days': {'task': 'squads.tasks.evaluate_days', 'schedule': crontab(minute='*/15')},
+    # 20:00 at-risk alerts, weekly recap, focus reminders, queued pushes after quiet hours
+    'squads-periodic': {'task': 'squads.tasks.periodic', 'schedule': crontab(minute='*/5')},
+})
