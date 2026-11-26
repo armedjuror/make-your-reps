@@ -676,8 +676,9 @@ class HabitViewSet(AuthenticatedModelViewSet):
         now = timezone.localdate()
         start_date = now - timezone.timedelta(days=60)
         streak_ctx = StreakContext(user_id)
+        # Health / Activity habits live in the Fitness tab, not on the Habits page
         queryset = self.get_queryset().filter(
-            user_id=user_id, status=habit_status
+            user_id=user_id, status=habit_status, kind=''
         ).annotate(
             total_reps_count=Count('habitlog', filter=Q(habitlog__is_done=True))
         ).prefetch_related(

@@ -29,8 +29,12 @@ def had_activity(user_id, target_date):
     from board.models import BlockLog, BlockStatus, DailyData, Task
     if BlockLog.objects.filter(user_id=user_id, date=target_date, status=BlockStatus.DONE).exists():
         return True
+    # A fitness rest day keeps its own habit streak but is not activity for the day streak
+    from board.models import HabitStepLog
+    rest = HabitStepLog.objects.filter(step__habit__user_id=user_id, step__key='rest',
+                                       date=target_date, done=True).values('step__habit_id')
     if HabitLog.objects.filter(habit__user_id=user_id, habit__is_system=False,
-                               date=target_date, is_done=True).exists():
+                               date=target_date, is_done=True).exclude(habit_id__in=rest).exists():
         return True
     if Task.objects.filter(user_id=user_id, is_deleted=False, is_done=True,
                            updated_at__date=target_date).exists():
@@ -66,6 +70,9 @@ def close_day(user_id, target_date, now=None):
     if existing:
         return existing
     detail = UserDetail.objects.select_for_update().get(user_id=user_id)
+    # Fitness habits are expanded lazily; settle the day being closed (rest days, linked rules)
+    from fitness.program import refresh_user
+    refresh_user(user_id, target_date)
     resolved = resolve_day(user_id, target_date, now=now, closing=True, detail=detail)
     plan = resolved['plan']
 
