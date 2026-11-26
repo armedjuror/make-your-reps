@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth import logout
 from django.contrib.auth.models import User
 from django.http import Http404, HttpResponseForbidden, JsonResponse
@@ -117,7 +118,29 @@ def internal_dashboard(request):
     ]
     recent_uninstalls = ExtensionUninstallFeedback.objects.exclude(comment='')[:10]
 
+    from main.internal_metrics import dashboard_data
+    analytics = dashboard_data(
+        days=request.GET.get('days', 30),
+        include_staff=request.GET.get('staff') == '1',
+        refresh=request.GET.get('refresh') == '1',
+    )
+    db = analytics['db']
+    ph = analytics['posthog']
+    chart = {
+        'labels': db['labels'],
+        'doers': db['doers_series'],
+        'signups': db['signups_series'],
+        'openers': ph['openers_series'] if ph else None,
+        'minutes': ph['minutes_series'] if ph else None,
+        'views': [{'view': v['view'], 'minutes': v['minutes']} for v in (ph['views'][:15] if ph else [])],
+    }
+
     return render(request, 'internal/dashboard.html', {
+        'a': analytics,
+        'db': db,
+        'ph': ph,
+        'chart': chart,
+        'posthog_app_url': f"{settings.POSTHOG_APP_HOST.rstrip('/')}/project/{settings.POSTHOG_PROJECT_ID}" if settings.POSTHOG_PROJECT_ID else '',
         'total_users': total_users,
         'opted_out_marketing': opted_out_marketing,
         'opted_out_announcements': opted_out_announcements,
@@ -219,3 +242,74 @@ def assetlinks(request):
         }
     }]
     return JsonResponse(data, safe=False)
+
+# ── Product analytics ingest ─────────────────────────────────────────────
+
+import json as _json
+import re as _re
+from datetime import datetime as _dt, timedelta as _td, timezone as _tz
+
+from main import analytics as _analytics
+
+_SAFE = _re.compile(r'^[\w:.\-#/ ]{1,80}$')
+_TRACK_SCHEMA = {
+    # event: {prop: kind}
+    'app_opened': {'display_mode': 'str', 'pane': 'str', 'app_version': 'str', 'viewport': 'str', 'tz': 'str'},
+    'view_time': {'view': 'str', 'kind': 'str', 'seconds': 'num', 'ended': 'str'},
+    'ui_click': {'action': 'str', 'view': 'str', 'count': 'int'},
+}
+_MAX_BATCH = 100
+
+
+def _clean_props(event, raw):
+    out = {}
+    for key, kind in _TRACK_SCHEMA[event].items():
+        val = raw.get(key)
+        if val is None:
+            continue
+        if kind == 'str' and isinstance(val, str) and _SAFE.match(val):
+            out[key] = val
+        elif kind == 'num' and isinstance(val, (int, float)) and 0 <= val <= 3600:
+            out[key] = round(float(val), 1)
+        elif kind == 'int' and isinstance(val, int) and 0 < val <= 1000:
+            out[key] = val
+    return out
+
+
+@csrf_exempt
+def track(request):
+    """Batched UI events from any client, forwarded to PostHog for the session user."""
+    if request.method != 'POST':
+        return JsonResponse({'status': 'failed', 'error': 'POST only'}, status=405)
+    user_id = request.session.get('user_id')
+    if not user_id:
+        return JsonResponse({'status': 'failed', 'error': 'Not authenticated'}, status=401)
+    if not _analytics.enabled():
+        return JsonResponse({'status': 'success', 'accepted': 0})
+    try:
+        body = _json.loads(request.body or b'{}')
+    except ValueError:
+        return JsonResponse({'status': 'failed', 'error': 'Bad JSON'}, status=400)
+
+    client = body.get('client')
+    if client not in _analytics.CLIENTS:
+        client = _analytics.detect_client(request)
+    ip = get_client_ip(request)
+    now = _dt.now(_tz.utc)
+    accepted = 0
+    token = _analytics.current_client.set(client)
+    try:
+        for item in (body.get('events') or [])[:_MAX_BATCH]:
+            if not isinstance(item, dict) or item.get('event') not in _TRACK_SCHEMA:
+                continue
+            props = _clean_props(item['event'], item.get('properties') or {})
+            ts = None
+            if isinstance(item.get('ts'), (int, float)):
+                ts = _dt.fromtimestamp(item['ts'] / 1000, _tz.utc)
+                if not (now - _td(days=1) <= ts <= now + _td(minutes=5)):
+                    ts = None
+            _analytics.capture(user_id, item['event'], props, ip=ip, timestamp=ts)
+            accepted += 1
+    finally:
+        _analytics.current_client.reset(token)
+    return JsonResponse({'status': 'success', 'accepted': accepted})

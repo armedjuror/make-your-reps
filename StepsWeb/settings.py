@@ -74,6 +74,7 @@ MIDDLEWARE = [
 
     "allauth.account.middleware.AccountMiddleware",
     "main.middlewares.auth_middleware.AuthMiddleware",
+    "main.middlewares.analytics_middleware.AnalyticsClientMiddleware",
 ]
 
 ROOT_URLCONF = 'StepsWeb.urls'
@@ -262,7 +263,17 @@ CORS_ALLOW_HEADERS = [
     'cookie',
     'x-csrftoken',
     'x-requested-with',
+    'x-myr-client',
 ]
+
+# ── Product analytics (PostHog) ── all optional; unset = analytics off
+# Project API key (phc_...) and ingest host, used to send events
+POSTHOG_API_KEY = os.environ.get('POSTHOG_API_KEY', '')
+POSTHOG_HOST = os.environ.get('POSTHOG_HOST', 'https://us.i.posthog.com')
+# Personal API key with query:read, project id and app host, used by /internal/ to read them back
+POSTHOG_PERSONAL_API_KEY = os.environ.get('POSTHOG_PERSONAL_API_KEY', '')
+POSTHOG_PROJECT_ID = os.environ.get('POSTHOG_PROJECT_ID', '')
+POSTHOG_APP_HOST = os.environ.get('POSTHOG_APP_HOST', 'https://us.posthog.com')
 
 SESSION_COOKIE_SAMESITE = 'None'
 SESSION_COOKIE_SECURE = True

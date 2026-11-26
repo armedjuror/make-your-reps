@@ -32,6 +32,7 @@ function switchPane(pane) {
     if (activeBottomItem) activeBottomItem.classList.add('active');
 
     currentPane = pane;
+    if (typeof Analytics !== 'undefined') Analytics.pane(pane);
 
     // Refresh footer bar pomodoro visibility on pane switch
     if (typeof Pomodoro !== 'undefined' && Pomodoro.state) Pomodoro.render();
