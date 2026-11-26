@@ -1,0 +1,224 @@
+/* ══════════════════════════════════════════════════════════════
+   Resilient days, trackers and privacy.
+   Only theme tokens from style.css are used here (--ink-*, --paper-bg,
+   --surface-raised, --accent-rgb, --radius-*), so every theme styles these
+   the same way it styles the rest of the app.
+   ══════════════════════════════════════════════════════════════ */
+
+/* Native controls (select popups, time pickers, checkboxes) follow the theme */
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) { color-scheme: dark; }
+:is([data-theme="aurora"], [data-theme="sensei"], [data-theme="garden"], [data-theme="quest"]) { color-scheme: light; }
+select.form-control option { background: var(--surface-raised, var(--paper-bg)); color: var(--ink-black); }
+
+/* ── Day chips (sit in the timeline bar, styled as .timeline-chip) ── */
+#day-bar { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin: 0; }
+#day-bar .timeline-chip i { margin-right: 4px; }
+#day-bar .timeline-chip .fa-chevron-down { font-size: .6rem; margin: 0 0 0 4px; }
+#day-bar .timeline-chip:disabled { opacity: .5; cursor: default; }
+#day-note:empty { display: none; }
+#day-note { margin: -6px 0 12px; }
+.rs-banner { font-size: .8rem; color: var(--ink-gray); margin: 0 0 4px; }
+.rs-warn { font-size: .8rem; color: var(--ink-red); margin: 0 0 4px; }
+
+/* ── Dropdown menus: reuse .search-engine-dropdown / .search-engine-option ── */
+.rs-menu.search-engine-dropdown { position: absolute; top: auto; right: auto; z-index: 1060; min-width: 230px; }
+.rs-menu-head { padding: 8px 14px 2px; font-size: .68rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-brown); opacity: .7; }
+.rs-menu .search-engine-option { width: 100%; border: 0; background: none; text-align: left; font: inherit; font-size: .88rem; padding: 8px 14px; }
+.rs-menu .search-engine-option small { color: var(--ink-gray); margin-left: auto; }
+
+/* ── Timeline block states ── */
+.tl-st-done .timeline-event-text, .tl-st-skipped .timeline-event-text, .tl-st-dropped .timeline-event-text { opacity: .55; }
+.tl-st-dropped .timeline-event-text { text-decoration: line-through; }
+.tl-st-missed .timeline-event-text { color: var(--ink-red); }
+.rs-note { font-size: .72rem; color: var(--ink-gray); margin-left: 6px; }
+.rs-link { background: none; border: 0; padding: 0 4px; font: inherit; font-size: .75rem; color: var(--ink-brown); text-decoration: underline; cursor: pointer; }
+.rs-link:hover { color: var(--ink-black); }
+.rs-steps { margin: 6px 0; }
+.rs-steps .form-check { margin: 2px 0; }
+
+/* ── Dialogs (real Bootstrap modals, so .modal-content from style.css applies) ── */
+.rs-modal .modal-body { padding: 24px 30px; }
+.rs-modal .modal-dialog { max-width: 560px; }
+.rs-modal .form-label { font-size: .85rem; margin: 10px 0 2px; color: var(--ink-brown); }
+.rs-modal .form-label:first-child { margin-top: 0; }
+.rs-modal .form-text { color: var(--ink-gray); font-size: .78rem; }
+.rs-modal textarea.form-control { resize: vertical; }
+.rs-err { color: var(--ink-red); font-size: .82rem; min-height: 1.2em; margin-top: 8px; }
+.rs-pick { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 6px; }
+.rs-scroll { max-height: 140px; overflow: auto; padding-right: 4px; }
+
+/* ── Trackers grid ── */
+.tracker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: 16px; }
+.tracker-card {
+    border: 1px solid rgba(var(--accent-rgb), .45); border-radius: var(--radius-md, 10px);
+    padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; color: var(--ink-black);
+}
+.tracker-card.tr-over { border-color: var(--ink-red); }
+.tracker-card.tr-met { border-color: var(--ink-green); }
+.tracker-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.tracker-head h5 { margin: 0; font-size: 1rem; font-weight: 700; color: var(--ink-brown); }
+.tracker-value { font-size: 1.5rem; font-weight: 700; line-height: 1.1; }
+.tracker-value small { font-size: .8rem; font-weight: 400; color: var(--ink-gray); }
+.tracker-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tracker-meta { font-size: .75rem; color: var(--ink-gray); }
+.tracker-chart { position: relative; height: 140px; }
+.tracker-empty { color: var(--ink-gray); font-size: .9rem; padding: 8px 0; }
+
+/* ── Lock button ── */
+/* Above the page's fades and the footer pill, below Bootstrap modals (1050) */
+#rs-lock-icon { position: fixed; right: 14px; bottom: 14px; z-index: 1045; width: 36px; height: 36px; padding: 0; border-radius: 50%;
+    background: var(--surface-raised, var(--paper-bg)); }
+
+/* ── Settings: weekend picker reuses .freq-day-btn ── */
+#rs-settings .freq-days { display: flex; flex-wrap: wrap; gap: 6px; }
+#rs-settings .freq-day-btn { padding: 4px 10px; }
+
+/* ── Timeline rows: actions sit on the same line as the text, at its right end ── */
+.tl-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
+.tl-line .timeline-actions { margin: 0 0 0 auto; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tl-line .timeline-actions .ms-1 { margin-left: 0 !important; }
+.tl-line .tl-resched { flex-basis: 100%; order: 2; }
+.tl-line .timeline-event-text { flex: 1 1 200px; min-width: 0; }
+
+/* In progress is highlighted (it reuses .timeline-next, so every theme's styling applies);
+   the item after it is shown in bold */
+.timeline-upnext .timeline-event-text { font-weight: 700; }
+.timeline-upnext .timeline-label { opacity: .75; }
+
+/* Tier tag in the routine list (Habits pane) */
+.rs-tier { font-size: .65rem; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-gray); margin-left: 6px; }
+
+/* App-wide fixes found while theming:
+   1. style.css gives placeholders the same colour as typed text, so hints read like values.
+   2. The modal close icon is a dark glyph, invisible on dark themes. */
+.form-control::placeholder { color: var(--ink-gray); opacity: .75; }
+:is([data-theme="dark"], [data-theme="ink"], [data-theme="terminal"], [data-theme="tech"], [data-theme="coach"], [data-theme="orbit"]) .btn-close {
+    filter: invert(1) sepia(100%) hue-rotate(5deg) saturate(150%);
+}
+
+/* ── Conversational forms (extends .conversational-form / .form-input from the app) ── */
+.rs-lead { color: var(--ink-black); margin-bottom: 12px; line-height: 1.5; min-height: 1.5em; }
+.conversational-form .form-input, .paragraph-form .form-input { min-width: 4ch; max-width: 100%; }
+.conversational-form .convo-line[hidden] { display: none; }
+.conversational-form .convo-line.rs-new { animation: fadeSlideIn .3s ease; }
+.conversational-form select.form-input { min-width: 0; width: auto; cursor: pointer; padding-right: 4px; }
+select.form-input option { background: var(--surface-raised, var(--paper-bg)); color: var(--ink-black); }
+.conversational-form .form-input[type="date"], .conversational-form .form-input[type="time"], .conversational-form .form-input[type="datetime-local"] { min-width: 0; }
+.conversational-form .freq-days { vertical-align: middle; }
+.conversational-form .form-check { padding-left: 1.8em; }
+.rs-howto { font-size: .8rem; color: var(--ink-gray); line-height: 1.4; }
+#rs-habit-options h6, #rs-habit-options + * h6 { color: var(--ink-black); }
+
+/* Habit settings sections */
+.rs-habit-section { margin-top: 18px; }
+.rs-habit-section h6 { color: var(--ink-black); }
+#rs-habit-sections { margin-top: 8px; }
+
+/* Journal pane: tracker notes under the day's journal */
+.tracker-note-group { margin-bottom: 12px; }
+.tracker-note-group h6 { color: var(--ink-brown); font-weight: 700; margin-bottom: 4px; }
+.tracker-note { color: var(--ink-black); line-height: 1.6; }
+.tracker-note-time { color: var(--ink-gray); font-size: .8rem; margin-right: 6px; }
+.tracker-note-meta { color: var(--ink-gray); font-size: .8rem; margin-left: 6px; }
+
+/* Tracker questions builder */
+[data-questions] .rs-q { padding: 2px 0; }
+[data-questions] .rs-q [hidden] { display: none; }
+
+/* Private mode notice in the footer bar (replaces the copyright while on) */
+#footer-bar.rs-private #footer-copyright { display: none !important; }
+#footer-bar.rs-private { align-items: center; gap: 10px; }
+#footer-private { display: inline-flex; align-items: center; gap: 6px; background: none; border: 0; padding: 0;
+    font: inherit; color: var(--ink-brown); cursor: pointer; white-space: nowrap; }
+/* With the focus timer showing too, the notice shrinks to a lock icon beside it */
+#footer-bar.rs-private:has(#footer-pomodoro:not([style*="none"])) #footer-private .rs-fp-text { display: none; }
+#footer-bar.rs-private:has(#footer-pomodoro:not([style*="none"])) #footer-private {
+    padding-right: 10px; border-right: 1px solid rgba(var(--accent-rgb), .35); }
+#footer-private:hover { text-decoration: underline; }
+#footer-private[hidden] { display: none; }
+
+/* Timeline: one fixed-width time column so every icon lines up. A 12-hour range
+   wraps after the dash rather than pushing the icon right. */
+.timeline-item .timeline-time, .timeline-now .timeline-time {
+    flex: 0 0 6.6rem; width: 6.6rem; min-width: 0; text-align: right; line-height: 1.35; white-space: normal;
+}
+.timeline-item .timeline-icon { flex-shrink: 0; }
+
+/* First-run setup */
+.rs-setup-page .rs-pick { margin: 6px 0 14px; gap: 8px; }
+.rs-setup-page .rs-pick .freq-day-btn { padding: 5px 12px; font-size: .85rem; }
+.rs-setup-dots { display: inline-flex; gap: 6px; margin-right: 6px; }
+.rs-setup-dots .ob-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(var(--accent-rgb), .3); display: inline-block; }
+.rs-setup-dots .ob-dot.active { background: var(--ink-brown); }
+
+/* Guided tour */
+.rs-tour-ring { position: fixed; z-index: 2050; border-radius: var(--radius-md, 10px); pointer-events: none;
+    box-shadow: 0 0 0 3px var(--ink-brown), 0 0 0 9999px rgba(0, 0, 0, .45); transition: all .25s ease; }
+.rs-tour.search-engine-dropdown { position: fixed; z-index: 2060; right: auto; margin: 0; padding: 14px 16px; overflow: visible; }
+.rs-tour-head { font-weight: 700; color: var(--ink-brown); margin-bottom: 4px; }
+.rs-tour-text { color: var(--ink-black); font-size: .9rem; line-height: 1.5; }
+.rs-tour-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
+.rs-tour-count { font-size: .75rem; color: var(--ink-gray); }
+
+/* Greeting keeps its height before the first words are painted (no layout jump) */
+#greeting-text:empty::before { content: '\00a0'; }
+
+/* Row content fills the line (the extension's dashboard.css has this rule commented
+   out), so actions sit at the right end and the highlighted card spans the row. */
+.timeline-item .timeline-content { flex: 1 1 auto; min-width: 0; }
+
+
+/* ── Phones and tablets ── */
+@media (max-width: 1200px) {
+    /* Day chips centred under the date */
+    #day-bar { justify-content: center; }
+    .timeline-bar { justify-content: center; }
+    /* Bookmarks on Today are for opening; adding and editing live on the Reading list page */
+    .bookmark-strip .rl-edit-btn, .bookmark-strip .reading-list-add-btn { display: none !important; }
+    /* Clear the bottom tab bar */
+    #rs-lock-icon { bottom: 72px; }
+    /* Trackers use the full width (the pane was capped at 80% with 40px section margins) */
+    #pane-trackers > .container-fluid { max-width: 100%; padding-left: 4px; padding-right: 14px; }
+    #pane-trackers .section { margin-left: 0; margin-right: 0; }
+}
+@media (max-width: 600px) {
+    /* A tighter time column (a range wraps after the dash), icon and gaps leave the
+       width to the text */
+    .timeline-item .timeline-time, .timeline-now .timeline-time { flex-basis: 2.9rem; width: 2.9rem; font-size: .66rem; letter-spacing: -.01em; }
+    .timeline-item, .timeline-now { gap: 6px; padding-left: 0; padding-right: 0; }
+    .timeline-item .timeline-icon { width: 20px; height: 20px; font-size: .62rem; }
+    .timeline-now .timeline-now-dot { margin: 0 3px; }
+    .timeline-next .timeline-content, .timeline-current .timeline-content { padding: 8px 10px; }
+    .tl-line { gap: 4px 8px; }
+}
+
+/* Desktop: the bookmark column is fixed on the left, so tabs are padded on the left
+   to clear it. Pad the right equally so the content sits in the middle of the screen. */
+@media (min-width: 1201px) {
+    .pane { padding-right: 86px; }
+    .tab-bar { padding-right: 76px; }
+}
+
+/* Phones and tablets: each tab scrolls on its own and must end at the bottom of the
+   screen. It starts below the pill and bookmark strip (--pane-top, measured in
+   resilient.js), and its last lines clear the fixed bottom tab bar (56px). */
+@media (max-width: 1200px) {
+    .pane {
+        max-height: calc(100dvh - var(--pane-top, 168px));
+        padding-bottom: calc(56px + 32px + env(safe-area-inset-bottom, 0px));
+    }
+}
+
+/* Phones: Today uses even, slimmer side margins so the timeline sits centred */
+@media (max-width: 600px) {
+    #pane-home { padding-left: 0; padding-right: 0; }
+    #pane-home .default-pane-content { padding-left: 12px; padding-right: 12px; }
+    #pane-home .timeline-item { padding-top: 6px; padding-bottom: 6px; }
+}
+
+/* Routine Done / Skip on the timeline: icon-only, square */
+.timeline-actions .rs-icon-btn {
+    width: 30px; height: 30px; padding: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: .78rem; line-height: 1;
+}

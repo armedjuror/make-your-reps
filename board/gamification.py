@@ -24,6 +24,7 @@ POINTS = {
     'sleep':       5,
     'pomodoro':    15,
     'achievement': 50,
+    'reset':       10,
 }
 
 
@@ -89,27 +90,21 @@ def deduct_points(user_id, action, multiplier=1.0):
 
 def update_daily_streak(user_id):
     """
-    Mark user as active today and update streak.
+    Mark user as active today and refresh the streak.
     Call on any meaningful action.
+
+    The streak is no longer a counter bumped by actions: it is computed from the
+    closed-day summaries (board.streaks), so idle days and freezes are handled
+    in one place. This call records activity and refreshes the cached value.
     """
     from board.models import UserDetail
+    from board.streaks import refresh_streak
     today = timezone.localdate()
     user_detail, _ = UserDetail.objects.get_or_create(user_id=user_id)
-
-    last = user_detail.last_active_date
-    if last == today:
-        return  # already counted today
-
-    if last == today - timedelta(days=1):
-        user_detail.current_streak += 1
-    else:
-        user_detail.current_streak = 1
-
-    if user_detail.current_streak > user_detail.longest_streak:
-        user_detail.longest_streak = user_detail.current_streak
-
-    user_detail.last_active_date = today
-    user_detail.save(update_fields=['current_streak', 'longest_streak', 'last_active_date'])
+    if user_detail.last_active_date != today:
+        user_detail.last_active_date = today
+        user_detail.save(update_fields=['last_active_date'])
+    refresh_streak(user_id)
 
 
 def _unlock(user_id, key):
@@ -160,16 +155,23 @@ def check_and_award_achievements(user_id):
             new.append(result)
 
     # ── Habits ──
-    done_habits = HabitLog.objects.filter(habit__user_id=user_id, is_done=True)
+    done_habits = HabitLog.objects.filter(habit__user_id=user_id, habit__is_system=False, is_done=True)
     if done_habits.exists():
         unlock('first_habit_done')
 
-    active_habits = Habit.objects.filter(user_id=user_id, status=HabitStatus.ACTIVE.value)
-    if active_habits.count() >= 5:
+    # Private and system habits never feed achievements: an unlock toast would hint at them.
+    active_habits = list(
+        Habit.objects.filter(user_id=user_id, status=HabitStatus.ACTIVE.value,
+                             is_private=False, is_system=False).prefetch_related('habitlog_set')
+    )
+    if len(active_habits) >= 5:
         unlock('five_habits')
 
-    # Per-habit streaks
+    # Per-habit streaks (one shared context, logs prefetched)
+    from board.streaks import StreakContext
+    streak_ctx = StreakContext(user_id)
     for habit in active_habits:
+        habit._streak_ctx = streak_ctx
         streak = habit.current_streak
         if streak >= 7:
             unlock('streak_7')
@@ -179,7 +181,7 @@ def check_and_award_achievements(user_id):
             unlock('streak_100')
 
     # Clean sweep: all habits done for each of last 7 days
-    if active_habits.exists():
+    if active_habits:
         all_sweep = True
         for i in range(7):
             check_date = today - timedelta(days=i)

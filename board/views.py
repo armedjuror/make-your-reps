@@ -2,6 +2,8 @@ import logging
 import os
 from datetime import datetime, time, timedelta
 
+from django.views.decorators.cache import never_cache
+
 from django.contrib.auth.models import User
 from django.db.models import Count, F, Prefetch, Q
 from django.shortcuts import render, redirect
@@ -16,7 +18,7 @@ from board.models import (
     RoutineEntry, ReadingListItem, TimelineEvent, TimelineEventType, SearchEngine,
     AccountabilityPartner, AccountabilityPartnerStatus,
     Friend, FriendRequest, FriendRequestStatus,
-    Achievement, UserAchievement, Feedback,
+    Achievement, UserAchievement, Feedback, Metric,
 )
 from board.serializers import (
     TaskSerializer, TaskGroupSerializer, DailyDataSerializer, UserDetailSerializer, HabitSerializer,
@@ -30,6 +32,11 @@ from main.utils import NoDestroyViewSet, AuthenticatedModelViewSet
 from board.tasks import generate_timeline_for_new_item
 from board.gamification import award_points, deduct_points, update_daily_streak
 from board.models import GoogleCalendarToken, LinkedCalendar
+from board import privacy
+from board.days import (
+    block_event, checkin_event, day_payload, get_detail, logical_today, needs_checkin, resolve_day,
+)
+from board.streaks import StreakContext, refresh_streak
 
 
 # ──────────────────────────────────────
@@ -61,6 +68,23 @@ def _accept_friend_request(freq):
     )
 
 
+def _move_partner_checks(habit):
+    """The habit's reminder moved: move partners' unanswered check cards from today on."""
+    ap_ids = list(AccountabilityPartner.objects.filter(habit=habit).values_list('id', flat=True))
+    if not ap_ids:
+        return
+    events = TimelineEvent.objects.filter(
+        event_type=TimelineEventType.ACCOUNTABILITY_HABIT, reference__model='AccountabilityPartner',
+        reference__id__in=ap_ids, reference__type='monitor', action_response__isnull=True,
+        timestamp__date__gte=timezone.localdate(),
+    )
+    at = partner_check_time(habit)
+    for ev in events:
+        local = timezone.localtime(ev.timestamp)
+        ev.timestamp = timezone.make_aware(datetime.combine(local.date(), at))
+        ev.save(update_fields=['timestamp'])
+
+
 def _clear_partner_habit_events(habit_id):
     """Remove every partner-facing timeline entry tied to this habit (monitor/done/etc)."""
     ap_ids = list(AccountabilityPartner.objects.filter(habit_id=habit_id).values_list('id', flat=True))
@@ -73,12 +97,19 @@ def _clear_partner_habit_events(habit_id):
     ).delete()
 
 
+def partner_check_time(habit):
+    """The partner's check card shows 10 minutes after the habit's own reminder (08:00 if it has none)."""
+    if not habit.notify_at:
+        return time(8, 0)
+    return (datetime.combine(datetime(2000, 1, 1), habit.notify_at) + timedelta(minutes=10)).time()
+
+
 def _create_partner_habit_entry(ap, target_date):
     """Create the daily monitoring timeline entry for an accountability partner."""
     if not ap.partner or ap.habit.status != HabitStatus.ACTIVE.value:
         return
     owner_name = ap.habit.user.get_full_name() or ap.habit.user.username
-    timestamp = timezone.make_aware(datetime.combine(target_date, time(8, 0)))
+    timestamp = timezone.make_aware(datetime.combine(target_date, partner_check_time(ap.habit)))
     exists = TimelineEvent.objects.filter(
         user=ap.partner,
         event_type=TimelineEventType.ACCOUNTABILITY_HABIT,
@@ -207,8 +238,9 @@ def _send_friend_request_email(to_email, from_name, token, site_url):
 # Page Views
 # ──────────────────────────────────────
 
+@never_cache
 def dashboard(request):
-    """Single unified dashboard view serving all panes."""
+    """Single unified dashboard view serving all panes. Never cached, so it always matches the current JS."""
     if request.user.is_authenticated:
         return render(request, 'board/dashboard.html')
     else:
@@ -239,6 +271,7 @@ class UserDetailView(APIView):
                 **UserDetailSerializer(user_detail).data,
                 'first_name': user_detail.user.first_name,
                 'last_name': user_detail.user.last_name,
+                'email': user_detail.user.email,
             }
         })
 
@@ -257,6 +290,12 @@ class UserDetailView(APIView):
         if name_fields:
             User.objects.filter(pk=user_id).update(**name_fields)
 
+        slip_metric = request.data.get('slip_metric')
+        if slip_metric and not Metric.objects.filter(pk=slip_metric, user_id=user_id).exists():
+            return Response({'status': 'failed', 'error': 'Metric not found'}, status=status.HTTP_404_NOT_FOUND)
+        journal_habit = request.data.get('journal_habit')
+        if journal_habit and not Habit.objects.filter(pk=journal_habit, user_id=user_id, is_system=False).exists():
+            return Response({'status': 'failed', 'error': 'Habit not found'}, status=status.HTTP_404_NOT_FOUND)
         serializer = UserDetailSerializer(user_detail, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -433,7 +472,7 @@ class TaskViewSet(AuthenticatedModelViewSet):
 
     def update(self, request, **kwargs):
         task_id = kwargs.get('pk')
-        task = self.get_queryset().get(pk=task_id)
+        task = self.get_queryset().get(pk=task_id, user_id=request.session.get('user_id'))
         deadline_changing = 'deadline' in request.data and request.data['deadline'] != (
             task.deadline.isoformat() if task.deadline else None
         )
@@ -470,7 +509,7 @@ class TaskViewSet(AuthenticatedModelViewSet):
 
     def destroy(self, request, **kwargs):
         task_id = kwargs.get('pk')
-        task = self.get_queryset().get(pk=task_id)
+        task = self.get_queryset().get(pk=task_id, user_id=request.session.get('user_id'))
         task.is_deleted = True
         task.save()
         TimelineEvent.objects.filter(
@@ -561,6 +600,12 @@ class DailyDataViewSet(NoDestroyViewSet):
             gamification_result = {}
             now_journal = bool(serializer.data.get('journal', ''))
             now_sleep = serializer.data.get('sleep_hours') is not None
+            from board import metrics as mx
+            if 'sleep_hours' in request.data:
+                mx.sync_sleep(uid, target_date, obj.sleep_hours)
+            if 'journal' in request.data:
+                mx.sync_default_journal(uid, target_date, serializer.data.get('journal'))
+                mx.sync_journal_habit(uid, target_date, serializer.data.get('journal'))
             if not had_journal and now_journal:
                 update_daily_streak(uid)
                 gamification_result = award_points(uid, 'journal')
@@ -610,13 +655,27 @@ class HabitViewSet(AuthenticatedModelViewSet):
     serializer_class = HabitSerializer
 
     def get_queryset(self):
-        return Habit.objects.exclude(status=HabitStatus.DELETED.value)
+        # Always scoped to the caller. Private habits are absent while locked;
+        # the hidden system habit (Reset) is never listed or edited here.
+        request = getattr(self, 'request', None)
+        user_id = request.session.get('user_id') if request else None
+        qs = Habit.objects.exclude(status=HabitStatus.DELETED.value).filter(
+            user_id=user_id, is_system=False)
+        if request is not None and not privacy.include_private(request):
+            qs = qs.filter(is_private=False)
+        return qs
+
+    def get_serializer_context(self):
+        ctx = super().get_serializer_context()
+        ctx['user_id'] = self.request.session.get('user_id')
+        return ctx
 
     def list(self, request, **kwargs):
         user_id = request.session.get('user_id')
         habit_status = request.GET.get('status', 'active')
         now = timezone.localdate()
         start_date = now - timezone.timedelta(days=60)
+        streak_ctx = StreakContext(user_id)
         queryset = self.get_queryset().filter(
             user_id=user_id, status=habit_status
         ).annotate(
@@ -626,24 +685,40 @@ class HabitViewSet(AuthenticatedModelViewSet):
                 'habitlog_set',
                 queryset=HabitLog.objects.filter(date__gte=start_date, date__lte=now).order_by('date'),
                 to_attr='recent_logs_prefetched',
-            )
+            ),
+            'habitlog_set',   # full history, one query, for the streak walk
+            'steps',
         ).order_by('notify_at', 'created_at')
+        queryset = list(queryset)
+        for h in queryset:
+            h._streak_ctx = streak_ctx
         data = self.get_serializer(queryset, many=True).data
         return Response({
             'status': 'success',
             'data': data
         })
 
+    def _check_metric(self, request, user_id):
+        """A linked metric must belong to the caller. Returns an error Response or None."""
+        mid = request.data.get('metric')
+        if mid and not Metric.objects.filter(pk=mid, user_id=user_id).exists():
+            return Response({'status': 'failed', 'error': 'Metric not found'}, status=status.HTTP_404_NOT_FOUND)
+        return None
+
     def create(self, request, **kwargs):
         user_id = request.session.get('user_id')
+        bad = self._check_metric(request, user_id)
+        if bad:
+            return bad
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             habit = serializer.save(user_id=user_id)
             generate_timeline_for_new_item.delay('habit', serializer.data['id'])
             try:
-                from board.calendar_views import push_habit_to_calendar
-                from django.contrib.auth.models import User
-                push_habit_to_calendar(User.objects.get(id=user_id), habit)
+                if not habit.is_private:   # private habits never reach Calendar sync
+                    from board.calendar_views import push_habit_to_calendar
+                    from django.contrib.auth.models import User
+                    push_habit_to_calendar(User.objects.get(id=user_id), habit)
             except Exception:
                 pass
             return Response({
@@ -658,6 +733,9 @@ class HabitViewSet(AuthenticatedModelViewSet):
     def update(self, request, **kwargs):
         try:
             pk = int(kwargs['pk'])
+            bad = self._check_metric(request, request.session.get('user_id'))
+            if bad:
+                return bad
             habit = self.get_queryset().get(pk=pk)
             before = (habit.notify_at, list(habit.frequency or []), habit.status)
             serializer = self.serializer_class(habit, data=request.data, partial=True)
@@ -666,6 +744,12 @@ class HabitViewSet(AuthenticatedModelViewSet):
                 habit.refresh_from_db()
                 if before != (habit.notify_at, list(habit.frequency or []), habit.status):
                     self._resync_today_event(habit)
+                if before[0] != habit.notify_at:
+                    _move_partner_checks(habit)
+                if habit.is_private:
+                    # Going private ends any sharing: partners never see private habits.
+                    AccountabilityPartner.objects.filter(habit=habit).delete()
+                    _clear_partner_habit_events(habit.id)
                 if habit.status != HabitStatus.ACTIVE.value:
                     _clear_partner_habit_events(habit.id)
                 return Response({
@@ -704,7 +788,10 @@ class HabitViewSet(AuthenticatedModelViewSet):
 
     def destroy(self, request, **kwargs):
         habit_id = int(kwargs['pk'])
-        habit = self.get_queryset().get(pk=habit_id)
+        try:
+            habit = self.get_queryset().get(pk=habit_id)
+        except Habit.DoesNotExist:
+            return Response({'status': 'failed', 'error': 'Habit not found'}, status=status.HTTP_404_NOT_FOUND)
         habit.status = HabitStatus.DELETED.value
         habit.save()
         TimelineEvent.objects.filter(
@@ -723,6 +810,8 @@ class HabitViewSet(AuthenticatedModelViewSet):
         start_date = request.GET.get('start_date')
         end_date = request.GET.get('end_date')
         habit_id = int(kwargs['pk'])
+        if not self.get_queryset().filter(pk=habit_id).exists():
+            return Response({'status': 'failed', 'error': 'Habit not found'}, status=status.HTTP_404_NOT_FOUND)
         dataset = HabitLog.objects.filter(habit__id=habit_id)
         if start_date:
             dataset = dataset.filter(date__gte=start_date)
@@ -747,7 +836,7 @@ class HabitViewSet(AuthenticatedModelViewSet):
 
         try:
             parsed_date = datetime.strptime(toggle_date, '%Y-%m-%d').date()
-            if parsed_date > timezone.localdate():
+            if parsed_date > logical_today(request.session.get('user_id')):
                 return Response({'status': 'failed', 'error': 'This date is in future'},
                                 status=status.HTTP_400_BAD_REQUEST)
             if parsed_date < habit.created_at.replace(tzinfo=None).date():
@@ -767,7 +856,7 @@ class HabitViewSet(AuthenticatedModelViewSet):
         # Gamification
         user_id = request.session.get('user_id')
         gamification_result = {}
-        if parsed_date == timezone.localdate():
+        if parsed_date == logical_today(user_id):
             if not was_done and habit_log.is_done:
                 update_daily_streak(user_id)
                 gamification_result = award_points(user_id, 'habit')
@@ -827,7 +916,9 @@ class RoutineEntryViewSet(AuthenticatedModelViewSet):
     serializer_class = RoutineEntrySerializer
 
     def get_queryset(self):
-        return RoutineEntry.objects.all()
+        # Scoped to the caller so update/destroy by pk cannot touch another user's routine.
+        request = getattr(self, 'request', None)
+        return RoutineEntry.objects.filter(user_id=request.session.get('user_id') if request else None)
 
     def list(self, request, **kwargs):
         user_id = request.session.get('user_id')
@@ -854,7 +945,11 @@ class RoutineEntryViewSet(AuthenticatedModelViewSet):
 
     def update(self, request, **kwargs):
         pk = int(kwargs['pk'])
-        entry = self.get_queryset().get(pk=pk)
+        try:
+            entry = self.get_queryset().get(pk=pk)
+        except RoutineEntry.DoesNotExist:
+            return Response({'status': 'failed', 'error': 'Routine entry not found'},
+                            status=status.HTTP_404_NOT_FOUND)
         serializer = self.get_serializer(entry, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -869,41 +964,66 @@ class RoutineEntryViewSet(AuthenticatedModelViewSet):
 
     def destroy(self, request, **kwargs):
         pk = int(kwargs['pk'])
-        self.get_queryset().get(pk=pk).delete()
+        deleted, _ = self.get_queryset().filter(pk=pk).delete()
+        if not deleted:
+            return Response({'status': 'failed', 'error': 'Routine entry not found'},
+                            status=status.HTTP_404_NOT_FOUND)
         return Response({'status': 'success', 'message': 'Routine entry deleted'})
 
     @action(detail=False, methods=['post'])
     def bulk_create(self, request, **kwargs):
-        """Create multiple routine entries at once (for routine editing)."""
+        """
+        Save the whole routine for one type as an upsert, so entry ids (and the
+        logs keyed to them) survive an edit. Rows with an ``id`` are updated,
+        rows without one are created, and only rows missing from the payload
+        are deleted. An empty list clears the routine.
+        """
         user_id = request.session.get('user_id')
         routine_type = request.data.get('routine_type')
-        entries = request.data.get('entries', [])
+        entries = request.data.get('entries')
 
-        if not routine_type or not entries:
+        if not routine_type or not isinstance(entries, list):
             return Response({
                 'status': 'failed',
                 'error': 'routine_type and entries are required'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        # Delete existing entries for this type
-        RoutineEntry.objects.filter(
-            user_id=user_id, routine_type=routine_type
-        ).delete()
-
-        # Routine events are no longer stored in the DB — no timeline cleanup needed.
-
-        created = []
+        existing = {e.id: e for e in RoutineEntry.objects.filter(user_id=user_id, routine_type=routine_type)}
+        validated = []
         for entry_data in entries:
+            entry_data = dict(entry_data)
+            entry_id = entry_data.pop('id', None)
             entry_data['routine_type'] = routine_type
-            serializer = self.get_serializer(data=entry_data)
-            if serializer.is_valid():
-                serializer.save(user_id=user_id)
-                created.append(serializer.data)
+            instance = None
+            if entry_id is not None:
+                instance = existing.get(int(entry_id))
+                if instance is None:
+                    return Response({'status': 'failed', 'error': f'Routine entry {entry_id} not found'},
+                                    status=status.HTTP_404_NOT_FOUND)
+            serializer = self.get_serializer(instance, data=entry_data, partial=instance is not None)
+            if not serializer.is_valid():
+                return Response({'status': 'failed', 'error': serializer.errors},
+                                status=status.HTTP_400_BAD_REQUEST)
+            validated.append((instance, serializer))
+
+        from django.db import IntegrityError, transaction
+        keep = {inst.id for inst, _ in validated if inst is not None}
+        saved = []
+        try:
+            with transaction.atomic():
+                RoutineEntry.objects.filter(user_id=user_id, routine_type=routine_type) \
+                    .exclude(id__in=keep).delete()
+                for instance, serializer in validated:
+                    serializer.save(user_id=user_id) if instance is None else serializer.save()
+                    saved.append(serializer.data)
+        except IntegrityError:
+            return Response({'status': 'failed', 'error': 'Two entries share the same time and title'},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         return Response({
             'status': 'success',
-            'data': created,
-            'message': f'{len(created)} routine entries created'
+            'data': saved,
+            'message': f'{len(saved)} routine entries saved'
         }, status=status.HTTP_201_CREATED)
 
 
@@ -1013,6 +1133,18 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
             event_type=TimelineEventType.ROUTINE
         )
 
+        # Private habits: absent while locked (or a bare 'Reminder' when the habit opts in).
+        masked_habit_ids = []
+        if not privacy.include_private(request):
+            hidden = Habit.objects.filter(user_id=user_id, is_private=True)
+            masked_habit_ids = list(hidden.filter(private_reminder=True).values_list('id', flat=True))
+            hidden_ids = list(hidden.values_list('id', flat=True))
+            if hidden_ids:
+                queryset = queryset.exclude(
+                    event_type=TimelineEventType.HABIT,
+                    reference__model='Habit', reference__id__in=hidden_ids,
+                )
+
         # Hide partner-monitoring entries whose habit is no longer active (deleted/archived),
         # including rows created before habits started cleaning these up.
         inactive_ap_ids = list(
@@ -1052,39 +1184,72 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
 
         queryset = queryset.order_by('-timestamp')[:limit]
         data = list(self.get_serializer(queryset, many=True).data)
+        day_info = None
 
-        # Inject routine events for the requested date (app-layer computation)
-        if parsed_date:
-            weekday = parsed_date.weekday()
-            routine_type = 'holiday' if weekday in (5, 6) else 'workday'
-            entries = RoutineEntry.objects.filter(user_id=user_id, routine_type=routine_type)
-            for entry in entries:
-                ts = timezone.make_aware(datetime.combine(parsed_date, entry.time))
+        # Answered habit reminders for a masked private habit show as a bare 'Reminder'
+        if masked_habit_ids:
+            masked_events = self.get_queryset().filter(
+                user_id=user_id, event_type=TimelineEventType.HABIT, action_response__isnull=True,
+                reference__model='Habit', reference__id__in=masked_habit_ids,
+            )
+            if parsed_date:
+                masked_events = masked_events.filter(timestamp__date=parsed_date)
+            for ev in masked_events:
                 data.append({
-                    'id': f'routine-{entry.id}',
-                    'timestamp': ts.isoformat(),
-                    'event_type': TimelineEventType.ROUTINE,
-                    'event': entry.title,
-                    'reference': {'model': 'RoutineEntry', 'id': entry.id},
-                    'action': None,
-                    'action_response': None,
-                    'created_at': ts.isoformat(),
-                    'updated_at': ts.isoformat(),
+                    'id': f'reminder-{ev.id}', 'timestamp': ev.timestamp.isoformat(),
+                    'event_type': TimelineEventType.TEXT, 'event': 'Reminder',
+                    'reference': None, 'action': None, 'action_response': None,
+                    'created_at': ev.timestamp.isoformat(), 'updated_at': ev.timestamp.isoformat(),
                 })
 
-            # Inject sleep tracker reminder at 7:00 AM
-            sleep_track_ts = timezone.make_aware(datetime.combine(parsed_date, time(7, 0)))
-            data.append({
-                'id': f'sleep-tracker-{parsed_date}',
-                'timestamp': sleep_track_ts.isoformat(),
-                'event_type': TimelineEventType.SLEEP_TRACKER,
-                'event': "Good morning! How many hours did you sleep last night?",
-                'reference': None,
-                'action': {'log_sleep': [True, False]},
-                'action_response': None,
-                'created_at': sleep_track_ts.isoformat(),
-                'updated_at': sleep_track_ts.isoformat(),
-            })
+        # Inject routine events for the requested date (app-layer computation).
+        # The template and mode come from one resolver, never from the weekday here.
+        if parsed_date:
+            detail = get_detail(user_id)
+            resolved = resolve_day(user_id, parsed_date, detail=detail)
+            day_info = day_payload(resolved)
+            for block in resolved['blocks']:
+                if not block['orphan']:
+                    data.append(block_event(block, parsed_date))
+
+            today = logical_today(user_id, detail=detail)
+            if parsed_date == today:
+                if needs_checkin(resolved['plan']):
+                    data.append(checkin_event(resolved, parsed_date))
+                from board.day_views import freeze_event, reset_event, reset_state
+                state = reset_state(user_id, resolved)
+                if state:
+                    data.append(reset_event(user_id, parsed_date, state))
+                freeze = freeze_event(user_id, today)
+                if freeze:
+                    data.append(freeze)
+
+            # Tracker reminders: one card per tracker with a reminder time (Sleep has its own below)
+            from board.day_views import hidden_ids as _hidden_ids
+            from board import metrics as _mx
+            _, hidden_metrics = _hidden_ids(request, user_id)
+            _mx.ensure_sleep_metric(user_id)
+            for m in (Metric.objects.filter(user_id=user_id).exclude(id__in=hidden_metrics)
+                      .filter(Q(remind_at__isnull=False) | Q(system_key='sleep'))):
+                m_time = _mx.reminder_time(m, detail)
+                if m_time is None:
+                    continue
+                m_ts = timezone.make_aware(datetime.combine(parsed_date, m_time))
+                logged = _mx.day_value(m, parsed_date) > 0
+                data.append({
+                    'id': f'metric-{m.id}-{parsed_date}',
+                    'timestamp': m_ts.isoformat(),
+                    'event_type': TimelineEventType.SLEEP_TRACKER if m.system_key == 'sleep' else TimelineEventType.TEXT,
+                    'event': 'Good morning! How did you sleep last night?' if m.system_key == 'sleep' else f'Log {m.name}',
+                    'reference': {'model': 'Metric', 'id': m.id},
+                    'action': None if logged else {'metric': ['log']},
+                    'action_response': {'metric': 'logged'} if logged else None,
+                    'created_at': m_ts.isoformat(), 'updated_at': m_ts.isoformat(),
+                })
+
+            # Journal card is done once the day has a journal entry
+            _dd = DailyData.objects.filter(user_id=user_id, date=parsed_date).first()
+            _journaled = bool(_dd and (_dd.journal or '').strip())
 
             # Inject system reminders computed from user settings
             user_detail = UserDetail.objects.filter(user_id=user_id).first()
@@ -1098,6 +1263,11 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
                 journal_ts = timezone.make_aware(datetime.combine(parsed_date, time(21, 0)))
                 sleep_ts = None
 
+            # The journaling habit's own reminder time wins over the default
+            _jh = user_detail.journal_habit if user_detail and user_detail.journal_habit_id else None
+            if _jh and _jh.notify_at:
+                journal_ts = timezone.make_aware(datetime.combine(parsed_date, _jh.notify_at))
+            _journaled = bool(_dd and _mx.personal_journal_text(_dd.journal))
             data.append({
                 'id': f'journal-reminder-{parsed_date}',
                 'timestamp': journal_ts.isoformat(),
@@ -1105,7 +1275,7 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
                 'event': "Time to reflect! Write a few lines in your journal.",
                 'reference': None,
                 'action': {'open_journal': [True, False]},
-                'action_response': None,
+                'action_response': {'open_journal': True} if _journaled else None,
                 'created_at': journal_ts.isoformat(),
                 'updated_at': journal_ts.isoformat(),
             })
@@ -1126,6 +1296,7 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
         return Response({
             'status': 'success',
             'data': data,
+            'day': day_info,
             'has_more': len(data) == limit,
         })
 
@@ -1197,10 +1368,10 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
         try:
             if event.event_type == TimelineEventType.HABIT and model_name == 'Habit':
                 mark_done = action_response.get('mark_done', False)
-                today = timezone.localdate()
-                habit_log, _ = HabitLog.objects.get_or_create(
-                    habit_id=model_id, date=today
-                )
+                # Log against the event's own date, not today: answering yesterday's card logs yesterday.
+                event_day = timezone.localtime(event.timestamp).date()
+                habit = Habit.objects.get(pk=model_id, user_id=user_id)
+                habit_log, _ = HabitLog.objects.get_or_create(habit=habit, date=event_day)
                 habit_log.is_done = mark_done
                 habit_log.save()
                 return {'propagated': True, 'model': 'HabitLog', 'is_done': mark_done}
@@ -1217,7 +1388,7 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
                     task.save()
                     return {'propagated': True, 'model': 'Task', 'snoozed_to': task.deadline.isoformat()}
                 mark_done = action_response.get('mark_done', False)
-                task = Task.objects.get(pk=model_id)
+                task = Task.objects.get(pk=model_id, user_id=user_id)
                 task.is_done = mark_done
                 task.save()
                 return {'propagated': True, 'model': 'Task', 'is_done': mark_done}
@@ -1507,6 +1678,10 @@ class AccountabilityPartnerViewSet(AuthenticatedModelViewSet):
         except Habit.DoesNotExist:
             return Response({'status': 'failed', 'error': 'Habit not found'}, status=404)
 
+        if habit.is_private:
+            return Response({'status': 'failed', 'error': 'Private habits cannot be shared with partners'},
+                            status=400)
+
         try:
             partner_user = User.objects.get(email=email)
         except User.DoesNotExist:
@@ -1630,7 +1805,8 @@ class AccountabilityPartnerViewSet(AuthenticatedModelViewSet):
         partner_name = partner.get_full_name() or partner.username
         TimelineEvent.objects.create(
             user=ap.habit.user,
-            timestamp=timezone.now(),
+            # Shows 15 minutes after the partner taps Remind
+            timestamp=timezone.now() + timedelta(minutes=15),
             event_type=TimelineEventType.ACCOUNTABILITY_HABIT,
             event=f"{partner_name} reminded you to: {ap.habit.habit}",
             reference={'model': 'AccountabilityPartner', 'id': ap.id, 'type': 'reminder'},
@@ -1648,7 +1824,8 @@ class GamificationView(APIView):
             return Response({'status': 'failed', 'error': 'Not authenticated'}, status=401)
 
         from board.gamification import get_level_info
-        ud, _ = UserDetail.objects.get_or_create(user_id=user_id)
+        # Closes any idle days, so a lapsed streak shows as lapsed instead of its old number.
+        ud = refresh_streak(user_id)
         level_num, level_name, threshold, next_threshold = get_level_info(ud.total_points)
         xp_in_level = ud.total_points - threshold
         xp_needed = next_threshold - threshold
@@ -1668,6 +1845,7 @@ class GamificationView(APIView):
                 'xp_needed': xp_needed,
                 'current_streak': ud.current_streak,
                 'longest_streak': ud.longest_streak,
+                'freezes': ud.freezes,
                 'achievements': serializer.data,
                 'unlocked_count': UserAchievement.objects.filter(user_id=user_id).count(),
                 'total_count': achievements.count(),
@@ -1697,13 +1875,15 @@ class FeedbackView(APIView):
         return Response({'status': 'success'})
 
 
-def _compute_productivity_score(user_id, target_date, now=None):
+def _compute_productivity_score(user_id, target_date, now=None, include_private=False):
     """Compute productivity score for a given date. Returns a dict."""
     from datetime import date as date_type
     weekday = target_date.weekday()
     is_today = target_date == timezone.localdate()
 
-    active_habits = Habit.objects.filter(user_id=user_id, status=HabitStatus.ACTIVE.value)
+    active_habits = Habit.objects.filter(user_id=user_id, status=HabitStatus.ACTIVE.value, is_system=False)
+    if not include_private:
+        active_habits = active_habits.filter(is_private=False)
     habits_due = 0
     habits_done = 0
     for habit in active_habits:
@@ -1719,7 +1899,16 @@ def _compute_productivity_score(user_id, target_date, now=None):
             habits_done += 1
 
     denominator = max(habits_due, habits_done)
-    habit_score = (habits_done / denominator * 5) if denominator > 0 else 5.0
+    habit_score = (habits_done / denominator * 4) if denominator > 0 else 4.0
+
+    # Routine: blocks done out of blocks that came due. Skipped and dropped
+    # (running late) blocks are a deliberate choice and stay out of the count;
+    # a block in progress only counts once it is done or missed.
+    from board.days import resolve_day
+    blocks = resolve_day(user_id, target_date, now=now)['blocks']
+    routine_done = sum(1 for b in blocks if b['status'] == 'done')
+    routine_due = routine_done + sum(1 for b in blocks if b['status'] == 'missed')
+    routine_score = (routine_done / routine_due * 3) if routine_due else 3.0
 
     todos_due = Task.objects.filter(user_id=user_id, is_deleted=False, deadline__date=target_date).count()
     todos_done_deadline = Task.objects.filter(user_id=user_id, is_deleted=False, deadline__date=target_date, is_done=True).count()
@@ -1727,26 +1916,63 @@ def _compute_productivity_score(user_id, target_date, now=None):
         user_id=user_id, is_deleted=False, deadline__isnull=True, is_done=True, updated_at__date=target_date
     ).count()
     total_todos_done = todos_done_deadline + todos_done_no_deadline
-    todo_score = (total_todos_done / max(todos_due, total_todos_done) * 2) if max(todos_due, total_todos_done) > 0 else 2.0
+    todo_score = (total_todos_done / max(todos_due, total_todos_done) * 1) if max(todos_due, total_todos_done) > 0 else 1.0
 
     daily_data = DailyData.objects.filter(user_id=user_id, date=target_date).first()
-    journal_score = 2.0 if (daily_data and daily_data.journal and daily_data.journal.strip()) else 0.0
-    sleep_score = 1.0 if (daily_data and daily_data.sleep_hours is not None) else 0.0
+    journal_score = 1.0 if (daily_data and daily_data.journal and daily_data.journal.strip()) else 0.0
+    sleep_logged = bool(daily_data and daily_data.sleep_hours is not None)
 
-    total = round(habit_score + todo_score + journal_score + sleep_score, 1)
+    # Trackers, one share each:
+    #   at most + limit:  counts every day, earned by default, lost once over the limit
+    #   at least + target: earned once the target is reached; counts against the day
+    #                      once its reminder has passed (or the day is over)
+    #   no target:        earned by logging; counts once its reminder has passed
+    # A tracker that hasn't come due and isn't earned stays out. Slips never count.
+    from board.metrics import day_value, effective_target, reminder_time
+    from board.models import Metric, MetricEntry
+    detail = UserDetail.objects.filter(user_id=user_id).first()
+    trackers = Metric.objects.filter(user_id=user_id, created_at__date__lte=target_date).exclude(system_key='slip')
+    if not include_private:
+        trackers = trackers.filter(is_private=False)
+    logged_ids = set(MetricEntry.objects.filter(metric__in=trackers, date=target_date)
+                     .values_list('metric_id', flat=True))
+    now_t = timezone.localtime(now).time() if (is_today and now) else None
+    trackers_due = trackers_done = 0
+    for m in trackers:
+        at = reminder_time(m, detail)
+        came_due = now_t is None or (at is not None and at <= now_t)
+        target = effective_target(m, user_id, target_date)
+        if target is not None and m.direction == 'at_most':
+            due, earned = True, day_value(m, target_date) <= target
+        elif target is not None:
+            earned = day_value(m, target_date) >= target
+            due = earned or came_due
+        else:
+            earned = m.id in logged_ids
+            due = earned or (at is not None and came_due)
+        trackers_due += due
+        trackers_done += earned and due
+    tracker_score = (trackers_done / trackers_due * 1) if trackers_due else 1.0
+
+    total = round(habit_score + routine_score + todo_score + tracker_score + journal_score, 1)
     return {
         'total': total,
         'habit': round(habit_score, 1),
+        'routine': round(routine_score, 1),
         'todo': round(todo_score, 1),
+        'tracker': round(tracker_score, 1),
         'journal': round(journal_score, 1),
-        'sleep': round(sleep_score, 1),
         'breakdown': {
             'habits_done': habits_done,
             'habits_due': habits_due,
+            'routine_done': routine_done,
+            'routine_due': routine_due,
             'todos_done': total_todos_done,
             'todos_due': todos_due,
+            'trackers_done': trackers_done,
+            'trackers_due': trackers_due,
             'journaled': bool(journal_score),
-            'sleep_logged': bool(sleep_score),
+            'sleep_logged': sleep_logged,
         }
     }
 
@@ -1769,7 +1995,8 @@ class ProductivityScoreView(APIView):
         else:
             target_date = timezone.localdate()
 
-        data = _compute_productivity_score(user_id, target_date, now=now)
+        data = _compute_productivity_score(user_id, target_date, now=now,
+                                           include_private=privacy.include_private(request))
         return Response({'status': 'success', 'data': data})
 
 
@@ -1789,7 +2016,8 @@ class ProductivityScoreHistoryView(APIView):
         history = []
         for i in range(days - 1, -1, -1):
             d = today - timedelta(days=i)
-            score = _compute_productivity_score(user_id, d, now=(now if i == 0 else None))
+            score = _compute_productivity_score(user_id, d, now=(now if i == 0 else None),
+                                                include_private=privacy.include_private(request))
             history.append({'date': d.isoformat(), 'score': score['total']})
 
         return Response({'status': 'success', 'data': history})

@@ -89,6 +89,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'board.context_processors.asset_version',
             ],
         },
     },
@@ -241,6 +242,11 @@ CELERY_BEAT_SCHEDULE = {
     'send-reengagement-emails-daily': {
         'task': 'board.tasks.send_reengagement_emails',
         'schedule': crontab(hour=9, minute=0),
+    },
+    # Closes finished days into DaySummary (streak source of truth), per user day_start
+    'close-days': {
+        'task': 'board.tasks.close_days',
+        'schedule': crontab(minute='*/15'),
     },
 }
 

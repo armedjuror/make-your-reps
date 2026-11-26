@@ -26,7 +26,11 @@ def sw_view(request):
     sw_path = os.path.join(settings.BASE_DIR, 'static', 'sw.js')
     with open(sw_path) as f:
         content = f.read()
-    return HttpResponse(content, content_type='application/javascript; charset=utf-8')
+    response = HttpResponse(content, content_type='application/javascript; charset=utf-8')
+    # Never cache the worker itself: a stale copy keeps serving stale files
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response['CDN-Cache-Control'] = 'no-store'
+    return response
 
 
 urlpatterns = [

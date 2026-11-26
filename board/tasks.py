@@ -41,6 +41,7 @@ def _generate_habit_events(user, today, weekday):
     habits = Habit.objects.filter(
         user=user,
         status=HabitStatus.ACTIVE.value,
+        is_system=False,
     )
     for habit in habits:
         # Check if today is a scheduled day
@@ -150,7 +151,9 @@ def _generate_accountability_partner_events(user, today):
 
     for ap in partnerships:
         owner_name = ap.habit.user.get_full_name() or ap.habit.user.username
-        timestamp = timezone.make_aware(datetime.combine(today, time(8, 0)))
+        # 10 minutes after the habit's own reminder (08:00 if it has none)
+        from board.views import partner_check_time
+        timestamp = timezone.make_aware(datetime.combine(today, partner_check_time(ap.habit)))
         exists = TimelineEvent.objects.filter(
             user=user,
             event_type=TimelineEventType.ACCOUNTABILITY_HABIT,
@@ -169,6 +172,26 @@ def _generate_accountability_partner_events(user, today):
                 action={'check': [True, False], 'remind': [True, False]},
             )
 
+
+
+@shared_task
+def close_days():
+    """
+    Close every user's finished day into a DaySummary. Runs every 15 minutes and
+    only acts once a user's own ``day_start`` has passed. If it did not run, the
+    next request closes the missed dates lazily, in date order.
+    """
+    from board.streaks import close_pending_days, refresh_streak
+    users = closed = 0
+    for user_id in User.objects.filter(is_active=True).values_list('id', flat=True):
+        try:
+            if close_pending_days(user_id):
+                refresh_streak(user_id)   # refresh the cached streak only when a day actually closed
+                closed += 1
+            users += 1
+        except Exception:
+            continue
+    return f"Checked {users} users, closed days for {closed}."
 
 
 @shared_task
