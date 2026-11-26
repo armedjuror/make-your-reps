@@ -1,0 +1,1965 @@
+{
+ "/board/api/day_plans/": {
+  "body": {
+   "data": [
+    {
+     "banner": null,
+     "date": "2026-11-05",
+     "is_default": true,
+     "mode": "normal",
+     "reset_done": false,
+     "shifts": [],
+     "source": "default",
+     "template": "workday",
+     "warning": null
+    },
+    {
+     "banner": null,
+     "date": "2026-11-06",
+     "is_default": true,
+     "mode": "normal",
+     "reset_done": false,
+     "shifts": [],
+     "source": "default",
+     "template": "workday",
+     "warning": null
+    },
+    {
+     "banner": null,
+     "date": "2026-11-07",
+     "is_default": true,
+     "mode": "normal",
+     "reset_done": false,
+     "shifts": [],
+     "source": "default",
+     "template": "holiday",
+     "warning": null
+    },
+    {
+     "banner": null,
+     "date": "2026-11-08",
+     "is_default": true,
+     "mode": "normal",
+     "reset_done": false,
+     "shifts": [],
+     "source": "default",
+     "template": "holiday",
+     "warning": null
+    }
+   ],
+   "status": "success"
+  },
+  "status": 200
+ },
+ "/board/api/day_plans/2026-11-05/": {
+  "body": {
+   "detail": "Method \"GET\" not allowed."
+  },
+  "status": 405
+ },
+ "/board/api/gamification/": {
+  "body": {
+   "data": {
+    "achievements": [],
+    "current_streak": 2,
+    "freezes": 1,
+    "level": 1,
+    "level_name": "Newcomer",
+    "longest_streak": 2,
+    "total_count": 0,
+    "total_points": 0,
+    "unlocked_count": 0,
+    "xp_in_level": 0,
+    "xp_needed": 500,
+    "xp_pct": 0.0
+   },
+   "status": "success"
+  },
+  "status": 200
+ },
+ "/board/api/habits/": {
+  "body": {
+   "data": [
+    {
+     "complete_when": "all",
+     "created_at": "2026-09-26T18:30:00+05:30",
+     "current_stage": 1,
+     "detail": "LeetCode",
+     "frequency": [
+      0,
+      1,
+      2,
+      3,
+      4
+     ],
+     "habit": "Solve 2 problems",
+     "id": 1,
+     "identity": "Solve 2 problems",
+     "is_private": false,
+     "metric": null,
+     "notify_at": "07:00:00",
+     "on_disrupted": "excused",
+     "on_light": "required",
+     "private_reminder": false,
+     "remark": "\u2728 2-day streak! Every day counts. Let's keep this going!",
+     "stats": {
+      "logs": {
+       "2026-11-01": {
+        "date": "01",
+        "is_done": true
+       },
+       "2026-11-02": {
+        "date": "02",
+        "is_done": false
+       },
+       "2026-11-03": {
+        "date": "03",
+        "is_done": true
+       },
+       "2026-11-04": {
+        "date": "04",
+        "is_done": true
+       },
+       "2026-11-05": {
+        "date": "05",
+        "is_done": false
+       },
+       "2026-11-06": {
+        "date": "06",
+        "is_done": false
+       },
+       "2026-11-07": {
+        "date": "07",
+        "is_done": false
+       },
+       "2026-11-08": {
+        "date": "08",
+        "is_done": false
+       },
+       "2026-11-09": {
+        "date": "09",
+        "is_done": false
+       },
+       "2026-11-10": {
+        "date": "10",
+        "is_done": false
+       },
+       "2026-11-11": {
+        "date": "11",
+        "is_done": false
+       },
+       "2026-11-12": {
+        "date": "12",
+        "is_done": false
+       },
+       "2026-11-13": {
+        "date": "13",
+        "is_done": false
+       },
+       "2026-11-14": {
+        "date": "14",
+        "is_done": false
+       },
+       "2026-11-15": {
+        "date": "15",
+        "is_done": false
+       },
+       "2026-11-16": {
+        "date": "16",
+        "is_done": false
+       },
+       "2026-11-17": {
+        "date": "17",
+        "is_done": false
+       },
+       "2026-11-18": {
+        "date": "18",
+        "is_done": false
+       },
+       "2026-11-19": {
+        "date": "19",
+        "is_done": false
+       },
+       "2026-11-20": {
+        "date": "20",
+        "is_done": false
+       },
+       "2026-11-21": {
+        "date": "21",
+        "is_done": false
+       },
+       "2026-11-22": {
+        "date": "22",
+        "is_done": false
+       },
+       "2026-11-23": {
+        "date": "23",
+        "is_done": false
+       },
+       "2026-11-24": {
+        "date": "24",
+        "is_done": false
+       },
+       "2026-11-25": {
+        "date": "25",
+        "is_done": false
+       },
+       "2026-11-26": {
+        "date": "26",
+        "is_done": false
+       },
+       "2026-11-27": {
+        "date": "27",
+        "is_done": false
+       },
+       "2026-11-28": {
+        "date": "28",
+        "is_done": false
+       },
+       "2026-11-29": {
+        "date": "29",
+        "is_done": false
+       },
+       "2026-11-30": {
+        "date": "30",
+        "is_done": false
+       }
+      },
+      "max_streak": 3,
+      "recent_logs": {
+       "2026-10-07": {
+        "date": "2026-10-07",
+        "is_done": true
+       },
+       "2026-10-08": {
+        "date": "2026-10-08",
+        "is_done": true
+       },
+       "2026-10-09": {
+        "date": "2026-10-09",
+        "is_done": false
+       },
+       "2026-10-10": {
+        "date": "2026-10-10",
+        "is_done": true
+       },
+       "2026-10-11": {
+        "date": "2026-10-11",
+        "is_done": true
+       },
+       "2026-10-12": {
+        "date": "2026-10-12",
+        "is_done": false
+       },
+       "2026-10-13": {
+        "date": "2026-10-13",
+        "is_done": true
+       },
+       "2026-10-14": {
+        "date": "2026-10-14",
+        "is_done": true
+       },
+       "2026-10-15": {
+        "date": "2026-10-15",
+        "is_done": false
+       },
+       "2026-10-16": {
+        "date": "2026-10-16",
+        "is_done": true
+       },
+       "2026-10-17": {
+        "date": "2026-10-17",
+        "is_done": true
+       },
+       "2026-10-18": {
+        "date": "2026-10-18",
+        "is_done": false
+       },
+       "2026-10-19": {
+        "date": "2026-10-19",
+        "is_done": true
+       },
+       "2026-10-20": {
+        "date": "2026-10-20",
+        "is_done": true
+       },
+       "2026-10-21": {
+        "date": "2026-10-21",
+        "is_done": false
+       },
+       "2026-10-22": {
+        "date": "2026-10-22",
+        "is_done": true
+       },
+       "2026-10-23": {
+        "date": "2026-10-23",
+        "is_done": true
+       },
+       "2026-10-24": {
+        "date": "2026-10-24",
+        "is_done": false
+       },
+       "2026-10-25": {
+        "date": "2026-10-25",
+        "is_done": true
+       },
+       "2026-10-26": {
+        "date": "2026-10-26",
+        "is_done": true
+       },
+       "2026-10-27": {
+        "date": "2026-10-27",
+        "is_done": false
+       },
+       "2026-10-28": {
+        "date": "2026-10-28",
+        "is_done": true
+       },
+       "2026-10-29": {
+        "date": "2026-10-29",
+        "is_done": true
+       },
+       "2026-10-30": {
+        "date": "2026-10-30",
+        "is_done": false
+       },
+       "2026-10-31": {
+        "date": "2026-10-31",
+        "is_done": true
+       },
+       "2026-11-01": {
+        "date": "2026-11-01",
+        "is_done": true
+       },
+       "2026-11-02": {
+        "date": "2026-11-02",
+        "is_done": false
+       },
+       "2026-11-03": {
+        "date": "2026-11-03",
+        "is_done": true
+       },
+       "2026-11-04": {
+        "date": "2026-11-04",
+        "is_done": true
+       },
+       "2026-11-05": {
+        "date": "2026-11-05",
+        "is_done": false
+       }
+      },
+      "streak": 2,
+      "total_reps": 20
+     },
+     "status": "active",
+     "step_count": 0
+    },
+    {
+     "complete_when": "all",
+     "created_at": "2026-09-26T18:29:00+05:30",
+     "current_stage": 1,
+     "detail": "Bands",
+     "frequency": [],
+     "habit": "Workout",
+     "id": 2,
+     "identity": "Workout",
+     "is_private": false,
+     "metric": null,
+     "notify_at": "18:00:00",
+     "on_disrupted": "excused",
+     "on_light": "required",
+     "private_reminder": false,
+     "remark": "\u2728 1-day streak! Every day counts. Let's keep this going!",
+     "stats": {
+      "logs": {
+       "2026-11-01": {
+        "date": "01",
+        "is_done": true
+       },
+       "2026-11-02": {
+        "date": "02",
+        "is_done": false
+       },
+       "2026-11-03": {
+        "date": "03",
+        "is_done": true
+       },
+       "2026-11-04": {
+        "date": "04",
+        "is_done": false
+       },
+       "2026-11-05": {
+        "date": "05",
+        "is_done": true
+       },
+       "2026-11-06": {
+        "date": "06",
+        "is_done": false
+       },
+       "2026-11-07": {
+        "date": "07",
+        "is_done": false
+       },
+       "2026-11-08": {
+        "date": "08",
+        "is_done": false
+       },
+       "2026-11-09": {
+        "date": "09",
+        "is_done": false
+       },
+       "2026-11-10": {
+        "date": "10",
+        "is_done": false
+       },
+       "2026-11-11": {
+        "date": "11",
+        "is_done": false
+       },
+       "2026-11-12": {
+        "date": "12",
+        "is_done": false
+       },
+       "2026-11-13": {
+        "date": "13",
+        "is_done": false
+       },
+       "2026-11-14": {
+        "date": "14",
+        "is_done": false
+       },
+       "2026-11-15": {
+        "date": "15",
+        "is_done": false
+       },
+       "2026-11-16": {
+        "date": "16",
+        "is_done": false
+       },
+       "2026-11-17": {
+        "date": "17",
+        "is_done": false
+       },
+       "2026-11-18": {
+        "date": "18",
+        "is_done": false
+       },
+       "2026-11-19": {
+        "date": "19",
+        "is_done": false
+       },
+       "2026-11-20": {
+        "date": "20",
+        "is_done": false
+       },
+       "2026-11-21": {
+        "date": "21",
+        "is_done": false
+       },
+       "2026-11-22": {
+        "date": "22",
+        "is_done": false
+       },
+       "2026-11-23": {
+        "date": "23",
+        "is_done": false
+       },
+       "2026-11-24": {
+        "date": "24",
+        "is_done": false
+       },
+       "2026-11-25": {
+        "date": "25",
+        "is_done": false
+       },
+       "2026-11-26": {
+        "date": "26",
+        "is_done": false
+       },
+       "2026-11-27": {
+        "date": "27",
+        "is_done": false
+       },
+       "2026-11-28": {
+        "date": "28",
+        "is_done": false
+       },
+       "2026-11-29": {
+        "date": "29",
+        "is_done": false
+       },
+       "2026-11-30": {
+        "date": "30",
+        "is_done": false
+       }
+      },
+      "max_streak": 1,
+      "recent_logs": {
+       "2026-10-07": {
+        "date": "2026-10-07",
+        "is_done": false
+       },
+       "2026-10-08": {
+        "date": "2026-10-08",
+        "is_done": true
+       },
+       "2026-10-09": {
+        "date": "2026-10-09",
+        "is_done": false
+       },
+       "2026-10-10": {
+        "date": "2026-10-10",
+        "is_done": true
+       },
+       "2026-10-11": {
+        "date": "2026-10-11",
+        "is_done": false
+       },
+       "2026-10-12": {
+        "date": "2026-10-12",
+        "is_done": true
+       },
+       "2026-10-13": {
+        "date": "2026-10-13",
+        "is_done": false
+       },
+       "2026-10-14": {
+        "date": "2026-10-14",
+        "is_done": true
+       },
+       "2026-10-15": {
+        "date": "2026-10-15",
+        "is_done": false
+       },
+       "2026-10-16": {
+        "date": "2026-10-16",
+        "is_done": true
+       },
+       "2026-10-17": {
+        "date": "2026-10-17",
+        "is_done": false
+       },
+       "2026-10-18": {
+        "date": "2026-10-18",
+        "is_done": true
+       },
+       "2026-10-19": {
+        "date": "2026-10-19",
+        "is_done": false
+       },
+       "2026-10-20": {
+        "date": "2026-10-20",
+        "is_done": true
+       },
+       "2026-10-21": {
+        "date": "2026-10-21",
+        "is_done": false
+       },
+       "2026-10-22": {
+        "date": "2026-10-22",
+        "is_done": true
+       },
+       "2026-10-23": {
+        "date": "2026-10-23",
+        "is_done": false
+       },
+       "2026-10-24": {
+        "date": "2026-10-24",
+        "is_done": true
+       },
+       "2026-10-25": {
+        "date": "2026-10-25",
+        "is_done": false
+       },
+       "2026-10-26": {
+        "date": "2026-10-26",
+        "is_done": true
+       },
+       "2026-10-27": {
+        "date": "2026-10-27",
+        "is_done": false
+       },
+       "2026-10-28": {
+        "date": "2026-10-28",
+        "is_done": true
+       },
+       "2026-10-29": {
+        "date": "2026-10-29",
+        "is_done": false
+       },
+       "2026-10-30": {
+        "date": "2026-10-30",
+        "is_done": true
+       },
+       "2026-10-31": {
+        "date": "2026-10-31",
+        "is_done": false
+       },
+       "2026-11-01": {
+        "date": "2026-11-01",
+        "is_done": true
+       },
+       "2026-11-02": {
+        "date": "2026-11-02",
+        "is_done": false
+       },
+       "2026-11-03": {
+        "date": "2026-11-03",
+        "is_done": true
+       },
+       "2026-11-04": {
+        "date": "2026-11-04",
+        "is_done": false
+       },
+       "2026-11-05": {
+        "date": "2026-11-05",
+        "is_done": true
+       }
+      },
+      "streak": 1,
+      "total_reps": 15
+     },
+     "status": "active",
+     "step_count": 2
+    }
+   ],
+   "status": "success"
+  },
+  "status": 200
+ },
+ "/board/api/habits/1/logs/": {
+  "body": {
+   "data": [
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "date": "2026-11-05",
+     "habit": 1,
+     "id": 1,
+     "is_done": false,
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "date": "2026-11-04",
+     "habit": 1,
+     "id": 4,
+     "is_done": true,
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "date": "2026-11-03",
+     "habit": 1,
+     "id": 7,
+     "is_done": true,
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "date": "2026-11-02",
+     "habit": 1,
+     "id": 10,
+     "is_done": false,
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "date": "2026-11-01",
+     "habit": 1,
+     "id": 13,
+     "is_done": true,
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "date": "2026-10-31",
+     "habit": 1,
+     "id": 16,
+     "is_done": true,
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "date": "2026-10-30",
+     "habit": 1,
+     "id": 19,
+     "is_done": false,
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "date": "2026-10-29",
+     "habit": 1,
+     "id": 22,
+     "is_done": true,
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "date": "2026-10-28",
+     "habit": 1,
+     "id": 25,
+     "is_done": true,
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "date": "2026-10-27",
+     "habit": 1,
+     "id": 28,
+     "is_done": false,
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "date": "2026-10-26",
+     "habit": 1,
+     "id": 31,
+     "is_done": true,
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "date": "2026-10-25",
+     "habit": 1,
+     "id": 34,
+     "is_done": true,
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "date": "2026-10-24",
+     "habit": 1,
+     "id": 37,
+     "is_done": false,
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "date": "2026-10-23",
+     "habit": 1,
+     "id": 40,
+     "is_done": true,
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "date": "2026-10-22",
+     "habit": 1,
+     "id": 43,
+     "is_done": true,
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "date": "2026-10-21",
+     "habit": 1,
+     "id": 46,
+     "is_done": false,
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "date": "2026-10-20",
+     "habit": 1,
+     "id": 49,
+     "is_done": true,
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "date": "2026-10-19",
+     "habit": 1,
+     "id": 52,
+     "is_done": true,
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "date": "2026-10-18",
+     "habit": 1,
+     "id": 55,
+     "is_done": false,
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "date": "2026-10-17",
+     "habit": 1,
+     "id": 58,
+     "is_done": true,
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "date": "2026-10-16",
+     "habit": 1,
+     "id": 61,
+     "is_done": true,
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "date": "2026-10-15",
+     "habit": 1,
+     "id": 64,
+     "is_done": false,
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "date": "2026-10-14",
+     "habit": 1,
+     "id": 67,
+     "is_done": true,
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "date": "2026-10-13",
+     "habit": 1,
+     "id": 70,
+     "is_done": true,
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "date": "2026-10-12",
+     "habit": 1,
+     "id": 73,
+     "is_done": false,
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "date": "2026-10-11",
+     "habit": 1,
+     "id": 76,
+     "is_done": true,
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "date": "2026-10-10",
+     "habit": 1,
+     "id": 79,
+     "is_done": true,
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "date": "2026-10-09",
+     "habit": 1,
+     "id": 82,
+     "is_done": false,
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "date": "2026-10-08",
+     "habit": 1,
+     "id": 85,
+     "is_done": true,
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "date": "2026-10-07",
+     "habit": 1,
+     "id": 88,
+     "is_done": true,
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    }
+   ],
+   "status": "success"
+  },
+  "status": 200
+ },
+ "/board/api/habits/2/steps/": {
+  "body": {
+   "data": {
+    "complete_when": "all",
+    "current_stage": 1,
+    "steps": [
+     {
+      "done": false,
+      "how_to": "",
+      "id": 1,
+      "metric": null,
+      "name": "Glute bridges",
+      "order": 0,
+      "stage": 1,
+      "target": "2 x 12",
+      "value": null,
+      "visible": true
+     },
+     {
+      "done": false,
+      "how_to": "",
+      "id": 2,
+      "metric": null,
+      "name": "Rows",
+      "order": 1,
+      "stage": 1,
+      "target": "3 x 10",
+      "value": null,
+      "visible": true
+     }
+    ]
+   },
+   "status": "success"
+  },
+  "status": 200
+ },
+ "/board/api/habits/5/logs/": {
+  "body": {
+   "error": "Habit not found",
+   "status": "failed"
+  },
+  "status": 404
+ },
+ "/board/api/habits/?status=completed": {
+  "body": {
+   "data": [
+    {
+     "complete_when": "all",
+     "created_at": "2026-09-26T18:27:00+05:30",
+     "current_stage": 1,
+     "detail": "",
+     "frequency": [],
+     "habit": "Old habit",
+     "id": 4,
+     "identity": "Old habit",
+     "is_private": false,
+     "metric": null,
+     "notify_at": null,
+     "on_disrupted": "excused",
+     "on_light": "required",
+     "private_reminder": false,
+     "remark": "\ud83d\udd27 It seems like this habit might be too challenging right now. Consider adjusting it to something smaller and more manageable.",
+     "stats": {
+      "logs": {
+       "2026-11-01": {
+        "date": "01",
+        "is_done": false
+       },
+       "2026-11-02": {
+        "date": "02",
+        "is_done": false
+       },
+       "2026-11-03": {
+        "date": "03",
+        "is_done": false
+       },
+       "2026-11-04": {
+        "date": "04",
+        "is_done": false
+       },
+       "2026-11-05": {
+        "date": "05",
+        "is_done": false
+       },
+       "2026-11-06": {
+        "date": "06",
+        "is_done": false
+       },
+       "2026-11-07": {
+        "date": "07",
+        "is_done": false
+       },
+       "2026-11-08": {
+        "date": "08",
+        "is_done": false
+       },
+       "2026-11-09": {
+        "date": "09",
+        "is_done": false
+       },
+       "2026-11-10": {
+        "date": "10",
+        "is_done": false
+       },
+       "2026-11-11": {
+        "date": "11",
+        "is_done": false
+       },
+       "2026-11-12": {
+        "date": "12",
+        "is_done": false
+       },
+       "2026-11-13": {
+        "date": "13",
+        "is_done": false
+       },
+       "2026-11-14": {
+        "date": "14",
+        "is_done": false
+       },
+       "2026-11-15": {
+        "date": "15",
+        "is_done": false
+       },
+       "2026-11-16": {
+        "date": "16",
+        "is_done": false
+       },
+       "2026-11-17": {
+        "date": "17",
+        "is_done": false
+       },
+       "2026-11-18": {
+        "date": "18",
+        "is_done": false
+       },
+       "2026-11-19": {
+        "date": "19",
+        "is_done": false
+       },
+       "2026-11-20": {
+        "date": "20",
+        "is_done": false
+       },
+       "2026-11-21": {
+        "date": "21",
+        "is_done": false
+       },
+       "2026-11-22": {
+        "date": "22",
+        "is_done": false
+       },
+       "2026-11-23": {
+        "date": "23",
+        "is_done": false
+       },
+       "2026-11-24": {
+        "date": "24",
+        "is_done": false
+       },
+       "2026-11-25": {
+        "date": "25",
+        "is_done": false
+       },
+       "2026-11-26": {
+        "date": "26",
+        "is_done": false
+       },
+       "2026-11-27": {
+        "date": "27",
+        "is_done": false
+       },
+       "2026-11-28": {
+        "date": "28",
+        "is_done": false
+       },
+       "2026-11-29": {
+        "date": "29",
+        "is_done": false
+       },
+       "2026-11-30": {
+        "date": "30",
+        "is_done": false
+       }
+      },
+      "max_streak": 0,
+      "recent_logs": {},
+      "streak": 0,
+      "total_reps": 0
+     },
+     "status": "completed",
+     "step_count": 0
+    }
+   ],
+   "status": "success"
+  },
+  "status": 200
+ },
+ "/board/api/journal_books/": {
+  "body": {
+   "data": [
+    {
+     "id": 1,
+     "is_default": true,
+     "is_private": false,
+     "metric": null,
+     "name": "Daily"
+    }
+   ],
+   "status": "success"
+  },
+  "status": 200
+ },
+ "/board/api/journal_entries/?date=2026-11-05": {
+  "body": {
+   "data": [],
+   "status": "success"
+  },
+  "status": 200
+ },
+ "/board/api/metrics/": {
+  "body": {
+   "data": [
+    {
+     "chips": {},
+     "direction": "at_most",
+     "fields": [],
+     "habit_ids": [],
+     "id": 2,
+     "is_private": false,
+     "is_system": false,
+     "kind": "counter",
+     "name": "Coffee",
+     "quick_steps": [],
+     "remind_at": null,
+     "system_key": "",
+     "target": 3.0,
+     "target_light": null,
+     "today": 1.0,
+     "today_target": 3.0,
+     "unit": "cups"
+    },
+    {
+     "chips": {},
+     "direction": "at_least",
+     "fields": [],
+     "habit_ids": [],
+     "id": 4,
+     "is_private": false,
+     "is_system": true,
+     "kind": "single",
+     "name": "Sleep",
+     "quick_steps": [],
+     "remind_at": "04:30",
+     "system_key": "sleep",
+     "target": null,
+     "target_light": null,
+     "today": 0.0,
+     "today_target": null,
+     "unit": "h"
+    },
+    {
+     "chips": {},
+     "direction": "at_least",
+     "fields": [],
+     "habit_ids": [],
+     "id": 1,
+     "is_private": false,
+     "is_system": false,
+     "kind": "additive",
+     "name": "Walk",
+     "quick_steps": [
+      10.0,
+      20.0
+     ],
+     "remind_at": null,
+     "system_key": "",
+     "target": 30.0,
+     "target_light": null,
+     "today": 10.0,
+     "today_target": 30.0,
+     "unit": "min"
+    }
+   ],
+   "status": "success"
+  },
+  "status": 200
+ },
+ "/board/api/metrics/1/": {
+  "body": {
+   "data": {
+    "chips": {},
+    "direction": "at_least",
+    "fields": [],
+    "habit_ids": [],
+    "id": 1,
+    "is_private": false,
+    "is_system": false,
+    "kind": "additive",
+    "name": "Walk",
+    "quick_steps": [
+     10.0,
+     20.0
+    ],
+    "remind_at": null,
+    "system_key": "",
+    "target": 30.0,
+    "target_light": null,
+    "today": 10.0,
+    "today_target": 30.0,
+    "unit": "min"
+   },
+   "status": "success"
+  },
+  "status": 200
+ },
+ "/board/api/metrics/1/insights/": {
+  "body": {
+   "data": {
+    "daily": [
+     {
+      "date": "2026-10-07",
+      "target": 30.0,
+      "value": 0.0
+     },
+     {
+      "date": "2026-10-08",
+      "target": 30.0,
+      "value": 0.0
+     },
+     {
+      "date": "2026-10-09",
+      "target": 30.0,
+      "value": 0.0
+     },
+     {
+      "date": "2026-10-10",
+      "target": 30.0,
+      "value": 0.0
+     },
+     {
+      "date": "2026-10-11",
+      "target": 30.0,
+      "value": 0.0
+     },
+     {
+      "date": "2026-10-12",
+      "target": 30.0,
+      "value": 0.0
+     },
+     {
+      "date": "2026-10-13",
+      "target": 30.0,
+      "value": 0.0
+     },
+     {
+      "date": "2026-10-14",
+      "target": 30.0,
+      "value": 0.0
+     },
+     {
+      "date": "2026-10-15",
+      "target": 30.0,
+      "value": 0.0
+     },
+     {
+      "date": "2026-10-16",
+      "target": 30.0,
+      "value": 0.0
+     },
+     {
+      "date": "2026-10-17",
+      "target": 30.0,
+      "value": 0.0
+     },
+     {
+      "date": "2026-10-18",
+      "target": 30.0,
+      "value": 0.0
+     },
+     {
+      "date": "2026-10-19",
+      "target": 30.0,
+      "value": 0.0
+     },
+     {
+      "date": "2026-10-20",
+      "target": 30.0,
+      "value": 0.0
+     },
+     {
+      "date": "2026-10-21",
+      "target": 30.0,
+      "value": 0.0
+     },
+     {
+      "date": "2026-10-22",
+      "target": 30.0,
+      "value": 0.0
+     },
+     {
+      "date": "2026-10-23",
+      "target": 30.0,
+      "value": 0.0
+     },
+     {
+      "date": "2026-10-24",
+      "target": 30.0,
+      "value": 0.0
+     },
+     {
+      "date": "2026-10-25",
+      "target": 30.0,
+      "value": 0.0
+     },
+     {
+      "date": "2026-10-26",
+      "target": 30.0,
+      "value": 0.0
+     },
+     {
+      "date": "2026-10-27",
+      "target": 30.0,
+      "value": 19.0
+     },
+     {
+      "date": "2026-10-28",
+      "target": 30.0,
+      "value": 18.0
+     },
+     {
+      "date": "2026-10-29",
+      "target": 30.0,
+      "value": 17.0
+     },
+     {
+      "date": "2026-10-30",
+      "target": 30.0,
+      "value": 16.0
+     },
+     {
+      "date": "2026-10-31",
+      "target": 30.0,
+      "value": 15.0
+     },
+     {
+      "date": "2026-11-01",
+      "target": 30.0,
+      "value": 14.0
+     },
+     {
+      "date": "2026-11-02",
+      "target": 30.0,
+      "value": 13.0
+     },
+     {
+      "date": "2026-11-03",
+      "target": 30.0,
+      "value": 12.0
+     },
+     {
+      "date": "2026-11-04",
+      "target": 30.0,
+      "value": 11.0
+     },
+     {
+      "date": "2026-11-05",
+      "target": 30.0,
+      "value": 10.0
+     }
+    ],
+    "time_of_day": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     10,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "triggers": {},
+    "weekday": [
+     1,
+     2,
+     2,
+     2,
+     1,
+     1,
+     1
+    ]
+   },
+   "status": "success"
+  },
+  "status": 200
+ },
+ "/board/api/productivity_score/?date=2026-11-05": {
+  "body": {
+   "data": {
+    "breakdown": {
+     "habits_done": 1,
+     "habits_due": 2,
+     "journaled": true,
+     "routine_done": 0,
+     "routine_due": 0,
+     "sleep_logged": true,
+     "todos_done": 1,
+     "todos_due": 1,
+     "trackers_done": 1,
+     "trackers_due": 2
+    },
+    "habit": 2.0,
+    "journal": 1.0,
+    "routine": 3.0,
+    "todo": 1.0,
+    "total": 7.5,
+    "tracker": 0.5
+   },
+   "status": "success"
+  },
+  "status": 200
+ },
+ "/board/api/productivity_score_history/": {
+  "body": {
+   "data": [
+    {
+     "date": "2026-10-30",
+     "score": 7.0
+    },
+    {
+     "date": "2026-10-31",
+     "score": 5.0
+    },
+    {
+     "date": "2026-11-01",
+     "score": 9.0
+    },
+    {
+     "date": "2026-11-02",
+     "score": 4.0
+    },
+    {
+     "date": "2026-11-03",
+     "score": 9.0
+    },
+    {
+     "date": "2026-11-04",
+     "score": 7.0
+    },
+    {
+     "date": "2026-11-05",
+     "score": 7.5
+    }
+   ],
+   "status": "success"
+  },
+  "status": 200
+ },
+ "/board/api/routine_entries/": {
+  "body": {
+   "data": [
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "duration_min": null,
+     "fixed_time": false,
+     "id": 1,
+     "routine_type": "workday",
+     "tier": "essential",
+     "time": "05:00:00",
+     "title": "Wake",
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "duration_min": null,
+     "fixed_time": false,
+     "id": 2,
+     "routine_type": "workday",
+     "tier": "anchor",
+     "time": "07:00:00",
+     "title": "DSA",
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    }
+   ],
+   "status": "success"
+  },
+  "status": 200
+ },
+ "/board/api/task_groups/": {
+  "body": {
+   "data": [
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "id": 1,
+     "is_active": true,
+     "name": "Personal Works",
+     "pending_count": 2,
+     "task_count": 2,
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "id": 2,
+     "is_active": true,
+     "name": "General",
+     "pending_count": 1,
+     "task_count": 2,
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    }
+   ],
+   "status": "success"
+  },
+  "status": 200
+ },
+ "/board/api/tasks/": {
+  "body": {
+   "data": [
+    {
+     "created_at": "2026-11-05T09:30:00+05:30",
+     "deadline": "2026-11-02T10:00:00+05:30",
+     "group": 1,
+     "group_name": "Personal Works",
+     "id": 2,
+     "is_done": false,
+     "task_name": "Overdue thing"
+    },
+    {
+     "created_at": "2026-11-05T08:30:00+05:30",
+     "deadline": "2026-11-05T17:00:00+05:30",
+     "group": 1,
+     "group_name": "Personal Works",
+     "id": 1,
+     "is_done": false,
+     "task_name": "File taxes"
+    },
+    {
+     "created_at": "2026-11-05T10:30:00+05:30",
+     "deadline": null,
+     "group": 2,
+     "group_name": "General",
+     "id": 3,
+     "is_done": true,
+     "task_name": "Done thing"
+    },
+    {
+     "created_at": "2026-11-05T11:30:00+05:30",
+     "deadline": null,
+     "group": 2,
+     "group_name": "General",
+     "id": 4,
+     "is_done": false,
+     "task_name": "No deadline"
+    }
+   ],
+   "status": "success"
+  },
+  "status": 200
+ },
+ "/board/api/tasks/?done=false": {
+  "body": {
+   "data": [
+    {
+     "created_at": "2026-11-05T09:30:00+05:30",
+     "deadline": "2026-11-02T10:00:00+05:30",
+     "group": 1,
+     "group_name": "Personal Works",
+     "id": 2,
+     "is_done": false,
+     "task_name": "Overdue thing"
+    },
+    {
+     "created_at": "2026-11-05T08:30:00+05:30",
+     "deadline": "2026-11-05T17:00:00+05:30",
+     "group": 1,
+     "group_name": "Personal Works",
+     "id": 1,
+     "is_done": false,
+     "task_name": "File taxes"
+    },
+    {
+     "created_at": "2026-11-05T11:30:00+05:30",
+     "deadline": null,
+     "group": 2,
+     "group_name": "General",
+     "id": 4,
+     "is_done": false,
+     "task_name": "No deadline"
+    }
+   ],
+   "status": "success"
+  },
+  "status": 200
+ },
+ "/board/api/tasks/?group=1": {
+  "body": {
+   "data": [
+    {
+     "created_at": "2026-11-05T09:30:00+05:30",
+     "deadline": "2026-11-02T10:00:00+05:30",
+     "group": 1,
+     "group_name": "Personal Works",
+     "id": 2,
+     "is_done": false,
+     "task_name": "Overdue thing"
+    },
+    {
+     "created_at": "2026-11-05T08:30:00+05:30",
+     "deadline": "2026-11-05T17:00:00+05:30",
+     "group": 1,
+     "group_name": "Personal Works",
+     "id": 1,
+     "is_done": false,
+     "task_name": "File taxes"
+    }
+   ],
+   "status": "success"
+  },
+  "status": 200
+ },
+ "/board/api/timeline/?date=2026-11-04": {
+  "body": {
+   "data": [
+    {
+     "action": {
+      "block": [
+       "done",
+       "skipped"
+      ]
+     },
+     "action_response": null,
+     "created_at": "2026-11-04T05:00:00+05:30",
+     "ends_at": "2026-11-04T07:00:00+05:30",
+     "event": "Wake",
+     "event_type": "routine",
+     "id": "routine-1",
+     "reason": "",
+     "reference": {
+      "id": 1,
+      "model": "RoutineEntry"
+     },
+     "shifted_from": null,
+     "status": "pending",
+     "tier": "essential",
+     "timestamp": "2026-11-04T05:00:00+05:30",
+     "updated_at": "2026-11-04T05:00:00+05:30"
+    },
+    {
+     "action": {
+      "block": [
+       "done",
+       "skipped"
+      ]
+     },
+     "action_response": null,
+     "created_at": "2026-11-04T07:00:00+05:30",
+     "ends_at": "2026-11-04T08:00:00+05:30",
+     "event": "DSA",
+     "event_type": "routine",
+     "id": "routine-2",
+     "reason": "",
+     "reference": {
+      "id": 2,
+      "model": "RoutineEntry"
+     },
+     "shifted_from": null,
+     "status": "pending",
+     "tier": "anchor",
+     "timestamp": "2026-11-04T07:00:00+05:30",
+     "updated_at": "2026-11-04T07:00:00+05:30"
+    },
+    {
+     "action": {
+      "metric": [
+       "log"
+      ]
+     },
+     "action_response": null,
+     "created_at": "2026-11-04T04:30:00+05:30",
+     "event": "Good morning! How did you sleep last night?",
+     "event_type": "sleep_tracker",
+     "id": "metric-4-2026-11-04",
+     "reference": {
+      "id": 4,
+      "model": "Metric"
+     },
+     "timestamp": "2026-11-04T04:30:00+05:30",
+     "updated_at": "2026-11-04T04:30:00+05:30"
+    },
+    {
+     "action": {
+      "open_journal": [
+       true,
+       false
+      ]
+     },
+     "action_response": null,
+     "created_at": "2026-11-04T21:00:00+05:30",
+     "event": "Time to reflect! Write a few lines in your journal.",
+     "event_type": "journal",
+     "id": "journal-reminder-2026-11-04",
+     "reference": null,
+     "timestamp": "2026-11-04T21:00:00+05:30",
+     "updated_at": "2026-11-04T21:00:00+05:30"
+    }
+   ],
+   "day": {
+    "banner": null,
+    "date": "2026-11-04",
+    "is_default": false,
+    "mode": "light",
+    "reset_done": false,
+    "shifts": [],
+    "source": "manual",
+    "template": "workday",
+    "warning": null
+   },
+   "has_more": false,
+   "status": "success"
+  },
+  "status": 200
+ },
+ "/board/api/timeline/?date=2026-11-05": {
+  "body": {
+   "data": [
+    {
+     "action": {
+      "mark_done": [
+       true,
+       false
+      ]
+     },
+     "action_response": null,
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "event": "Time to: Workout (Bands)",
+     "event_type": "habit",
+     "group": null,
+     "id": 2,
+     "reference": {
+      "id": 2,
+      "model": "Habit"
+     },
+     "timestamp": "2026-11-05T18:00:00+05:30",
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "action": {
+      "mark_done": [
+       true,
+       false
+      ]
+     },
+     "action_response": null,
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "event": "Due today: File taxes",
+     "event_type": "todo",
+     "group": {
+      "id": 1,
+      "name": "Personal Works"
+     },
+     "id": 3,
+     "reference": {
+      "id": 1,
+      "model": "Task"
+     },
+     "timestamp": "2026-11-05T17:00:00+05:30",
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "action": {
+      "mark_done": [
+       true,
+       false
+      ]
+     },
+     "action_response": null,
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "event": "Overdue by 3 days: Overdue thing",
+     "event_type": "todo",
+     "group": {
+      "id": 1,
+      "name": "Personal Works"
+     },
+     "id": 4,
+     "reference": {
+      "id": 2,
+      "model": "Task"
+     },
+     "timestamp": "2026-11-05T09:00:00+05:30",
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "action": {
+      "mark_done": [
+       true,
+       false
+      ]
+     },
+     "action_response": null,
+     "created_at": "2026-11-05T18:30:00+05:30",
+     "event": "Time to: Solve 2 problems (LeetCode)",
+     "event_type": "habit",
+     "group": null,
+     "id": 1,
+     "reference": {
+      "id": 1,
+      "model": "Habit"
+     },
+     "timestamp": "2026-11-05T07:00:00+05:30",
+     "updated_at": "2026-11-05T18:30:00+05:30"
+    },
+    {
+     "action": {
+      "block": [
+       "done",
+       "skipped"
+      ]
+     },
+     "action_response": null,
+     "created_at": "2026-11-05T05:00:00+05:30",
+     "ends_at": "2026-11-05T07:00:00+05:30",
+     "event": "Wake",
+     "event_type": "routine",
+     "id": "routine-1",
+     "reason": "",
+     "reference": {
+      "id": 1,
+      "model": "RoutineEntry"
+     },
+     "shifted_from": null,
+     "status": "pending",
+     "tier": "essential",
+     "timestamp": "2026-11-05T05:00:00+05:30",
+     "updated_at": "2026-11-05T05:00:00+05:30"
+    },
+    {
+     "action": {
+      "block": [
+       "done",
+       "skipped"
+      ]
+     },
+     "action_response": null,
+     "created_at": "2026-11-05T07:00:00+05:30",
+     "ends_at": "2026-11-05T08:00:00+05:30",
+     "event": "DSA",
+     "event_type": "routine",
+     "id": "routine-2",
+     "reason": "",
+     "reference": {
+      "id": 2,
+      "model": "RoutineEntry"
+     },
+     "shifted_from": null,
+     "status": "pending",
+     "tier": "anchor",
+     "timestamp": "2026-11-05T07:00:00+05:30",
+     "updated_at": "2026-11-05T07:00:00+05:30"
+    },
+    {
+     "action": {
+      "mode": [
+       "normal",
+       "light",
+       "disrupted"
+      ]
+     },
+     "action_response": null,
+     "created_at": "2026-11-05T05:00:00+05:30",
+     "event": "What kind of day is it?",
+     "event_type": "text",
+     "id": "day-checkin-2026-11-05",
+     "reference": null,
+     "timestamp": "2026-11-05T05:00:00+05:30",
+     "updated_at": "2026-11-05T05:00:00+05:30"
+    },
+    {
+     "action": {
+      "metric": [
+       "log"
+      ]
+     },
+     "action_response": null,
+     "created_at": "2026-11-05T04:30:00+05:30",
+     "event": "Good morning! How did you sleep last night?",
+     "event_type": "sleep_tracker",
+     "id": "metric-4-2026-11-05",
+     "reference": {
+      "id": 4,
+      "model": "Metric"
+     },
+     "timestamp": "2026-11-05T04:30:00+05:30",
+     "updated_at": "2026-11-05T04:30:00+05:30"
+    },
+    {
+     "action": {
+      "open_journal": [
+       true,
+       false
+      ]
+     },
+     "action_response": {
+      "open_journal": true
+     },
+     "created_at": "2026-11-05T21:00:00+05:30",
+     "event": "Time to reflect! Write a few lines in your journal.",
+     "event_type": "journal",
+     "id": "journal-reminder-2026-11-05",
+     "reference": null,
+     "timestamp": "2026-11-05T21:00:00+05:30",
+     "updated_at": "2026-11-05T21:00:00+05:30"
+    }
+   ],
+   "day": {
+    "banner": null,
+    "date": "2026-11-05",
+    "is_default": true,
+    "mode": "normal",
+    "reset_done": false,
+    "shifts": [],
+    "source": "default",
+    "template": "workday",
+    "warning": null
+   },
+   "has_more": false,
+   "status": "success"
+  },
+  "status": 200
+ },
+ "/board/api/user_details/": {
+  "body": {
+   "data": {
+    "clock_format": "12h",
+    "current_streak": 2,
+    "day_start": "04:00:00",
+    "default_search_engine": "google",
+    "default_theme": "dark",
+    "email": "arjun@example.com",
+    "first_name": "Arjun",
+    "font_family": "Montserrat",
+    "freezes": 1,
+    "has_private_pin": false,
+    "holiday_routine": "",
+    "is_onboarded": false,
+    "journal_habit": null,
+    "last_active_date": null,
+    "last_name": "",
+    "level": 1,
+    "longest_streak": 2,
+    "pomodoro_break": 5,
+    "pomodoro_cycles": 4,
+    "pomodoro_focus": 25,
+    "pomodoro_long_break": 15,
+    "private_unlock_minutes": 10,
+    "sleep_time": null,
+    "slip_metric": null,
+    "sound_notifications": true,
+    "sound_pomodoro": true,
+    "streak_rule": "activity",
+    "total_points": 0,
+    "travel_ramp_days": 1,
+    "user": 1,
+    "weekend_days": [
+     5,
+     6
+    ],
+    "workday_routine": ""
+   },
+   "status": "success"
+  },
+  "status": 200
+ }
+}

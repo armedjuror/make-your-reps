@@ -1,0 +1,78 @@
+{% extends 'squads/base.html' %}
+{% block title %}Focus room · {{ session.board.name }}{% endblock %}
+{% block head_actions %}<a class="btn btn-paper btn-sm" href="/board/#squad/{{ session.board_id }}/focus">Back to squad</a>{% endblock %}
+{% block content %}
+<section class="sq-card sq-room" id="room">
+    <div class="sq-label" id="room-board"></div>
+    <h1 id="room-title"></h1>
+    <div class="sq-room-phase" id="room-phase"></div>
+    <div class="sq-room-timer" id="room-timer" aria-live="polite">--:--</div>
+    <div class="sq-room-blocks" id="room-blocks"></div>
+    <div class="sq-avatars sq-room-people" id="room-people"></div>
+    <div class="sq-room-actions">
+        <button class="btn btn-paper btn-primary btn-lg" id="room-join">Join the room</button>
+        <button class="btn btn-paper" id="room-leave" hidden>Leave</button>
+    </div>
+    <p class="sq-muted small" id="room-note">Stay for 80% of the focus time to complete it. Points need 2 or more people completing.</p>
+    <div class="sq-error" id="room-error" hidden></div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+    var ID = {{ session.id }};
+    var state = {{ state|safe }};
+    var joined = false, beat = null, skew = 0;
+    var $ = function (id) { return document.getElementById(id); };
+    function csrf() { return (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || ''; }
+    function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
+    async function call(method, body) {
+        var r = await fetch('/squads/api/focus/' + ID + '/room/', { method: method, credentials: 'include',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() }, body: body ? JSON.stringify(body) : undefined });
+        return r.json();
+    }
+    function render() {
+        skew = new Date(state.server_now) - new Date();
+        $('room-board').textContent = state.board.emoji + ' ' + state.board.name;
+        $('room-title').textContent = state.title;
+        var label = { before: 'Starts in', focus: 'Focus · block ' + state.block + ' of ' + state.blocks, break: 'Break', done: 'Session over' }[state.phase];
+        $('room-phase').textContent = label;
+        var blocks = '';
+        for (var i = 1; i <= state.blocks; i++) blocks += '<span class="sq-room-block' + (state.block === i ? ' on' : (state.block && i < state.block) || state.phase === 'done' ? ' past' : '') + '"></span>';
+        $('room-blocks').innerHTML = blocks;
+        $('room-people').innerHTML = state.people.map(function (p) {
+            return '<span class="sq-avatar' + (p.present ? ' present' : '') + '" title="' + esc(p.name) + ' · ' + p.minutes + ' min">' + esc(p.name.slice(0, 1).toUpperCase()) + '</span>';
+        }).join('') || '<span class="sq-muted">Nobody here yet</span>';
+        $('room-join').hidden = joined || !state.can_join || state.phase === 'done';
+        $('room-leave').hidden = !joined || state.phase === 'done';
+    }
+    function tick() {
+        var left = Math.max(0, Math.round((new Date(state.phase_ends_at) - (Date.now() + skew)) / 1000));
+        var h = Math.floor(left / 3600), m = Math.floor(left % 3600 / 60), s = left % 60;
+        $('room-timer').textContent = (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(s).padStart(2, '0');
+        if (left === 0) refresh();
+    }
+    async function refresh() {
+        var res = await call(joined ? 'POST' : 'GET', joined ? {} : null);
+        if (res.status === 'success') { state = res.data; render(); }
+        else { $('room-error').textContent = res.error; $('room-error').hidden = false; }
+    }
+    $('room-join').addEventListener('click', async function () {
+        var res = await call('POST', {});
+        if (res.status !== 'success') { $('room-error').textContent = res.error; $('room-error').hidden = false; return; }
+        joined = true; state = res.data; render();
+        beat = setInterval(refresh, 20000);   // presence heartbeat
+    });
+    $('room-leave').addEventListener('click', async function () {
+        await call('POST', { leaving: true }); joined = false; clearInterval(beat); refresh();
+    });
+    window.addEventListener('pagehide', function () {
+        if (joined) navigator.sendBeacon && fetch('/squads/api/focus/' + ID + '/room/', { method: 'POST', keepalive: true, credentials: 'include',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() }, body: JSON.stringify({ leaving: true }) });
+    });
+    render(); tick();
+    setInterval(tick, 1000);
+    setInterval(function () { if (!joined) refresh(); }, 30000);
+})();
+</script>
+{% endblock %}

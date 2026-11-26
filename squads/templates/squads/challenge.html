@@ -1,0 +1,51 @@
+{% extends 'squads/base.html' %}
+{% block title %}{{ ch.title }} · makeyourreps challenge{% endblock %}
+{% block meta %}{% with og_title=ch.title og_description='A makeyourreps challenge · join free' %}{% include 'squads/_og.html' %}{% endwith %}{% endblock %}
+{% block head_actions %}<a class="btn btn-paper btn-sm" href="/discover/">Discover</a>{% endblock %}
+{% block content %}
+<section class="sq-card">
+    <div class="sq-label">{{ info.kind|title }} challenge · {{ info.visibility }}</div>
+    <h1>{{ ch.board.emoji }} {{ ch.title }}</h1>
+    <p class="sq-muted">Hosted by {{ info.host }} · {{ info.days }} days · starts {{ ch.start_date|date:"j M" }} · {{ info.participant_count }} taking part</p>
+    <ul class="sq-rules">
+        <li>Do <strong>{{ info.rules.item_template.name }}</strong>{% if info.rules.daily_target and info.kind != 'streak' %} ({{ info.rules.daily_target|floatformat:"-1" }} {{ info.rules.item_template.unit }}{% if info.kind == 'ladder' %}, +{{ info.rules.ladder_step|floatformat:"-1" }} each day{% endif %}){% endif %} every day</li>
+        <li>{{ info.rules.skip_tokens }} skip{{ info.rules.skip_tokens|pluralize }}: a missed day uses one automatically</li>
+        <li>Runs {{ ch.start_date|date:"j M" }} – {{ ch.end_date|date:"j M Y" }}{% if ch.join_deadline %}; late joins until {{ ch.join_deadline|date:"j M" }}{% endif %}</li>
+        {% if info.locked %}<li>Rules are locked</li>{% endif %}
+    </ul>
+    {% if error %}<div class="sq-error">{{ error }}</div>{% endif %}
+    {% if progress %}
+        <div class="sq-progress">
+            <div><strong>Day {{ progress.day }}/{{ progress.days }}</strong></div>
+            <div>{{ progress.days_done }} done · {{ progress.skips_left }} skip{{ progress.skips_left|pluralize }} left · ahead of {{ progress.percentile }}%</div>
+            {% if me.status == 'dropped' %}
+                <form method="post">{% csrf_token %}<input type="hidden" name="action" value="continue"><button class="btn btn-paper btn-sm mt-2">Continue unofficially</button></form>
+            {% elif me.status == 'completed' %}
+                <a class="btn btn-paper btn-primary btn-sm mt-2" href="/c/{{ ch.slug }}/card/{{ me.id }}/">Your completion card</a>
+            {% endif %}
+        </div>
+    {% elif info.join_open %}
+        {% if logged_in %}
+            <form method="post">{% csrf_token %}<input type="hidden" name="tz" id="sq-tz"><button class="btn btn-paper btn-primary btn-lg">Join the challenge</button></form>
+        {% else %}
+            {% load socialaccount %}
+            <div class="sq-auth">
+                <form action="{% provider_login_url 'google' %}?client_type=web&next={{ request.path|urlencode }}" method="POST">{% csrf_token %}
+                    <button class="btn btn-paper btn-primary w-100" type="submit"><i class="fa-brands fa-google me-2"></i>Join with Google</button>
+                </form>
+                <a class="btn btn-paper w-100" href="{{ login_url }}"><i class="fas fa-envelope me-2"></i>Join with email</a>
+            </div>
+        {% endif %}
+    {% else %}
+        <p class="sq-muted">Joining has closed.</p>
+    {% endif %}
+</section>
+<section class="sq-card">
+    <h2 class="sq-h2">{% if info.visibility == 'squad' %}Everyone{% else %}Top 10{% endif %}</h2>
+    {% if board.team %}<p class="sq-muted">Team: {{ board.team.days_done }} days done · {{ board.team.completion_pct }}% complete</p>{% endif %}
+    {% if board.teams %}<ol class="sq-board">{% for t in board.teams %}<li><span>{{ t.emoji }} {{ t.name }}</span><span>{{ t.score }}</span></li>{% endfor %}</ol>{% endif %}
+    <ol class="sq-board">{% for r in board.top %}<li><span>{{ r.name }}</span><span>{{ r.days_done }} day{{ r.days_done|pluralize }}</span></li>{% empty %}<li class="sq-muted">Nobody yet. Be the first.</li>{% endfor %}</ol>
+    {% if board.friends %}<h3 class="sq-h3">Friends</h3><ol class="sq-board">{% for r in board.friends %}<li><span>{{ r.name }}</span><span>{{ r.days_done }}</span></li>{% endfor %}</ol>{% endif %}
+</section>
+{% endblock %}
+{% block scripts %}<script>var tz=document.getElementById('sq-tz'); if (tz) try { tz.value = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (e) {}</script>{% endblock %}

@@ -1,0 +1,14 @@
+{% extends 'squads/base.html' %}
+{% block title %}{{ name }} finished {{ ch.title }}{% endblock %}
+{% block meta %}{% with og_title=name|add:' finished '|add:ch.title og_description='Start your own challenge on makeyourreps' %}{% include 'squads/_og.html' %}{% endwith %}{% endblock %}
+{% block content %}
+<section class="sq-card sq-share">
+    <img class="sq-share-img" src="{{ image }}" alt="Completion card: {{ name }} finished {{ ch.title }}">
+    <div class="sq-share-actions" data-share-type="completion" data-share-url="{{ page_url }}" data-share-text="{{ name }} finished {{ ch.title }} on makeyourreps 🎉">
+        <a class="btn btn-paper btn-primary" data-channel="whatsapp" target="_blank" rel="noopener" href="https://wa.me/?text={{ name|urlencode }}%20finished%20{{ ch.title|urlencode }}%20%F0%9F%8E%89%20{{ page_url|urlencode }}"><i class="fa-brands fa-whatsapp me-1"></i>WhatsApp</a>
+        <a class="btn btn-paper" data-channel="download" href="{{ image }}" download="completion.png"><i class="fas fa-download me-1"></i>Image for Instagram</a>
+    </div>
+    <p class="sq-muted mt-3">Your turn? <a href="/discover/">Find a challenge</a> or <a href="/board/#squads">start a squad</a>.</p>
+</section>
+{% endblock %}
+{% block scripts %}{% include 'squads/_share_js.html' %}{% endblock %}

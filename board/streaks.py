@@ -15,6 +15,7 @@ from board.days import get_detail, logical_today, resolve_day
 from board.models import (
     DayMode, DayPlan, DaySummary, Habit, HabitLog, HabitStatus, StreakRule, UserDetail,
 )
+from squads.scoping import visible_items
 
 COUNTS = {'met', 'reset', 'legacy'}   # outcomes that add to the streak
 MAX_FREEZES = 2
@@ -32,7 +33,7 @@ def had_activity(user_id, target_date):
     if HabitLog.objects.filter(habit__user_id=user_id, habit__is_system=False,
                                date=target_date, is_done=True).exists():
         return True
-    if Task.objects.filter(user_id=user_id, is_deleted=False, is_done=True,
+    if visible_items(user_id, Task, squads=False).filter(is_deleted=False, is_done=True,
                            updated_at__date=target_date).exists():
         return True
     return DailyData.objects.filter(user_id=user_id, date=target_date).filter(
@@ -118,7 +119,7 @@ def close_pending_days(user_id, now=None, detail=None):
 def _settle_metric_habits(user_id, target_date):
     """At day close, 'at most' habits are done if the day's total stayed within target."""
     from board.metrics import day_value, effective_target
-    for habit in Habit.objects.filter(user_id=user_id, status=HabitStatus.ACTIVE.value,
+    for habit in visible_items(user_id, Habit, squads=False).filter(status=HabitStatus.ACTIVE.value,
                                       metric__isnull=False, metric__direction='at_most'):
         m = habit.metric
         target = effective_target(m, user_id, target_date)

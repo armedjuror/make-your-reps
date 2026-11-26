@@ -8,6 +8,7 @@ let panesLoaded = { home: false, todos: false, trackers: false, journals: false,
 
 // ── Pane Switching ──
 function switchPane(pane) {
+    if (pane === 'friends') pane = 'squads';   // Friends now lives on the Squads page
     if (pane === currentPane) return;
 
     // Hide all panes
@@ -36,8 +37,9 @@ function switchPane(pane) {
     // Refresh footer bar pomodoro visibility on pane switch
     if (typeof Pomodoro !== 'undefined' && Pomodoro.state) Pomodoro.render();
 
-    // Sync URL hash
-    history.replaceState(null, '', pane === 'home' ? window.location.pathname : `#${pane}`);
+    // Sync URL hash (the squad page keeps its own #squad/<id>/<tab> hash)
+    if (pane !== 'squad') history.replaceState(null, '', pane === 'home' ? window.location.pathname : `#${pane}`);
+    if (pane === 'squads') document.querySelector('.tab-item[data-pane="squads"]')?.classList.add('active');
 
     // Lazy load pane data on first visit
     if (!panesLoaded[pane]) {
@@ -48,13 +50,13 @@ function switchPane(pane) {
         else if (pane === 'todos') initTodosPane();
         else if (pane === 'achievements') MiscPane.loadAchievements();
         else if (pane === 'reading-list') ReadingList.loadAll();
-        else if (pane === 'friends') MiscPane.initFriends();
+        else if (pane === 'squads') { MiscPane.initFriends(); Squads.loadPage(); }
         else if (pane === 'settings') Settings.loadSearchEngines();
     } else {
         // Refresh data-driven panes on every visit
         if (pane === 'achievements') MiscPane.loadAchievements();
         else if (pane === 'reading-list') ReadingList.loadAll();
-        else if (pane === 'friends') MiscPane.load();
+        else if (pane === 'squads') { MiscPane.load(); Squads.loadPage(); }
     }
 }
 
@@ -326,8 +328,9 @@ const Onboarding = {
     bindEvents();
 
     const hash = window.location.hash.replace('#', '') || 'home';
-    const validPanes = ['home', 'todos', 'trackers', 'journals', 'achievements', 'reading-list', 'friends', 'settings', 'help'];
+    const validPanes = ['home', 'todos', 'trackers', 'journals', 'achievements', 'reading-list', 'friends', 'squads', 'settings', 'help'];
     const initialPane = validPanes.includes(hash) ? hash : 'home';
+    const squadRoute = hash.startsWith('squad/') ? hash : null;
 
     // Wait for every script on the page (greeting.js and the rest load after this
     // one) as well as the config; a fast config response used to win the race.
@@ -339,9 +342,12 @@ const Onboarding = {
         panesLoaded.home = true;
         initHomePane();
 
-        if (initialPane !== 'home') {
+        if (squadRoute && typeof Squads !== 'undefined') {
+            Squads.route(squadRoute);
+        } else if (initialPane !== 'home') {
             switchPane(initialPane);
         }
+        if (typeof Squads !== 'undefined') Squads.init();
 
         document.dispatchEvent(new Event('appConfigLoaded'));
         BrowserNotify.updatePermissionUI();
@@ -357,8 +363,10 @@ const Onboarding = {
 // Listen for hash changes
 window.addEventListener('hashchange', function () {
     const hash = window.location.hash.replace('#', '') || 'home';
-    const validPanes = ['home', 'todos', 'trackers', 'journals', 'achievements', 'reading-list', 'friends', 'settings', 'help'];
-    if (validPanes.includes(hash)) {
+    const validPanes = ['home', 'todos', 'trackers', 'journals', 'achievements', 'reading-list', 'friends', 'squads', 'settings', 'help'];
+    if (hash.startsWith('squad/') && typeof Squads !== 'undefined') {
+        Squads.route(hash);
+    } else if (validPanes.includes(hash)) {
         switchPane(hash);
     }
 });

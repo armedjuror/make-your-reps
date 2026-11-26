@@ -24,6 +24,7 @@ from board.models import (
     Journal, JournalEntry, Metric, MetricEntry, MetricKind, RoutineEntry, RoutineType, Tier,
 )
 from board.streaks import refresh_streak
+from squads.scoping import visible_items
 
 LATE_CHOICES = (15, 30, 60)
 EDIT_AHEAD_DAYS = 3
@@ -62,15 +63,15 @@ def hidden_ids(request, user_id):
     if privacy.include_private(request):
         return set(), set()
     return (
-        set(Habit.objects.filter(user_id=user_id, is_private=True).values_list('id', flat=True)),
-        set(Metric.objects.filter(user_id=user_id, is_private=True).values_list('id', flat=True)),
+        set(visible_items(user_id, Habit, squads=False).filter(is_private=True).values_list('id', flat=True)),
+        set(visible_items(user_id, Metric, squads=False).filter(is_private=True).values_list('id', flat=True)),
     )
 
 
 # ── Reset habit (hidden system habit) ──────────────────────
 
 def ensure_reset_habit(user_id):
-    habit = Habit.objects.filter(user_id=user_id, is_system=True).first()
+    habit = visible_items(user_id, Habit, squads=False).filter(is_system=True).first()
     if not habit:
         habit = Habit.objects.create(
             user_id=user_id, habit='Reset', identity='Someone who gets back on track',
@@ -100,7 +101,7 @@ def reset_state(user_id, resolved, now=None):
     for b in resolved['blocks']:
         if b['tier'] == Tier.ESSENTIAL and b['status'] == 'missed':
             times.append(b['end'] + timedelta(minutes=30))
-    for m in Metric.objects.filter(user_id=user_id, direction='at_most', target__isnull=False):
+    for m in visible_items(user_id, Metric, squads=False).filter(direction='at_most', target__isnull=False):
         if mx.breached(m, user_id, target_date):
             last = MetricEntry.objects.filter(metric=m, date=target_date).order_by('-at').first()
             times.append(last.at if last else now)
@@ -407,7 +408,7 @@ def metric_json(metric, request=None):
         'fields': metric.fields, 'is_private': metric.is_private, 'is_system': metric.is_system,
         'system_key': metric.system_key,
         'remind_at': (lambda t: t.strftime('%H:%M') if t else None)(mx.reminder_time(metric)),
-        'habit_ids': list(Habit.objects.filter(user_id=metric.user_id, metric_id=metric.id).values_list('id', flat=True)),
+        'habit_ids': list(visible_items(metric.user_id, Habit, squads=False).filter(metric_id=metric.id).values_list('id', flat=True)),
         'today': float(mx.day_value(metric, today)),
         'today_target': float(target) if target is not None else None,
         'chips': mx.chips(metric),
@@ -459,7 +460,7 @@ class MetricsView(APIView):
         mx.ensure_sleep_metric(user_id)
         mx.ensure_slip_metric(user_id)
         _, hidden = hidden_ids(request, user_id)
-        qs = Metric.objects.filter(user_id=user_id).exclude(id__in=hidden)
+        qs = visible_items(user_id, Metric, squads=False).filter().exclude(id__in=hidden)
         return ok([metric_json(m) for m in qs])
 
     @auth
@@ -482,7 +483,7 @@ def _own_metric(request, user_id, pk):
     _, hidden = hidden_ids(request, user_id)
     if int(pk) in hidden:
         return None
-    return Metric.objects.filter(pk=pk, user_id=user_id).first()
+    return visible_items(user_id, Metric, squads=False).filter(pk=pk).first()
 
 
 class MetricDetailView(APIView):
@@ -577,7 +578,7 @@ def _habit_for(request, user_id, habit_id):
     hidden, _ = hidden_ids(request, user_id)
     if int(habit_id) in hidden:
         return None
-    return Habit.objects.filter(pk=habit_id, user_id=user_id).exclude(status=HabitStatus.DELETED.value).first()
+    return visible_items(user_id, Habit, squads=False).filter(pk=habit_id).exclude(status=HabitStatus.DELETED.value).first()
 
 
 class HabitStepsView(APIView):
@@ -607,7 +608,7 @@ class HabitStepsView(APIView):
             return fail('name is required')
         metric = None
         if request.data.get('metric'):
-            metric = Metric.objects.filter(pk=request.data['metric'], user_id=user_id).first()
+            metric = visible_items(user_id, Metric, squads=False).filter(pk=request.data['metric']).first()
             if not metric:
                 return fail('Metric not found', http.HTTP_404_NOT_FOUND)
         last = habit.steps.order_by('-order').first()
@@ -650,7 +651,7 @@ class HabitStepDetailView(APIView):
                     return fail(f'{key} must be a number')
         if 'metric' in request.data:
             if request.data['metric']:
-                step.metric = Metric.objects.filter(pk=request.data['metric'], user_id=user_id).first()
+                step.metric = visible_items(user_id, Metric, squads=False).filter(pk=request.data['metric']).first()
                 if not step.metric:
                     return fail('Metric not found', http.HTTP_404_NOT_FOUND)
             else:

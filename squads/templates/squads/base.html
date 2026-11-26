@@ -1,0 +1,31 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}makeyourreps{% endblock %}</title>
+    <script>
+        (function () {
+            var map = { dark: 'ink', light: 'aurora', paper: 'aurora', plain: 'aurora' }, ok = ['ink', 'terminal', 'tech', 'aurora', 'sensei', 'coach', 'garden', 'orbit', 'quest'], t = null;
+            try { t = localStorage.getItem('mr_theme'); } catch (e) {}
+            t = map[t] || t;
+            document.documentElement.setAttribute('data-theme', ok.indexOf(t) < 0 ? 'ink' : t);
+        })();
+    </script>
+    {% block meta %}{% endblock %}
+    <link rel="icon" type="image/x-icon" href="{% static 'images/logo.png' %}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'board/css/style.css' %}?v={{ ASSET_VERSION }}">
+    <link rel="stylesheet" href="{% static 'squads/squads.css' %}?v={{ ASSET_VERSION }}">
+</head>
+<body class="sq-page">
+    <header class="sq-page-head">
+        <a href="{% if logged_in %}/board/{% else %}/{% endif %}" class="sq-brand"><img src="{% static 'images/logo.png' %}" alt=""> makeyourreps</a>
+        {% block head_actions %}{% endblock %}
+    </header>
+    <main class="sq-page-main">{% block content %}{% endblock %}</main>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

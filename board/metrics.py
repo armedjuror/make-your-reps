@@ -14,6 +14,7 @@ from board.models import (
     DailyData, DayMode, DayPlan, Habit, HabitLog, HabitStatus, Journal, JournalEntry,
     Metric, MetricEntry, MetricKind,
 )
+from squads.scoping import visible_items
 
 SLEEP_METRIC_NAME = 'Sleep'
 FIELD_TYPES = {'choice', 'scale', 'text'}
@@ -192,7 +193,7 @@ def sync_metric_habits(metric, target_date):
         return
     met = day_value(metric, target_date) >= target
     today = logical_today(metric.user_id)
-    for habit in Habit.objects.filter(user_id=metric.user_id, metric=metric,
+    for habit in visible_items(metric.user_id, Habit, squads=False).filter(metric=metric,
                                       status=HabitStatus.ACTIVE.value):
         log, _ = HabitLog.objects.get_or_create(habit=habit, date=target_date)
         if log.is_done == met:
@@ -254,7 +255,7 @@ def reminder_time(metric, detail=None):
 
 
 def ensure_sleep_metric(user_id):
-    metric = Metric.objects.filter(user_id=user_id, system_key='sleep').first()
+    metric = visible_items(user_id, Metric, squads=False).filter(system_key='sleep').first()
     if not metric:
         metric = Metric.objects.create(
             user_id=user_id, name=SLEEP_METRIC_NAME, unit='h', kind=MetricKind.SINGLE,
@@ -265,7 +266,7 @@ def ensure_sleep_metric(user_id):
 
 def ensure_slip_metric(user_id):
     """Built-in private tracker: every "I slipped" adds one, so its chart shows how often."""
-    metric = Metric.objects.filter(user_id=user_id, system_key='slip').first()
+    metric = visible_items(user_id, Metric, squads=False).filter(system_key='slip').first()
     if not metric:
         metric = Metric.objects.create(
             user_id=user_id, name='Slips', unit='', kind=MetricKind.COUNTER, direction='at_most',

@@ -23,6 +23,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Fredericka+the+Great&family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=JetBrains+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Barlow+Condensed:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=DotGothic16&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'board/css/style.css' %}?v={{ ASSET_VERSION }}">
     <link rel="stylesheet" href="{% static 'board/css/dashboard.css' %}?v={{ ASSET_VERSION }}">
+    <link rel="stylesheet" href="{% static 'squads/squads.css' %}?v={{ ASSET_VERSION }}">
     <link rel="stylesheet" href="{% static 'board/css/share-poster.css' %}?v={{ ASSET_VERSION }}">
     <link rel="stylesheet" href="{% static 'board/css/resilient.css' %}?v={{ ASSET_VERSION }}">
     <!-- PWA -->
@@ -74,6 +75,10 @@
                 <i class="fas fa-trophy"></i>
                 <span>Progress</span>
             </a>
+            <a class="tab-item" data-pane="squads" id="squads-tab">
+                <i class="fas fa-people-group"></i>
+                <span>Squads</span>
+            </a>
             <div class="dropdown">
                 <a class="tab-item dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="fas fa-layer-group"></i>
@@ -81,7 +86,6 @@
                 </a>
                 <ul class="dropdown-menu">
                     <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); switchPane('reading-list')"><i class="fas fa-bookmark me-2"></i>Reading List</a></li>
-                    <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); switchPane('friends')"><i class="fas fa-user-friends me-2"></i>Friends</a></li>
                     <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); switchPane('settings')"><i class="fas fa-cog me-2"></i>Settings</a></li>
                     <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); switchPane('help')"><i class="fas fa-question-circle me-2"></i>Help</a></li>
                     <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); Theme.openAppearance()"><i class="fas fa-palette me-2"></i>Appearance</a></li>
@@ -136,8 +140,8 @@
         <a class="mobile-menu-item" data-pane="reading-list">
             <i class="fas fa-bookmark"></i> Reading List
         </a>
-        <a class="mobile-menu-item" data-pane="friends">
-            <i class="fas fa-user-friends"></i> Friends
+        <a class="mobile-menu-item" data-pane="squads">
+            <i class="fas fa-people-group"></i> Squads
         </a>
         <a class="mobile-menu-item" data-pane="settings">
             <i class="fas fa-cog"></i> Settings
@@ -164,6 +168,28 @@
         <!-- Date, Time & Productivity Score -->
 
     </div>
+
+    <!-- Squads: right dock on desktop; on small screens one strip with two pages, Squads | Bookmarks -->
+    <aside class="squad-dock" aria-label="Squads">
+        <div class="dock-list" id="squad-dock-list">
+            <span class="dock-edge-dot top"></span>
+            <div class="dock-scroll" id="squad-dock-scroll"></div>
+            <span class="dock-edge-dot bottom"></span>
+        </div>
+        <div class="dock-add"><button class="squad-tile add" onclick="Squads.openCreate()" title="New squad"><i class="fas fa-plus"></i></button></div>
+    </aside>
+    <div class="dock-pager" id="dock-pager" aria-label="Squads and bookmarks">
+        <div class="dock-pager-labels">
+            <button data-page="0" class="on">Squads<span class="label-dot" hidden></span></button>
+            <button data-page="1">Bookmarks</button>
+        </div>
+        <div class="dock-pages" id="dock-pages">
+            <div class="dock-page" id="dock-page-squads"></div>
+            <div class="dock-page reading-list-grid bookmark-strip-grid" id="dock-page-bookmarks"></div>
+        </div>
+    </div>
+    <div class="sq-slideover-backdrop" id="sq-slideover-backdrop"></div>
+    <aside class="sq-slideover" id="sq-slideover" aria-label="Squad"></aside>
 
     <!-- Bookmarks: left column on desktop, strip on small screens; available on every tab -->
     <aside class="bookmark-strip" aria-label="Bookmarks">
@@ -255,6 +281,9 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Squads: at-risk alerts and nudge rows -->
+                        <div class="sq-pulse" id="sq-pulse"></div>
 
                         <!-- Timeline: the hero of Today -->
                         <div class="timeline-section">
@@ -423,12 +452,24 @@ Write freely here, like you're writing in your personal journal..." id="journal-
     </div>
 
     <!-- ═══════════════════════════════════════════ -->
-    <!-- PANE: FRIENDS                               -->
+    <!-- PANE: SQUADS (replaces Friends)             -->
     <!-- ═══════════════════════════════════════════ -->
-    <div class="pane" id="pane-friends" style="display:none;">
+    <div class="pane" id="pane-squads" style="display:none;">
         <div class="container-fluid">
-            <div class="misc-pane-layout">
-                <h4 class="section-title mb-4">Friends</h4>
+            <div class="misc-pane-layout sq-pane">
+                <div id="squads-notices"></div>
+                <div class="sq-section"><h4 class="section-title m-0">My squads</h4></div>
+                <div class="sq-grid" id="squads-grid"></div>
+                <div class="sq-section">
+                    <h4 class="section-title m-0">Challenges</h4>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-paper btn-sm" onclick="Squads.openChallenge()"><i class="fas fa-flag-checkered me-1"></i>New challenge</button>
+                        <button class="btn btn-paper btn-sm" onclick="Squads.toggleDiscover()"><i class="fas fa-compass me-1"></i>Discover</button>
+                    </div>
+                </div>
+                <div class="sq-grid" id="challenges-grid"></div>
+                <div id="discover-box" class="mt-3" hidden></div>
+                <h4 class="section-title mt-5 mb-4">Friends</h4>
                 <div class="row">
                     <div class="col-md-6">
                         <div class="section mb-4">
@@ -461,6 +502,15 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- PANE: SQUAD (one squad)                     -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div class="pane" id="pane-squad" style="display:none;">
+        <div class="container-fluid">
+            <div class="misc-pane-layout sq-pane" id="squad-page"></div>
         </div>
     </div>
 
@@ -712,6 +762,20 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                     </div>
                     <!-- Notifications -->
                     <div class="tab-pane fade" id="sp-notifications">
+                        <div class="settings-card mb-3" id="sq-notify-settings">
+                            <h6 class="settings-card-title"><i class="fas fa-people-group me-2"></i>Squad notifications</h6>
+                            <p class="text-brown small">Nudges, at-risk alerts, focus sessions and your weekly recap. Mute a single squad from its Settings tab.</p>
+                            <div class="d-flex gap-2 align-items-center flex-wrap mb-3">
+                                <button class="btn btn-paper btn-sm" id="sq-push-btn" onclick="Squads.togglePush()">Turn on push on this device</button>
+                                <span class="small text-brown" id="sq-push-state"></span>
+                            </div>
+                            <div class="sq-sentence">
+                                Keep quiet from <input type="time" class="form-control form-control-sm" id="sq-quiet-start">
+                                to <input type="time" class="form-control form-control-sm" id="sq-quiet-end">,
+                                and send me at most <input type="number" min="1" max="30" class="form-control form-control-sm" id="sq-daily-cap" style="width:80px"> pushes a day.
+                                <button class="btn btn-paper btn-sm btn-primary ms-1" onclick="Squads.savePrefs()">Save</button>
+                            </div>
+                        </div>
                         <div class="settings-card mb-3">
                             <h6 class="settings-card-title"><i class="fas fa-bell me-2"></i>Notifications</h6>
                             <div class="mb-3">
@@ -753,6 +817,12 @@ Write freely here, like you're writing in your personal journal..." id="journal-
                     </div>
                     <!-- Data -->
                     <div class="tab-pane fade" id="sp-data">
+                        <div class="settings-card mb-3">
+                            <h6 class="settings-card-title"><i class="fas fa-file-export me-2"></i>Squad history</h6>
+                            <p class="text-brown small mb-3">Download everything you contributed to squads and challenges.</p>
+                            <a class="btn btn-paper btn-sm" href="/squads/api/export/?format=csv">CSV</a>
+                            <a class="btn btn-paper btn-sm" href="/squads/api/export/">JSON</a>
+                        </div>
                         <div class="settings-card">
                             <h6 class="settings-card-title"><i class="fas fa-trash-alt me-2"></i>Delete Account</h6>
                             <p class="text-brown small mb-3">This will permanently delete your account and all data including habits, tasks, journals, routines, and settings. This cannot be undone.</p>
@@ -1545,6 +1615,7 @@ Write freely here, like you're writing in your personal journal..." id="journal-
     <script src="{% static 'board/js/share-poster.js' %}?v={{ ASSET_VERSION }}"></script>
     <script src="{% static 'board/js/gamification.js' %}?v={{ ASSET_VERSION }}"></script>
     <script src="{% static 'board/js/greeting.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'squads/squads.js' %}?v={{ ASSET_VERSION }}"></script>
     <script>
         (function () {
             const params = new URLSearchParams(window.location.search);

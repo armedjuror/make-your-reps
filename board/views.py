@@ -37,6 +37,7 @@ from board.days import (
     block_event, checkin_event, day_payload, get_detail, logical_today, needs_checkin, resolve_day,
 )
 from board.streaks import StreakContext, refresh_streak
+from squads.scoping import visible_items
 
 
 # ──────────────────────────────────────
@@ -291,10 +292,10 @@ class UserDetailView(APIView):
             User.objects.filter(pk=user_id).update(**name_fields)
 
         slip_metric = request.data.get('slip_metric')
-        if slip_metric and not Metric.objects.filter(pk=slip_metric, user_id=user_id).exists():
+        if slip_metric and not visible_items(user_id, Metric, squads=False).filter(pk=slip_metric).exists():
             return Response({'status': 'failed', 'error': 'Metric not found'}, status=status.HTTP_404_NOT_FOUND)
         journal_habit = request.data.get('journal_habit')
-        if journal_habit and not Habit.objects.filter(pk=journal_habit, user_id=user_id, is_system=False).exists():
+        if journal_habit and not visible_items(user_id, Habit, squads=False).filter(pk=journal_habit, is_system=False).exists():
             return Response({'status': 'failed', 'error': 'Habit not found'}, status=status.HTTP_404_NOT_FOUND)
         serializer = UserDetailSerializer(user_detail, data=request.data, partial=True)
         if serializer.is_valid():
@@ -412,11 +413,13 @@ class TaskViewSet(AuthenticatedModelViewSet):
     serializer_class = TaskSerializer
 
     def get_queryset(self):
-        return Task.objects.filter(is_deleted=False).select_related('group')
+        # Own todos plus squad todos the caller can see (shared, or assigned to them)
+        request = getattr(self, 'request', None)
+        user_id = request.session.get('user_id') if request else None
+        return visible_items(user_id, Task).filter(is_deleted=False).select_related('group', 'board')
 
     def list(self, request, **kwargs):
-        user_id = request.session.get('user_id')
-        queryset = self.get_queryset().filter(user_id=user_id)
+        queryset = self.get_queryset()
 
         # Filter by group
         group_id = request.GET.get('group')
@@ -472,7 +475,15 @@ class TaskViewSet(AuthenticatedModelViewSet):
 
     def update(self, request, **kwargs):
         task_id = kwargs.get('pk')
-        task = self.get_queryset().get(pk=task_id, user_id=request.session.get('user_id'))
+        task = self.get_queryset().filter(pk=task_id).first()
+        if task is None:
+            return Response({'status': 'failed', 'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        uid = request.session.get('user_id')
+        if task.board.type != 'personal':
+            from squads import items as squad_items
+            denied = squad_items.check_todo_update(task, uid, request.data)
+            if denied:
+                return Response({'status': 'failed', 'error': denied}, status=status.HTTP_403_FORBIDDEN)
         deadline_changing = 'deadline' in request.data and request.data['deadline'] != (
             task.deadline.isoformat() if task.deadline else None
         )
@@ -482,7 +493,9 @@ class TaskViewSet(AuthenticatedModelViewSet):
             serializer.save()
             gamification_result = {}
             is_done_value = request.data.get('is_done')
-            uid = request.session.get('user_id')
+            if task.board.type != 'personal' and is_done_value in (True, False) and was_done != is_done_value:
+                from squads import items as squad_items
+                squad_items.todo_closed(task, uid, is_done_value)
             if is_done_value is True and not was_done:
                 update_daily_streak(uid)
                 gamification_result = award_points(uid, 'todo')
@@ -509,7 +522,15 @@ class TaskViewSet(AuthenticatedModelViewSet):
 
     def destroy(self, request, **kwargs):
         task_id = kwargs.get('pk')
-        task = self.get_queryset().get(pk=task_id, user_id=request.session.get('user_id'))
+        task = self.get_queryset().filter(pk=task_id).first()
+        if task is None:
+            return Response({'status': 'failed', 'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        if task.board.type != 'personal':
+            from squads.scoping import can_edit
+            if not (can_edit(task.board, request.session.get('user_id'))
+                    or task.user_id == request.session.get('user_id')):
+                return Response({'status': 'failed', 'error': 'Only squad admins can delete this todo'},
+                                status=status.HTTP_403_FORBIDDEN)
         task.is_deleted = True
         task.save()
         TimelineEvent.objects.filter(
@@ -659,8 +680,8 @@ class HabitViewSet(AuthenticatedModelViewSet):
         # the hidden system habit (Reset) is never listed or edited here.
         request = getattr(self, 'request', None)
         user_id = request.session.get('user_id') if request else None
-        qs = Habit.objects.exclude(status=HabitStatus.DELETED.value).filter(
-            user_id=user_id, is_system=False)
+        qs = visible_items(user_id, Habit, squads=False).exclude(
+            status=HabitStatus.DELETED.value).filter(is_system=False)
         if request is not None and not privacy.include_private(request):
             qs = qs.filter(is_private=False)
         return qs
@@ -677,7 +698,7 @@ class HabitViewSet(AuthenticatedModelViewSet):
         start_date = now - timezone.timedelta(days=60)
         streak_ctx = StreakContext(user_id)
         queryset = self.get_queryset().filter(
-            user_id=user_id, status=habit_status
+            status=habit_status
         ).annotate(
             total_reps_count=Count('habitlog', filter=Q(habitlog__is_done=True))
         ).prefetch_related(
@@ -701,7 +722,7 @@ class HabitViewSet(AuthenticatedModelViewSet):
     def _check_metric(self, request, user_id):
         """A linked metric must belong to the caller. Returns an error Response or None."""
         mid = request.data.get('metric')
-        if mid and not Metric.objects.filter(pk=mid, user_id=user_id).exists():
+        if mid and not visible_items(user_id, Metric, squads=False).filter(pk=mid).exists():
             return Response({'status': 'failed', 'error': 'Metric not found'}, status=status.HTTP_404_NOT_FOUND)
         return None
 
@@ -1136,7 +1157,7 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
         # Private habits: absent while locked (or a bare 'Reminder' when the habit opts in).
         masked_habit_ids = []
         if not privacy.include_private(request):
-            hidden = Habit.objects.filter(user_id=user_id, is_private=True)
+            hidden = visible_items(user_id, Habit, squads=False).filter(is_private=True)
             masked_habit_ids = list(hidden.filter(private_reminder=True).values_list('id', flat=True))
             hidden_ids = list(hidden.values_list('id', flat=True))
             if hidden_ids:
@@ -1229,7 +1250,7 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
             from board import metrics as _mx
             _, hidden_metrics = _hidden_ids(request, user_id)
             _mx.ensure_sleep_metric(user_id)
-            for m in (Metric.objects.filter(user_id=user_id).exclude(id__in=hidden_metrics)
+            for m in (visible_items(user_id, Metric, squads=False).filter().exclude(id__in=hidden_metrics)
                       .filter(Q(remind_at__isnull=False) | Q(system_key='sleep'))):
                 m_time = _mx.reminder_time(m, detail)
                 if m_time is None:
@@ -1370,7 +1391,7 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
                 mark_done = action_response.get('mark_done', False)
                 # Log against the event's own date, not today: answering yesterday's card logs yesterday.
                 event_day = timezone.localtime(event.timestamp).date()
-                habit = Habit.objects.get(pk=model_id, user_id=user_id)
+                habit = visible_items(user_id, Habit, squads=False).get(pk=model_id)
                 habit_log, _ = HabitLog.objects.get_or_create(habit=habit, date=event_day)
                 habit_log.is_done = mark_done
                 habit_log.save()
@@ -1379,7 +1400,7 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
             elif event.event_type == TimelineEventType.TODO and model_name == 'Task':
                 if action_response.get('snooze'):
                     # Move the deadline to the chosen day (default tomorrow), keeping the time of day
-                    task = Task.objects.get(pk=model_id, user_id=user_id, is_deleted=False)
+                    task = visible_items(user_id, Task).get(pk=model_id, is_deleted=False)
                     target = action_response['snooze']
                     new_day = (timezone.localdate() + timedelta(days=1) if target == 'tomorrow'
                                else datetime.strptime(str(target), '%Y-%m-%d').date())
@@ -1388,7 +1409,13 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
                     task.save()
                     return {'propagated': True, 'model': 'Task', 'snoozed_to': task.deadline.isoformat()}
                 mark_done = action_response.get('mark_done', False)
-                task = Task.objects.get(pk=model_id, user_id=user_id)
+                task = visible_items(user_id, Task).get(pk=model_id)
+                if task.board.type != 'personal':
+                    from squads import items as squad_items
+                    if squad_items.check_todo_update(task, user_id, {'is_done': mark_done}):
+                        return {'propagated': False, 'reason': 'Only the assignee can close this todo'}
+                    if task.is_done != mark_done:
+                        squad_items.todo_closed(task, user_id, mark_done)
                 task.is_done = mark_done
                 task.save()
                 return {'propagated': True, 'model': 'Task', 'is_done': mark_done}
@@ -1674,7 +1701,7 @@ class AccountabilityPartnerViewSet(AuthenticatedModelViewSet):
             return Response({'status': 'failed', 'error': 'habit_id and email are required'}, status=400)
 
         try:
-            habit = Habit.objects.get(pk=habit_id, user_id=user_id, status=HabitStatus.ACTIVE.value)
+            habit = visible_items(user_id, Habit, squads=False).get(pk=habit_id, status=HabitStatus.ACTIVE.value)
         except Habit.DoesNotExist:
             return Response({'status': 'failed', 'error': 'Habit not found'}, status=404)
 
@@ -1881,7 +1908,7 @@ def _compute_productivity_score(user_id, target_date, now=None, include_private=
     weekday = target_date.weekday()
     is_today = target_date == timezone.localdate()
 
-    active_habits = Habit.objects.filter(user_id=user_id, status=HabitStatus.ACTIVE.value, is_system=False)
+    active_habits = visible_items(user_id, Habit, squads=False).filter(status=HabitStatus.ACTIVE.value, is_system=False)
     if not include_private:
         active_habits = active_habits.filter(is_private=False)
     habits_due = 0
@@ -1910,10 +1937,9 @@ def _compute_productivity_score(user_id, target_date, now=None, include_private=
     routine_due = routine_done + sum(1 for b in blocks if b['status'] == 'missed')
     routine_score = (routine_done / routine_due * 3) if routine_due else 3.0
 
-    todos_due = Task.objects.filter(user_id=user_id, is_deleted=False, deadline__date=target_date).count()
-    todos_done_deadline = Task.objects.filter(user_id=user_id, is_deleted=False, deadline__date=target_date, is_done=True).count()
-    todos_done_no_deadline = Task.objects.filter(
-        user_id=user_id, is_deleted=False, deadline__isnull=True, is_done=True, updated_at__date=target_date
+    todos_due = visible_items(user_id, Task, squads=False).filter(is_deleted=False, deadline__date=target_date).count()
+    todos_done_deadline = visible_items(user_id, Task, squads=False).filter(is_deleted=False, deadline__date=target_date, is_done=True).count()
+    todos_done_no_deadline = visible_items(user_id, Task, squads=False).filter(is_deleted=False, deadline__isnull=True, is_done=True, updated_at__date=target_date
     ).count()
     total_todos_done = todos_done_deadline + todos_done_no_deadline
     todo_score = (total_todos_done / max(todos_due, total_todos_done) * 1) if max(todos_due, total_todos_done) > 0 else 1.0
@@ -1931,7 +1957,7 @@ def _compute_productivity_score(user_id, target_date, now=None, include_private=
     from board.metrics import day_value, effective_target, reminder_time
     from board.models import Metric, MetricEntry
     detail = UserDetail.objects.filter(user_id=user_id).first()
-    trackers = Metric.objects.filter(user_id=user_id, created_at__date__lte=target_date).exclude(system_key='slip')
+    trackers = visible_items(user_id, Metric, squads=False).filter(created_at__date__lte=target_date).exclude(system_key='slip')
     if not include_private:
         trackers = trackers.filter(is_private=False)
     logged_ids = set(MetricEntry.objects.filter(metric__in=trackers, date=target_date)

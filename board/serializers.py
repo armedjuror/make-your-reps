@@ -10,6 +10,7 @@ from board.models import (
     AccountabilityPartner, Friend, FriendRequest,
     Achievement, UserAchievement,
 )
+from squads.scoping import visible_items
 
 
 def get_habit_log(habit, target_month, target_year):
@@ -78,10 +79,17 @@ class TaskGroupSerializer(serializers.ModelSerializer):
 
 class TaskSerializer(serializers.ModelSerializer):
     group_name = serializers.CharField(source='group.name', read_only=True, default=None)
+    squad = serializers.SerializerMethodField()
 
     class Meta:
         model = Task
         exclude = ('user', 'is_deleted', 'updated_at')
+        # Squad fields are set through the squads API only
+        read_only_fields = ('board', 'completion_mode', 'assignee', 'completed_by')
+
+    def get_squad(self, obj):
+        from squads.items import squad_tag
+        return squad_tag(obj.board) if obj.board_id else None
 
 
 class DailyDataSerializer(serializers.ModelSerializer):
@@ -109,8 +117,15 @@ class HabitSerializer(serializers.ModelSerializer):
         fields = ['id', 'habit', 'detail', 'identity', 'frequency',
                   'notify_at', 'status', 'created_at', 'stats', 'remark',
                   'on_light', 'on_disrupted', 'metric', 'current_stage', 'complete_when',
-                  'is_private', 'private_reminder', 'step_count']
+                  'is_private', 'private_reminder', 'step_count', 'squad']
         read_only_fields = ['created_at', 'user']
+
+    squad = serializers.SerializerMethodField()
+
+    def get_squad(self, obj):
+        # A personal habit linked to a squad habit shows that squad's tag
+        from squads.items import squad_tag_for_habit
+        return squad_tag_for_habit(obj)
 
     def get_step_count(self, obj):
         # Uses the prefetch cache when the view provided one.
@@ -336,6 +351,8 @@ class ReadingListItemSerializer(serializers.ModelSerializer):
 class TimelineEventSerializer(serializers.ModelSerializer):
     # Task group for todo events, so the timeline can show and filter by it
     group = serializers.SerializerMethodField()
+    # Squad (or challenge) tag for squad todos and linked habits / trackers
+    squad = serializers.SerializerMethodField()
 
     class Meta:
         model = TimelineEvent
@@ -349,11 +366,34 @@ class TimelineEventSerializer(serializers.ModelSerializer):
         from board.models import Task
         cache = self.context.setdefault('_task_groups', {})
         if ref['id'] not in cache:
-            row = (Task.objects.filter(pk=ref['id'], user_id=obj.user_id)
+            row = (visible_items(obj.user_id, Task).filter(pk=ref['id'])
                    .values('group_id', 'group__name').first())
             cache[ref['id']] = ({'id': row['group_id'], 'name': row['group__name']}
                                 if row and row['group_id'] else None)
         return cache[ref['id']]
+
+    def get_squad(self, obj):
+        ref = obj.reference or {}
+        model, ref_id = ref.get('model'), ref.get('id')
+        if model not in ('Task', 'Habit', 'Metric') or not ref_id:
+            return None
+        cache = self.context.setdefault('_squad_tags', {})
+        key = (model, ref_id)
+        if key not in cache:
+            from squads import items as squad_items
+            from board.models import Habit, Metric, Task
+            tag = None
+            if model == 'Task':
+                row = Task.objects.filter(pk=ref_id).select_related('board').first()
+                tag = squad_items.squad_tag(row.board) if row else None
+            elif model == 'Habit':
+                row = Habit.objects.filter(pk=ref_id).select_related('linked_squad_habit__board').first()
+                tag = squad_items.squad_tag_for_habit(row) if row else None
+            else:
+                row = Metric.objects.filter(pk=ref_id).select_related('linked_squad_tracker__board').first()
+                tag = squad_items.squad_tag_for_metric(row) if row else None
+            cache[key] = tag
+        return cache[key]
 
 
 class SearchEngineSerializer(serializers.ModelSerializer):

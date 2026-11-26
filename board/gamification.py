@@ -5,6 +5,7 @@ Call award_points() and update_daily_streak() on key user actions.
 from datetime import date, timedelta
 
 from django.utils import timezone
+from squads.scoping import visible_items
 
 LEVELS = [
     (1, 'Newcomer',         0),
@@ -161,7 +162,7 @@ def check_and_award_achievements(user_id):
 
     # Private and system habits never feed achievements: an unlock toast would hint at them.
     active_habits = list(
-        Habit.objects.filter(user_id=user_id, status=HabitStatus.ACTIVE.value,
+        visible_items(user_id, Habit, squads=False).filter(status=HabitStatus.ACTIVE.value,
                              is_private=False, is_system=False).prefetch_related('habitlog_set')
     )
     if len(active_habits) >= 5:
@@ -199,20 +200,19 @@ def check_and_award_achievements(user_id):
             unlock('clean_sweep_7')
 
     # ── Todos ──
-    total_done = Task.objects.filter(user_id=user_id, is_deleted=False, is_done=True).count()
+    total_done = visible_items(user_id, Task, squads=False).filter(is_deleted=False, is_done=True).count()
     if total_done >= 1:
         unlock('first_todo_done')
     if total_done >= 100:
         unlock('todos_100')
 
     # Inbox zero: no pending tasks today
-    pending = Task.objects.filter(user_id=user_id, is_deleted=False, is_done=False).count()
+    pending = visible_items(user_id, Task, squads=False).filter(is_deleted=False, is_done=False).count()
     if total_done > 0 and pending == 0:
         unlock('inbox_zero')
 
     # Overachiever: 10 todos done today
-    done_today = Task.objects.filter(
-        user_id=user_id, is_deleted=False, is_done=True, updated_at__date=today
+    done_today = visible_items(user_id, Task, squads=False).filter(is_deleted=False, is_done=True, updated_at__date=today
     ).count()
     if done_today >= 10:
         unlock('overachiever')
