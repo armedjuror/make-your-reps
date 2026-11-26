@@ -7,3 +7,4 @@ class MainConfig(AppConfig):
 
     def ready(self):
         import main.signals
+        import main.analytics_signals  # noqa: F401

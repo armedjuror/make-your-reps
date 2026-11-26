@@ -45,7 +45,7 @@
     }
 
     /* ── Layout ── */
-    .page { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 48px 24px 80px; }
+    .page { position: relative; z-index: 1; max-width: 1240px; margin: 0 auto; padding: 48px 24px 80px; }
 
     /* ── Top bar ── */
     .topbar {
@@ -288,6 +288,54 @@
       transition: border-color 0.15s, color 0.15s;
     }
     .admin-link:hover { border-color: var(--border-mid); color: var(--text); }
+
+    /* ── Analytics ── */
+    .controls { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:28px; }
+    .chip { text-decoration:none; background:var(--bg-raised); border:1px solid var(--border); border-radius:999px;
+            padding:6px 14px; font-size:12px; font-weight:600; color:var(--text-dim); }
+    .chip:hover { border-color:var(--border-mid); color:var(--text); }
+    .chip.on { border-color:rgba(186,130,56,0.5); color:var(--amber); background:rgba(186,130,56,0.12); }
+    .controls .meta { margin-left:auto; font-size:11px; color:var(--text-mute); }
+    .notice { background:var(--bg-card); border:1px dashed var(--border-mid); border-radius:12px; padding:16px 20px;
+              font-size:13px; color:var(--text-mid); line-height:1.6; margin-bottom:28px; }
+    .notice code { background:var(--bg-raised); padding:1px 6px; border-radius:4px; font-size:12px; color:var(--gold); }
+    .notice.err { border-color:rgba(212,165,116,0.5); }
+    .stats-grid.six { grid-template-columns: repeat(6, 1fr); margin-bottom:28px; }
+    @media (max-width: 900px) { .stats-grid.six { grid-template-columns: repeat(3, 1fr); } }
+    .stat-value.sm { font-size:26px; }
+    .stat-sub { font-size:12px; color:var(--amber-dim); margin-top:4px; }
+    .card { background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom:28px; }
+    .card h3 { font-size:13px; font-weight:700; color:var(--text); margin-bottom:4px; }
+    .card .hint { font-size:12px; color:var(--text-mute); margin-bottom:16px; line-height:1.5; }
+    .two-col { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+    @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+    .two-col > .card { margin-bottom:0; }
+    .row-gap { margin-bottom:28px; }
+    .chart-box { position:relative; height:260px; }
+    table.t { width:100%; border-collapse:collapse; font-size:13px; }
+    table.t th { padding:9px 10px; text-align:left; font-size:10px; font-weight:700; letter-spacing:0.1em;
+                 text-transform:uppercase; color:var(--text-mute); border-bottom:1px solid var(--border); }
+    table.t td { padding:9px 10px; border-bottom:1px solid var(--border); color:var(--text-mid); }
+    table.t tr:last-child td { border-bottom:none; }
+    table.t .num { text-align:right; font-variant-numeric: tabular-nums; }
+    table.t .dim { color:var(--text-mute); font-size:12px; }
+    .bar { height:6px; border-radius:3px; background:linear-gradient(90deg, var(--amber), var(--gold)); min-width:2px; }
+    .bar-track { background:var(--bg-raised); border-radius:3px; width:120px; }
+    .tag { display:inline-block; border-radius:4px; padding:1px 7px; font-size:10px; font-weight:700; letter-spacing:0.06em; }
+    .tag.low { background:rgba(212,165,116,0.14); color:var(--red); border:1px solid rgba(212,165,116,0.3); }
+    .tag.thin { background:var(--bg-raised); color:var(--text-mute); border:1px solid var(--border-mid); }
+    .tag.ok { background:rgba(143,179,163,0.12); color:var(--green); border:1px solid rgba(143,179,163,0.3); }
+    .tag.kind { background:var(--bg-raised); color:var(--text-dim); border:1px solid var(--border); }
+    .cohort td.cell { text-align:center; font-weight:700; font-size:12px; color:#1a1510; }
+    .funnel-row { display:flex; align-items:center; gap:12px; margin-bottom:10px; font-size:13px; }
+    .funnel-row .lbl { width:220px; color:var(--text-mid); }
+    .funnel-row .track { flex:1; background:var(--bg-raised); border-radius:4px; height:22px; overflow:hidden; }
+    .funnel-row .fill { height:100%; background:linear-gradient(90deg, var(--amber), var(--gold)); }
+    .funnel-row .val { width:90px; text-align:right; color:var(--text); font-weight:700; font-variant-numeric: tabular-nums; }
+    .pill-list { display:flex; flex-wrap:wrap; gap:6px; }
+    .pill-list span { background:var(--bg-raised); border:1px solid var(--border); border-radius:5px; padding:3px 8px;
+                      font-size:11px; color:var(--text-dim); font-family: ui-monospace, Menlo, monospace; }
+    .scroll { max-height:420px; overflow-y:auto; }
   </style>
 </head>
 <body>
@@ -302,8 +350,203 @@
       <span class="topbar-user">Signed in as <strong>{{ request.user.username }}</strong></span>
     </div>
 
-    <!-- Stats -->
-    <p class="section-label">Overview</p>
+    <!-- ═══ Growth & usage ═══ -->
+    <div class="controls">
+      <a class="chip {% if a.days == 30 %}on{% endif %}" href="?days=30{% if a.include_staff %}&staff=1{% endif %}">30 days</a>
+      <a class="chip {% if a.days == 90 %}on{% endif %}" href="?days=90{% if a.include_staff %}&staff=1{% endif %}">90 days</a>
+      <a class="chip {% if a.include_staff %}on{% endif %}" href="?days={{ a.days }}{% if not a.include_staff %}&staff=1{% endif %}">
+        {% if a.include_staff %}Including staff{% else %}Staff excluded ({{ db.excluded }}){% endif %}</a>
+      <a class="chip" href="?days={{ a.days }}{% if a.include_staff %}&staff=1{% endif %}&refresh=1">Refresh</a>
+      {% if posthog_app_url %}<a class="chip" href="{{ posthog_app_url }}" target="_blank" rel="noopener">Open PostHog &nearr;</a>{% endif %}
+      <span class="meta">Updated {{ a.generated_at|date:"M j, H:i" }} &middot; cached 15 min</span>
+    </div>
+
+    {% if not a.posthog_configured %}
+    <div class="notice">
+      PostHog isn't connected, so only the Postgres numbers show (what people <em>did</em>). To add opens, time per pane
+      and control usage, set <code>POSTHOG_API_KEY</code> + <code>POSTHOG_HOST</code> (to send) and
+      <code>POSTHOG_PERSONAL_API_KEY</code> + <code>POSTHOG_PROJECT_ID</code> + <code>POSTHOG_APP_HOST</code> (to read here).
+    </div>
+    {% elif a.posthog_error %}
+    <div class="notice err">PostHog query failed, so the PostHog sections are hidden: <code>{{ a.posthog_error }}</code></div>
+    {% endif %}
+
+    <p class="section-label">Growth &amp; activity</p>
+    <div class="stats-grid six">
+      <div class="stat-card">
+        <div class="stat-value sm">{{ db.total_users }}</div>
+        <div class="stat-label">Users</div>
+        <div class="stat-sub">{{ db.signups_google }} via Google</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value sm">{{ db.signups_7d }}</div>
+        <div class="stat-label">New in 7 days</div>
+        <div class="stat-sub">{{ db.signups_today }} today &middot; {{ db.signups_30d }} in 30d</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value sm">{{ db.dau }}{% if ph %}<span style="font-size:15px;color:var(--text-mute);"> / {{ ph.dau }}</span>{% endif %}</div>
+        <div class="stat-label">DAU &mdash; did / opened</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value sm">{{ db.wau }}{% if ph %}<span style="font-size:15px;color:var(--text-mute);"> / {{ ph.wau }}</span>{% endif %}</div>
+        <div class="stat-label">WAU &mdash; did / opened</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value sm">{{ db.mau }}{% if ph %}<span style="font-size:15px;color:var(--text-mute);"> / {{ ph.mau }}</span>{% endif %}</div>
+        <div class="stat-label">MAU &mdash; did / opened</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value sm">{{ db.stickiness }}%</div>
+        <div class="stat-label">Stickiness (DAU/MAU)</div>
+        {% if ph %}<div class="stat-sub">{{ ph.minutes_per_user }} min / user / 30d</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Active users and signups per day</h3>
+      <p class="hint">"Did something" comes from Postgres and goes back to launch. "Opened" comes from PostHog and starts
+        when analytics.js ships. The gap between them is people who glance at the board and leave.</p>
+      <div class="chart-box"><canvas id="activityChart"></canvas></div>
+    </div>
+
+    <div class="two-col row-gap">
+      <div class="card">
+        <h3>Activation &mdash; signups in the last {{ a.days }} days</h3>
+        <p class="hint">Where new people drop off on their way to a habit.</p>
+        {% for f in db.funnel %}
+        <div class="funnel-row">
+          <span class="lbl">{{ f.label }}</span>
+          <span class="track"><span class="fill" style="display:block;width:{{ f.pct }}%;"></span></span>
+          <span class="val">{{ f.count }} <span style="color:var(--text-mute);font-weight:400;">{{ f.pct }}%</span></span>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="card">
+        <h3>Retention by signup week</h3>
+        <p class="hint">% of each weekly cohort who did something in their week N (W0 = first 7 days). Blank = not over yet.</p>
+        <table class="t cohort">
+          <thead><tr><th>Week of</th><th class="num">Users</th>{% for c in db.cohorts.0.cells %}<th class="num">W{{ forloop.counter0 }}</th>{% endfor %}</tr></thead>
+          <tbody>
+          {% for row in db.cohorts %}
+            <tr>
+              <td>{{ row.week|date:"M j" }}</td>
+              <td class="num">{{ row.size }}</td>
+              {% for cell in row.cells %}
+                {% if cell is None or not row.size %}<td></td>
+                {% else %}<td class="cell" style="background:rgba(212,175,55,{{ cell|add:12 }}e-2);color:{% if cell > 45 %}#1a1510{% else %}var(--text){% endif %};">{{ cell }}%</td>{% endif %}
+              {% endfor %}
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <p class="section-label">Feature adoption &mdash; what to keep, simplify or cut</p>
+    <div class="card">
+      <p class="hint">From Postgres: who has ever used each feature, and who used it in the last 30 days as a share of monthly
+        doers ({{ db.mau }}). <span class="tag low">LOW</span> = under 10% of MAU, worth simplifying, hiding or cutting.
+        {% if db.mau < 10 %}<span class="tag thin">THIN</span> = under 10 monthly doers, so shares aren't meaningful yet.{% endif %}</p>
+      <table class="t">
+        <thead><tr><th>Feature</th><th>Counts as</th><th class="num">Ever</th><th class="num">Last 30d</th><th>Share of MAU</th><th>Last used</th><th></th></tr></thead>
+        <tbody>
+        {% for f in db.features %}
+          <tr>
+            <td style="color:var(--text);font-weight:600;">{{ f.label }}</td>
+            <td class="dim">{{ f.what }}</td>
+            <td class="num">{{ f.ever }} <span class="dim">{{ f.ever_pct }}%</span></td>
+            <td class="num">{{ f.recent }}</td>
+            <td><div style="display:flex;align-items:center;gap:8px;"><div class="bar-track"><div class="bar" style="width:{{ f.share }}%;max-width:100%;"></div></div><span class="dim">{{ f.share }}%</span></div></td>
+            <td class="dim">{{ f.last_used|date:"M j"|default:"never" }}</td>
+            <td>{% if f.flag == 'low' %}<span class="tag low">LOW</span>{% elif f.flag == 'thin' %}<span class="tag thin">THIN</span>{% else %}<span class="tag ok">OK</span>{% endif %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if ph %}
+    <p class="section-label">Where time goes &mdash; PostHog, last {{ a.days }} days</p>
+    <div class="two-col row-gap">
+      <div class="card">
+        <h3>Time per pane and modal</h3>
+        <p class="hint">Visible, non-idle time only (stops after 2 min without input). {{ ph.minutes_30d }} min total in the last 30 days.</p>
+        <div class="chart-box" style="height:{% if chart.views|length > 8 %}360{% else %}260{% endif %}px;"><canvas id="viewsChart"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Clients</h3>
+        <p class="hint">Who opens the app where (from app_opened, one per 30-min session).</p>
+        <table class="t">
+          <thead><tr><th>Client</th><th class="num">Users</th><th class="num">Sessions</th></tr></thead>
+          <tbody>
+          {% for c in ph.clients %}<tr><td>{{ c.client }}</td><td class="num">{{ c.users }}</td><td class="num">{{ c.opens }}</td></tr>
+          {% empty %}<tr><td colspan="3" class="dim">No opens recorded yet.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+        <h3 style="margin-top:20px;">Feature events</h3>
+        <p class="hint">Server-side events, counted the same from every client.</p>
+        <div class="scroll" style="max-height:220px;">
+        <table class="t">
+          <thead><tr><th>Event</th><th class="num">Users</th><th class="num">Count</th></tr></thead>
+          <tbody>
+          {% for e in ph.feature_events %}<tr><td>{{ e.event }}</td><td class="num">{{ e.users }}</td><td class="num">{{ e.count }}</td></tr>
+          {% empty %}<tr><td colspan="3" class="dim">None yet.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Pane and modal detail</h3>
+      <table class="t">
+        <thead><tr><th>View</th><th></th><th class="num">Users</th><th class="num">Visits</th><th class="num">Minutes</th><th class="num">Share</th><th class="num">Min / user</th><th class="num">Median visit</th></tr></thead>
+        <tbody>
+        {% for v in ph.views %}
+          <tr><td style="color:var(--text);">{{ v.view }}</td><td><span class="tag kind">{{ v.kind|upper }}</span></td>
+            <td class="num">{{ v.users }}</td><td class="num">{{ v.visits }}</td><td class="num">{{ v.minutes }}</td>
+            <td class="num">{{ v.share }}%</td><td class="num">{{ v.per_user_min }}</td><td class="num">{{ v.median_s }}s</td></tr>
+        {% empty %}<tr><td colspan="8" class="dim">No view time recorded yet.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <p class="section-label">Controls &mdash; what gets clicked</p>
+    <div class="two-col row-gap">
+      <div class="card">
+        <h3>Most used</h3>
+        <div class="scroll">
+        <table class="t">
+          <thead><tr><th>Control</th><th class="num">Clicks</th><th class="num">Users</th></tr></thead>
+          <tbody>
+          {% for c in ph.top_clicks %}<tr><td><code style="font-size:12px;">{{ c.action }}</code> <span class="dim">{{ c.seen_on }}</span></td><td class="num">{{ c.count }}</td><td class="num">{{ c.users }}</td></tr>
+          {% empty %}<tr><td colspan="3" class="dim">No clicks recorded yet.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Barely or never used</h3>
+        <p class="hint">Clicked 3 times or fewer, then handlers in the board template nobody has clicked in this window.</p>
+        <div class="scroll">
+        <table class="t">
+          <tbody>
+          {% for c in ph.rare_clicks %}<tr><td><code style="font-size:12px;">{{ c.action }}</code></td><td class="num">{{ c.count }}</td><td class="num">{{ c.users }} users</td></tr>{% endfor %}
+          </tbody>
+        </table>
+        {% if ph.never_clicked %}
+        <h3 style="margin:16px 0 8px;">Never clicked ({{ ph.never_clicked|length }})</h3>
+        <div class="pill-list">{% for h in ph.never_clicked %}<span>{{ h }}</span>{% endfor %}</div>
+        {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {{ chart|json_script:"chart-data" }}
+
+    <!-- Email audience -->
+    <p class="section-label">Email audience</p>
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-value">{{ total_users }}</div>
@@ -501,5 +744,45 @@
     </div>
 
   </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+  (function () {
+    const data = JSON.parse(document.getElementById('chart-data').textContent);
+    const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+    Chart.defaults.color = css('--text-mute');
+    Chart.defaults.borderColor = css('--border');
+    Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+    const fmt = d => new Date(d + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+
+    const sets = [
+      { type: 'line', label: 'Did something', data: data.doers, borderColor: css('--gold'), backgroundColor: css('--gold'),
+        tension: 0.3, pointRadius: 0, borderWidth: 2, yAxisID: 'y' },
+    ];
+    if (data.openers) sets.push({ type: 'line', label: 'Opened', data: data.openers, borderColor: css('--green'),
+        backgroundColor: css('--green'), borderDash: [4, 3], tension: 0.3, pointRadius: 0, borderWidth: 2, yAxisID: 'y' });
+    sets.push({ type: 'bar', label: 'Signups', data: data.signups, backgroundColor: 'rgba(186,130,56,0.35)',
+        borderRadius: 2, yAxisID: 'y' });
+    new Chart(document.getElementById('activityChart'), {
+      data: { labels: data.labels.map(fmt), datasets: sets },
+      options: { maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, boxHeight: 10 } } },
+        scales: { x: { grid: { display: false }, ticks: { maxTicksLimit: 10 } },
+                  y: { beginAtZero: true, ticks: { precision: 0 } } } }
+    });
+
+    const vc = document.getElementById('viewsChart');
+    if (vc && data.views.length) {
+      new Chart(vc, {
+        type: 'bar',
+        data: { labels: data.views.map(v => v.view), datasets: [{ label: 'Minutes', data: data.views.map(v => v.minutes),
+          backgroundColor: data.views.map(v => v.view.startsWith('modal:') ? 'rgba(143,179,163,0.7)' : 'rgba(212,175,55,0.75)'),
+          borderRadius: 3 }] },
+        options: { indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { display: false } },
+          scales: { x: { beginAtZero: true, title: { display: true, text: 'minutes' } }, y: { grid: { display: false } } } }
+      });
+    }
+  }());
+  </script>
 </body>
 </html>
