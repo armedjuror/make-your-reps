@@ -194,3 +194,68 @@ class FitnessProfile(models.Model):
 
     def latest_answers(self):
         return (self.answers[-1] or {}).get('answers', {}) if self.answers else {}
+
+
+# ── Workouts ───────────────────────────────────────────────
+
+class SessionStatus(models.TextChoices):
+    IN_PROGRESS = 'in_progress'
+    COMPLETED = 'completed'       # >= 50% of planned sets and the duration check passed
+    PARTIAL = 'partial'           # saved; feeds progression, no streak or XP
+    ABANDONED = 'abandoned'       # paused for 30+ minutes, or never finished
+    SKIPPED = 'skipped'           # "Skip" on the timeline
+
+
+class WorkoutSession(models.Model):
+    """One performed (or skipped) workout. SetLog rows are the source of truth; totals derive from them."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='workouts')
+    program = models.ForeignKey(Program, null=True, blank=True, on_delete=models.SET_NULL)
+    habit = models.ForeignKey('board.Habit', null=True, blank=True, on_delete=models.SET_NULL)
+    date = models.DateField()                         # the logical day it started on
+    name = models.CharField(max_length=120, blank=True, default='')
+    source = models.CharField(max_length=8, default='player')   # player / manual / timeline
+    steps = models.JSONField(default=list)            # the frozen step list the player plays
+    state = models.JSONField(default=dict)            # {index, step_started_at, rest_extensions...}
+    started_at = models.DateTimeField()
+    ended_at = models.DateTimeField(null=True, blank=True)
+    paused_at = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=12, choices=SessionStatus.choices, default=SessionStatus.IN_PROGRESS)
+    est_seconds = models.PositiveIntegerField(default=0)
+    est_kcal = models.PositiveIntegerField(default=0)   # MET x kg x hours, always labelled an estimate
+    xp = models.PositiveIntegerField(default=0)
+    summary = models.JSONField(default=dict)          # totals, PRs, progression suggestions
+    strava_activity_id = models.BigIntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-started_at']
+        indexes = [models.Index(fields=['user', 'date'])]
+
+
+class SetLog(models.Model):
+    session = models.ForeignKey(WorkoutSession, on_delete=models.CASCADE, related_name='sets')
+    exercise = models.ForeignKey(Exercise, on_delete=models.PROTECT, related_name='set_logs')
+    set_index = models.PositiveSmallIntegerField()    # 1-based within the exercise for the session
+    side = models.CharField(max_length=5, blank=True, default='')   # '' / right / left
+    target = models.JSONField(default=dict)           # {"reps": [10, 12]} or {"seconds": 40}
+    reps_done = models.PositiveSmallIntegerField(null=True, blank=True)
+    seconds_done = models.PositiveSmallIntegerField(null=True, blank=True)
+    load = models.CharField(max_length=24, blank=True, default='')  # "red band" / "8 kg"
+    rir = models.PositiveSmallIntegerField(null=True, blank=True)    # reps in reserve, optional
+    skipped = models.BooleanField(default=False)
+    logged_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('session', 'exercise', 'set_index', 'side')
+        ordering = ['session', 'id']
+
+
+class FitnessTick(models.Model):
+    """A ticked timeline-only item (e.g. the pre-workout snack) for a date."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='fitness_ticks')
+    date = models.DateField()
+    key = models.CharField(max_length=24)
+
+    class Meta:
+        unique_together = ('user', 'date', 'key')

@@ -15,9 +15,11 @@ from board.models import FITNESS_HABIT_KINDS, HabitStep, HabitStepLog, MetricEnt
 
 def _threshold(step, target_date):
     from board.metrics import effective_target
-    value = (step.rule or {}).get('value', 'target')
+    rule = step.rule or {}
+    value = rule.get('value', 'target')
     if value == 'target':
-        return effective_target(step.metric, step.metric.user_id, target_date)
+        base = effective_target(step.metric, step.metric.user_id, target_date)
+        return None if base is None else base + Decimal(str(rule.get('plus', 0)))
     return Decimal(str(value))
 
 

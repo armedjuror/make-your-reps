@@ -4,7 +4,7 @@ from datetime import date, timedelta
 from board.models import HabitLog, HabitStepLog, UserDetail
 from board.streaks import close_day, had_activity
 
-from .base import START, WED, FitnessBase
+from .base import WED, FitnessBase
 
 
 def done(habit, d):

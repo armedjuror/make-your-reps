@@ -198,7 +198,7 @@ const Timeline = {
         return `
             <div class="timeline-item ${this.esc('timeline-type-' + event.event_type)} ${responded} ${event.status ? this.esc('tl-st-' + event.status) : ''} ${extraClass}" data-id="${this.esc(event.id)}">
                 <div class="timeline-time">${timeText}</div>
-                <div class="timeline-icon"><i class="${this.getTypeIcon(event.event_type)}"></i></div>
+                <div class="timeline-icon"><i class="${this.esc(event.icon || this.getTypeIcon(event.event_type))}"></i></div>
                 <div class="timeline-content">
                     ${label ? `<div class="timeline-label">${label}</div>` : ''}
                     <div class="tl-line">
@@ -409,6 +409,7 @@ const Timeline = {
         if (e.action_response) return false;
         if (e.event_type === 'routine') return e.status === 'pending' || e.status === 'missed';
         const id = String(e.id);
+        if (e.event_type === 'fitness') return !!(e.completable && e.action);
         if (id.startsWith('reset-') || /^metric-\d+-/.test(id)) return !!e.action;
         return ['habit', 'todo', 'journal'].includes(e.event_type) && !!e.action;
     },
@@ -446,6 +447,7 @@ const Timeline = {
 
     renderAction(event) {
         // Only the resilient-day items (blocks, check-in, reset, tracker reminders) are handled there
+        if (typeof FitnessTimeline !== 'undefined' && FitnessTimeline.owns(event)) return FitnessTimeline.actions(event);
         if (Resilient.owns(event)) return Resilient.actions(event);
         if (!event.action) return '';
         if (event.action_response) {
@@ -509,6 +511,10 @@ const Timeline = {
             }
         }
 
+        // Focus mode on a task (the web app only: the extension has no player)
+        if (event.event_type === 'todo' && event.reference && event.reference.model === 'Task' && typeof FocusPlayer !== 'undefined') {
+            html += `<button type="button" class="btn btn-paper btn-sm ms-1 rs-icon-btn" data-fp="focus-entry" data-fp-global data-task="${this.esc(event.reference.id)}" title="Focus on this" aria-label="Focus on this"><i class="fas fa-crosshairs"></i></button>`;
+        }
         html += '</div>';
         return html;
     },

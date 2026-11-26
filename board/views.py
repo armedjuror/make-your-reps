@@ -1248,6 +1248,11 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
                     'created_at': m_ts.isoformat(), 'updated_at': m_ts.isoformat(),
                 })
 
+            # Fitness items: workout, snack, meals, water, walk, weigh-in, bedtime (computed, never stored)
+            from fitness.timeline import fitness_events
+            _hh, _hm = _hidden_ids(request, user_id)
+            data.extend(fitness_events(user_id, parsed_date, _hh, _hm))
+
             # Journal card is done once the day has a journal entry
             _dd = DailyData.objects.filter(user_id=user_id, date=parsed_date).first()
             _journaled = bool(_dd and (_dd.journal or '').strip())

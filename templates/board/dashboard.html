@@ -26,6 +26,9 @@
     <link rel="stylesheet" href="{% static 'board/css/share-poster.css' %}?v={{ ASSET_VERSION }}">
     <link rel="stylesheet" href="{% static 'board/css/resilient.css' %}?v={{ ASSET_VERSION }}">
     <link rel="stylesheet" href="{% static 'board/css/fitness.css' %}?v={{ ASSET_VERSION }}">
+    <link rel="stylesheet" href="{% static 'board/css/focus-player.css' %}?v={{ ASSET_VERSION }}">
+    <!-- three.js for the exercise viewer: pinned, loaded only when a player or exercise screen asks -->
+    <script type="importmap">{"imports": {"three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
     <!-- PWA -->
     <link rel="manifest" href="{% static 'manifest.json' %}">
     <meta name="theme-color" content="#98753f">
@@ -216,6 +219,9 @@
                                 </button>
                                 <button class="btn btn-paper btn-sm" id="pomodoro-toggle-mode">
                                     <i class="fas fa-coffee"></i>
+                                </button>
+                                <button class="btn btn-paper btn-sm" data-fp="focus-entry" data-fp-global title="Focus mode" aria-label="Open focus mode">
+                                    <i class="fas fa-expand"></i>
                                 </button>
                             </div>
                                 </div>
@@ -1544,6 +1550,8 @@ Write freely here, like you're writing in your personal journal..." id="journal-
     <script src="{% static 'board/js/resilient.js' %}?v={{ ASSET_VERSION }}"></script>
     <script src="{% static 'board/js/trackers.js' %}?v={{ ASSET_VERSION }}"></script>
     <script src="{% static 'board/js/fitness.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'js/exercise3d.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/focus-player.js' %}?v={{ ASSET_VERSION }}"></script>
     <script src="{% static 'board/js/setup.js' %}?v={{ ASSET_VERSION }}"></script>
     <script src="{% static 'board/js/timeline.js' %}?v={{ ASSET_VERSION }}"></script>
     <script src="{% static 'board/js/default-pane.js' %}?v={{ ASSET_VERSION }}"></script>

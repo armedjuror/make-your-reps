@@ -72,15 +72,16 @@ def ensure_fitness(user_id, targets, track_calories=False):
 
 
 @transaction.atomic
-def install_program(habit, template, start_date, name=None):
-    """Copy a concrete template (exercise ids, no open slots) into a Program for the habit."""
+def install_program(habit, template, start_date, name=None, phases=None):
+    """Copy a concrete template (exercise ids, no open slots) into a Program for the habit.
+    ``phases`` overrides template.phases (the builder's resolved output)."""
     from fitness.models import DayTemplate, Phase, Program, ProgramStatus
     Program.objects.filter(habit=habit).delete()
     program = Program.objects.create(
         user_id=habit.user_id, habit=habit, template=template, name=name or template.name,
         start_date=start_date, status=ProgramStatus.ACTIVE,
     )
-    for order, ph in enumerate(template.phases):
+    for order, ph in enumerate(phases if phases is not None else template.phases):
         phase = Phase.objects.create(program=program, order=order, name=ph['name'],
                                      week_from=ph['weeks'][0], week_to=ph['weeks'][1])
         for weekday, day in sorted(ph['days'].items(), key=lambda kv: int(kv[0])):

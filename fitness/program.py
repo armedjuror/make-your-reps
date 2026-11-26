@@ -16,6 +16,7 @@ from board.models import (
 
 WARMUP_BLOCKS = ('warmup', 'cooldown')
 DISRUPTED_WALK_MIN = 20
+WORKOUT_DAY_WATER_ML = 500
 
 
 @dataclass
@@ -87,6 +88,17 @@ def session_exercises(day):
     return [tuple(x) for x in out]
 
 
+def is_session_day(user_id, target_date):
+    """A planned workout that is going ahead (not swapped for a walk on a disrupted day)."""
+    from fitness.models import DayKind
+    habit = Habit.objects.filter(user_id=user_id, kind=HabitKind.ACTIVITY).first()
+    program = active_program(habit) if habit else None
+    if not program:
+        return False
+    _, day = program_day(program, target_date)
+    return bool(day and day.kind == DayKind.SESSION and not is_disrupted(user_id, target_date))
+
+
 def is_disrupted(user_id, target_date):
     return DayPlan.objects.filter(user_id=user_id, date=target_date, mode=DayMode.DISRUPTED).exists()
 
@@ -134,6 +146,8 @@ def expand_activity(habit, target_date):
     items = [walk_item(habit.user_id)]
     for ex_id, sets, spec in exs:
         ex_id = overrides.get(ex_id, ex_id)
+        if ex_id is None:          # dropped ("something hurts" with no safe regression)
+            continue
         ex = library.get(ex_id) or Exercise.objects.filter(id=ex_id).first()
         name = ex.name if ex else ex_id.replace('_', ' ').capitalize()
         target = ex.dose_label(sets, spec.get('reps'), spec.get('seconds')) if ex else f'{sets} sets'
@@ -153,8 +167,10 @@ def expand_health(habit, target_date):
     weigh_day = int(((profile.times if profile else {}) or {}).get('weigh_in_day', 0))
     items = []
     water = targets.get('water_ml')
-    items.append(Item('water', f'Drink {_num(round(water / 1000, 1))} L water' if water else 'Drink water',
-                      metric_key='water', rule={'cmp': 'gte', 'value': 'target'}))
+    plus = WORKOUT_DAY_WATER_ML if is_session_day(habit.user_id, target_date) else 0
+    rule = {'cmp': 'gte', 'value': 'target', **({'plus': plus} if plus else {})}
+    items.append(Item('water', f'Drink {_num(round((water + plus) / 1000, 1))} L water' if water else 'Drink water',
+                      metric_key='water', rule=rule))
     protein = targets.get('protein_g')
     items.append(Item('protein', f'Hit {protein} g protein' if protein else 'Hit protein',
                       metric_key='protein', rule={'cmp': 'gte', 'value': 'target'}))

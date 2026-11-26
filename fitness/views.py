@@ -13,7 +13,7 @@ from board import metrics as mx
 from board.day_views import auth, fail, fitness_steps_payload, hidden_ids, ok, parse_date
 from board.days import logical_today
 from board.models import HabitKind, HabitLog, Metric
-from fitness.models import DayKind, Exercise, FitnessProfile
+from fitness.models import DayKind, Exercise, FitnessProfile, FitnessTick, SessionStatus, WorkoutSession
 from fitness.program import (
     active_program, expand, fitness_habits, program_day, program_end, session_exercises, week_of,
 )
@@ -99,8 +99,9 @@ class OverviewView(APIView):
         hidden_habits, hidden_metrics = hidden_ids(request, user_id)
         profile = FitnessProfile.objects.filter(user_id=user_id).first()
         out = {'date': d.isoformat(), 'today': today.isoformat(), 'onboarded': bool(profile),
-               'profile': {'targets': profile.targets, 'why': profile.why,
-                           'track_calories': profile.track_calories} if profile else None,
+               'profile': {'targets': profile.targets, 'why': profile.why, 'explanation': profile.explanation,
+                           'track_calories': profile.track_calories, 'times': profile.times,
+                           'answered': bool(profile.answers)} if profile else None,
                'program': None, 'activity': None, 'health': None, 'trackers': [], 'preview': []}
         for habit in fitness_habits(user_id):
             if habit.id in hidden_habits:
@@ -110,6 +111,15 @@ class OverviewView(APIView):
             if habit.kind == HabitKind.ACTIVITY:
                 block['day'] = day_summary(habit, d)
                 block['session'] = session_payload(habit, d)
+                if block['session']:
+                    from fitness.workouts import expire_stale, program_steps
+                    expire_stale(user_id)
+                    program = active_program(habit)
+                    _, day = program_day(program, d)
+                    block['session']['minutes'] = max(1, round(sum(x['est_seconds'] for x in program_steps(program, day)) / 60))
+                    last = WorkoutSession.objects.filter(user_id=user_id, date=d).exclude(
+                        status=SessionStatus.ABANDONED).order_by('-started_at').first()
+                    block['workout'] = {'id': last.id, 'status': last.status, 'xp': last.xp} if last else None
                 out['activity'] = block
                 program = active_program(habit)
                 if program:
@@ -184,3 +194,40 @@ class ExerciseListView(APIView):
         if request.GET.get('pattern'):
             qs = qs.filter(pattern=request.GET['pattern'])
         return ok([exercise_json(e) for e in qs])
+
+
+class TickView(APIView):
+    """Tick a timeline-only fitness item (the pre-workout snack)."""
+
+    @auth
+    def post(self, request, user_id):
+        key = request.data.get('key')
+        if key not in ('snack',):
+            return fail('Unknown item')
+        d = parse_date(request.data.get('date')) or logical_today(user_id)
+        if request.data.get('done', True):
+            FitnessTick.objects.get_or_create(user_id=user_id, date=d, key=key)
+        else:
+            FitnessTick.objects.filter(user_id=user_id, date=d, key=key).delete()
+        return ok(message='Saved')
+
+
+class OnboardingView(APIView):
+    """GET: the latest answers (Edit my answers). POST: preview, or install with confirm=true."""
+
+    @auth
+    def get(self, request, user_id):
+        from fitness.onboarding import latest_answers
+        return ok({'answers': latest_answers(user_id)})
+
+    @auth
+    def post(self, request, user_id):
+        from fitness import onboarding
+        from fitness.rules import AnswerError
+        data = dict(request.data)
+        confirm = bool(data.pop('confirm', False))
+        try:
+            out = onboarding.confirm(user_id, data) if confirm else onboarding.plan(data)[-1]
+        except AnswerError as e:
+            return fail(str(e))
+        return ok(out)

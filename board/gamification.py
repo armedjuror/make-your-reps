@@ -25,6 +25,7 @@ POINTS = {
     'pomodoro':    15,
     'achievement': 50,
     'reset':       10,
+    'xp':          1,    # exact amounts: award_points(user, 'xp', multiplier=n)
 }
 
 
