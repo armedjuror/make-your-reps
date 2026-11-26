@@ -25,6 +25,10 @@
     <link rel="stylesheet" href="{% static 'board/css/dashboard.css' %}?v={{ ASSET_VERSION }}">
     <link rel="stylesheet" href="{% static 'board/css/share-poster.css' %}?v={{ ASSET_VERSION }}">
     <link rel="stylesheet" href="{% static 'board/css/resilient.css' %}?v={{ ASSET_VERSION }}">
+    <link rel="stylesheet" href="{% static 'board/css/fitness.css' %}?v={{ ASSET_VERSION }}">
+    <link rel="stylesheet" href="{% static 'board/css/focus-player.css' %}?v={{ ASSET_VERSION }}">
+    <!-- three.js for the exercise viewer: pinned, loaded only when a player or exercise screen asks -->
+    <script type="importmap">{"imports": {"three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
     <!-- PWA -->
     <link rel="manifest" href="{% static 'manifest.json' %}">
     <meta name="theme-color" content="#98753f">
@@ -70,9 +74,9 @@
                 <i class="fas fa-book"></i>
                 <span>Journal</span>
             </a>
-            <a class="tab-item" data-pane="achievements">
-                <i class="fas fa-trophy"></i>
-                <span>Progress</span>
+            <a class="tab-item" data-pane="fitness">
+                <i class="fas fa-dumbbell"></i>
+                <span>Fitness</span>
             </a>
             <div class="dropdown">
                 <a class="tab-item dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
@@ -80,6 +84,7 @@
                     <span>More</span>
                 </a>
                 <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); switchPane('achievements')"><i class="fas fa-trophy me-2"></i>Progress</a></li>
                     <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); switchPane('reading-list')"><i class="fas fa-bookmark me-2"></i>Reading List</a></li>
                     <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); switchPane('friends')"><i class="fas fa-user-friends me-2"></i>Friends</a></li>
                     <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); switchPane('settings')"><i class="fas fa-cog me-2"></i>Settings</a></li>
@@ -93,7 +98,7 @@
         <!-- Score + Datetime (desktop right side) -->
         <div class="tab-meta-group">
             <div class="home-meta">
-                <div class="tab-item productivity-score" id="productivity-score">
+                <div class="tab-item productivity-score" id="productivity-score" data-pane="achievements" role="button" tabindex="0" title="Productivity score · open Progress" aria-label="Productivity score, open Progress">
                     <div class="score-ring">
                         <svg viewBox="0 0 80 80">
                             <circle class="score-bg" cx="40" cy="40" r="34" />
@@ -101,10 +106,9 @@
                         </svg>
                         <div class="score-value" id="score-value">-</div>
                     </div>
-                    <div class="score-label">Productivity</div>
                 </div>
             </div>
-            <div class="tab-item home-datetime" id="home-datetime"></div>
+            <button class="header-menu-btn" id="header-menu-btn" aria-label="Menu"><i class="fas fa-bars"></i></button>
         </div>
         <!-- Mobile: hamburger -->
 {#        <button class="hamburger-btn" id="hamburger-btn">#}
@@ -129,6 +133,9 @@
         </a>
         <a class="mobile-menu-item" data-pane="journals">
             <i class="fas fa-book"></i> Journal
+        </a>
+        <a class="mobile-menu-item" data-pane="fitness">
+            <i class="fas fa-dumbbell"></i> Fitness
         </a>
         <a class="mobile-menu-item" data-pane="achievements">
             <i class="fas fa-trophy"></i> Progress
@@ -195,6 +202,7 @@
                         <div class="today-head">
                             <div class="greeting-main">
                                 <h1 id="greeting-text" aria-live="polite" data-name="{{ request.user.first_name }}"></h1>
+                                <div class="today-date" id="home-datetime"></div>
                             </div>
                         <div class="pomodoro-section">
                             <div class="pomodoro-main">
@@ -211,6 +219,9 @@
                                 </button>
                                 <button class="btn btn-paper btn-sm" id="pomodoro-toggle-mode">
                                     <i class="fas fa-coffee"></i>
+                                </button>
+                                <button class="btn btn-paper btn-sm" data-fp="focus-entry" data-fp-global title="Focus mode" aria-label="Open focus mode">
+                                    <i class="fas fa-expand"></i>
                                 </button>
                             </div>
                                 </div>
@@ -358,6 +369,15 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- PANE: FITNESS                               -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div class="pane" id="pane-fitness" style="display:none;">
+        <div class="container-fluid">
+            <div id="fitness-root"><div class="tracker-empty">Loading your plan&hellip;</div></div>
         </div>
     </div>
 
@@ -1483,13 +1503,9 @@ Write freely here, like you're writing in your personal journal..." id="journal-
             <i class="fas fa-book"></i>
             <span>Journal</span>
         </a>
-        <a class="mobile-bottom-nav-item" data-pane="achievements">
-            <i class="fas fa-trophy"></i>
-            <span>Progress</span>
-        </a>
-        <a class="mobile-bottom-nav-item" id="mobile-bottom-more-btn">
-            <i class="fas fa-ellipsis-h"></i>
-            <span>More</span>
+        <a class="mobile-bottom-nav-item" data-pane="fitness">
+            <i class="fas fa-dumbbell"></i>
+            <span>Fitness</span>
         </a>
     </nav>
 
@@ -1533,6 +1549,9 @@ Write freely here, like you're writing in your personal journal..." id="journal-
     <script src="{% static 'board/js/dashboard.js' %}?v={{ ASSET_VERSION }}"></script>
     <script src="{% static 'board/js/resilient.js' %}?v={{ ASSET_VERSION }}"></script>
     <script src="{% static 'board/js/trackers.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/fitness.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'js/exercise3d.js' %}?v={{ ASSET_VERSION }}"></script>
+    <script src="{% static 'board/js/focus-player.js' %}?v={{ ASSET_VERSION }}"></script>
     <script src="{% static 'board/js/setup.js' %}?v={{ ASSET_VERSION }}"></script>
     <script src="{% static 'board/js/timeline.js' %}?v={{ ASSET_VERSION }}"></script>
     <script src="{% static 'board/js/default-pane.js' %}?v={{ ASSET_VERSION }}"></script>

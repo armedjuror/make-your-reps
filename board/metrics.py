@@ -118,7 +118,7 @@ def chips(metric, limit_days=90):
 
 # ── Logging ────────────────────────────────────────────────
 
-def log_entry(metric, *, value=None, data=None, note='', at=None):
+def log_entry(metric, *, value=None, data=None, note='', at=None, source='manual'):
     """
     Log against a metric. counter: +1 entry. additive: adds ``value`` as a new
     entry. single: one row per day, logging again overwrites it and keeps the
@@ -143,12 +143,14 @@ def log_entry(metric, *, value=None, data=None, note='', at=None):
         entry = MetricEntry.objects.filter(metric=metric, date=day).order_by('-at').first()
         if entry:
             data['previous'] = float(entry.value)
-            entry.value, entry.data, entry.at = value, data, at
+            entry.value, entry.data, entry.at, entry.source = value, data, at, source
             entry.save()
         else:
-            entry = MetricEntry.objects.create(metric=metric, date=day, at=at, value=value, data=data)
+            entry = MetricEntry.objects.create(metric=metric, date=day, at=at, value=value, data=data,
+                                               source=source)
     else:
-        entry = MetricEntry.objects.create(metric=metric, date=day, at=at, value=value, data=data)
+        entry = MetricEntry.objects.create(metric=metric, date=day, at=at, value=value, data=data,
+                                           source=source)
 
     if metric.system_key == 'sleep':
         # The Sleep tracker keeps the day's sleep_hours in step, like the old sleep card did
@@ -163,6 +165,7 @@ def log_entry(metric, *, value=None, data=None, note='', at=None):
         JournalEntry.objects.filter(metric_entry=entry).delete()
         JournalEntry.objects.create(journal=journal, date=day, at=at, text=note, metric_entry=entry)
     sync_metric_habits(metric, day)
+    sync_linked_steps(metric, day)
     return entry
 
 
@@ -176,7 +179,14 @@ def undo_last(metric, target_date):
     if metric.system_key == 'sleep':
         DailyData.objects.filter(user_id=metric.user_id, date=target_date).update(sleep_hours=None)
     sync_metric_habits(metric, target_date)
+    sync_linked_steps(metric, target_date)
     return True
+
+
+def sync_linked_steps(metric, target_date):
+    """Fitness subtasks linked to this metric re-evaluate on every write, whatever its source."""
+    from fitness.links import on_metric_change
+    on_metric_change(metric, target_date)
 
 
 def sync_metric_habits(metric, target_date):
@@ -299,6 +309,7 @@ def sync_sleep(user_id, target_date, hours):
     if hours is None:
         if existing:
             existing.delete()
+            sync_linked_steps(metric, target_date)
         return
     if existing and existing.value == Decimal(str(hours)):
         return
@@ -309,6 +320,7 @@ def sync_sleep(user_id, target_date, hours):
         existing.save()
     else:
         MetricEntry.objects.create(metric=metric, date=target_date, at=at, value=Decimal(str(hours)))
+    sync_linked_steps(metric, target_date)
 
 
 def personal_journal_text(text):

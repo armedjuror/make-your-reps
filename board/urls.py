@@ -83,5 +83,7 @@ urlpatterns = [
     path('api/private/lock/', PrivateLockView.as_view(), name='private-lock'),
     path('api/private/reset/request/', PrivateResetRequestView.as_view(), name='private-reset-request'),
     path('api/private/reset/confirm/', PrivateResetConfirmView.as_view(), name='private-reset-confirm'),
+    path('api/fitness/', include('fitness.urls')),
+    path('api/focus/', include('focus.urls')),
     path('api/', include(api_router.urls)),
 ]

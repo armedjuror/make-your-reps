@@ -44,6 +44,7 @@ function switchPane(pane) {
         panesLoaded[pane] = true;
         if (pane === 'home') initHomePane();
         else if (pane === 'trackers') initTrackersPane();
+        else if (pane === 'fitness') Fitness.init();
         else if (pane === 'journals') initJournalsPane();
         else if (pane === 'todos') initTodosPane();
         else if (pane === 'achievements') MiscPane.loadAchievements();
@@ -126,6 +127,11 @@ function bindEvents() {
         item.addEventListener('click', () => switchPane(item.dataset.pane));
     });
     document.getElementById('mobile-bottom-more-btn')?.addEventListener('click', toggleMobileMenu);
+    document.getElementById('header-menu-btn')?.addEventListener('click', toggleMobileMenu);
+    // The score ring opens Progress (keyboard too)
+    document.getElementById('productivity-score')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); switchPane('achievements'); }
+    });
     document.getElementById('mobile-theme-btn')?.addEventListener('click', () => { closeMobileMenu(); Theme.openAppearance(); });
     // Settings is now triggered from the Others pane sub-tab
 
@@ -239,31 +245,14 @@ const General = {
         });
     },
     startClock() {
+        // The date sits in the Today header; the time left the nav (the device shows it)
         const update = () => {
-            const now = new Date();
-            const clockFormat = document.body.getAttribute('data-clock') || '12h';
-            let timeStr;
-
-            if (clockFormat === '24h') {
-                timeStr = now.toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit', second: '2-digit'});
-            } else {
-                timeStr = now.toLocaleTimeString('en-US', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                    hour12: true
-                });
-            }
-
-            const dateStr = now.toLocaleDateString('en-US', {
-                weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
-            });
-
-            document.getElementById('home-datetime').innerHTML =
-                `<span class="home-date">${dateStr}</span><span class="home-time">${timeStr}</span>`;
+            const dateStr = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+            const el = document.getElementById('home-datetime');
+            if (el && el.textContent !== dateStr) el.textContent = dateStr;
         };
         update();
-        this.clockInterval = setInterval(update, 1000);
+        this.clockInterval = setInterval(update, 60000);
     }
 }
 

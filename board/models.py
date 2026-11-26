@@ -188,6 +188,15 @@ class DailyData(models.Model):
         unique_together = ('user', 'date')
 
 
+class HabitKind(models.TextChoices):
+    USER = ''                 # the user's own habit
+    HEALTH = 'health'         # fitness: daily health checklist (water, protein, sleep...)
+    ACTIVITY = 'activity'     # fitness: subtasks rotate with the active Program
+
+
+FITNESS_HABIT_KINDS = (HabitKind.HEALTH, HabitKind.ACTIVITY)
+
+
 class HabitStatus(models.TextChoices):
     ACTIVE = 'active'
     DELETED = 'deleted'
@@ -218,6 +227,8 @@ class Habit(models.Model):
     is_private = models.BooleanField(default=False)
     is_system = models.BooleanField(default=False)                      # hidden system habit (Reset)
     private_reminder = models.BooleanField(default=False)               # locked: show a bare 'Reminder' instead of nothing
+    # Fitness: health / activity habits live in the Fitness tab, not on the Habits page
+    kind = models.CharField(max_length=10, choices=HabitKind.choices, default=HabitKind.USER, blank=True)
 
     def _streaks(self):
         """(current, max), cached on the instance. Views may set ``_streak_ctx`` to share one context."""
@@ -557,6 +568,9 @@ class Metric(models.Model):
     is_system = models.BooleanField(default=False)  # built-in, cannot be deleted
     system_key = models.CharField(max_length=8, blank=True, default='')  # 'sleep' or 'slip'
     remind_at = models.TimeField(null=True, blank=True)  # daily reminder on the timeline
+    # Fitness trackers (water, protein, steps...) live in the Fitness tab, not on the Trackers page
+    domain = models.CharField(max_length=10, blank=True, default='')        # '' / 'fitness'
+    fitness_key = models.CharField(max_length=16, blank=True, default='')   # water / protein / kcal / steps / weight / waist
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -572,6 +586,7 @@ class MetricEntry(models.Model):
     at = models.DateTimeField()      # auto now, editable for back-logging
     value = models.DecimalField(max_digits=8, decimal_places=2)
     data = models.JSONField(default=dict)  # {trigger: 'after meal', urge: 4}; single: {previous: 6.5}
+    source = models.CharField(max_length=8, default='manual')  # manual / workout / strava / mcp
 
     class Meta:
         ordering = ['at', 'id']
@@ -586,6 +601,12 @@ class HabitStep(models.Model):
     how_to = models.TextField(blank=True)                 # push through heels, don't arch
     stage = models.PositiveSmallIntegerField(default=1)   # shown when habit.current_stage >= stage
     metric = models.ForeignKey(Metric, null=True, blank=True, on_delete=models.SET_NULL)
+    # Fitness: a stable key ('ex:band_squat', 'walk', 'water') lets rotating subtasks reuse one row
+    # across days; rule ticks the step from its metric: {"cmp": "gte"|"within_pct", "value": "target"|n,
+    # "pct": 10, "window": "day"|"week"}
+    key = models.CharField(max_length=64, blank=True, default='')
+    rule = models.JSONField(null=True, blank=True)
+    optional = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['order', 'id']
@@ -596,6 +617,7 @@ class HabitStepLog(models.Model):
     date = models.DateField()
     done = models.BooleanField(default=False)
     value = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    source = models.CharField(max_length=8, default='manual')  # manual / auto (linked rule) / workout
 
     class Meta:
         unique_together = ('step', 'date')

@@ -60,6 +60,8 @@ INSTALLED_APPS = [
 
     'main',
     'board',
+    'fitness',
+    'focus',
 ]
 
 MIDDLEWARE = [

@@ -1,0 +1,117 @@
+/* fitness.css — Fitness tab. Theme variables only, so every MYR theme applies. */
+#pane-fitness .container-fluid { max-width: 1100px; }
+.fit-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 12px 0 4px; }
+.fit-sub { color: var(--ink-gray); font-size: .85rem; }
+.fit-h { color: var(--ink-brown); font-weight: 700; font-size: 1rem; margin-bottom: 10px; }
+.fit-muted { color: var(--ink-gray); font-size: .85rem; }
+.fit-empty p { color: var(--ink-gray); }
+
+/* Target rings */
+.fit-rings { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+.fit-ring-card { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 6px;
+    border: 1px solid var(--coffee-stain); border-radius: var(--radius-md); background: rgba(var(--accent-rgb), .04); }
+.fit-ring-card.met { border-color: var(--ink-green); }
+.fit-ring { position: relative; width: 84px; height: 84px; }
+.fit-ring svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+.fit-ring .score-fill { transition: stroke-dashoffset .8s ease; }
+.fit-ring-card.met .score-fill { stroke: var(--ink-green); }
+.fit-ring-val { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-weight: 700; color: var(--ink-black); font-size: .95rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.fit-ring-val small { font-weight: 400; color: var(--ink-gray); font-size: .7rem; }
+.fit-ring-label { font-weight: 600; color: var(--ink-brown); font-size: .85rem; }
+.fit-ring-label small { color: var(--ink-gray); font-weight: 400; }
+.fit-ring-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
+
+/* Workout card */
+.fit-workout-title { font-weight: 700; font-size: 1.1rem; color: var(--ink-black); margin-bottom: 4px; }
+.fit-workout-title small { color: var(--ink-gray); font-weight: 400; font-size: .85rem; }
+.fit-ex-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin: 10px 0; }
+.fit-ex { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px; text-align: center;
+    border: 1px solid var(--coffee-stain); border-radius: var(--radius-md); background: none; color: var(--ink-black); cursor: pointer; }
+.fit-ex:hover, .fit-ex:focus-visible { border-color: var(--ink-brown); background: rgba(var(--accent-rgb), .06); }
+.fit-ex img, .fit-ex-noimg { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--radius-sm); }
+.fit-ex-noimg { display: flex; align-items: center; justify-content: center; color: var(--ink-gray); font-size: 1.6rem; background: rgba(var(--accent-rgb), .06); }
+.fit-ex-name { font-weight: 600; font-size: .85rem; }
+.fit-ex-dose { color: var(--ink-gray); font-size: .75rem; }
+.fit-workout-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.fit-preview { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+.fit-pre { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: var(--radius-pill);
+    border: 1px solid var(--coffee-stain); font-size: .75rem; color: var(--ink-gray); }
+.fit-pre.fit-k-session { color: var(--ink-brown); border-color: var(--ink-brown); }
+
+/* Checklists */
+.fit-checks { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 16px; }
+.fit-check-head { display: flex; justify-content: space-between; align-items: center; }
+.fit-check-head h6 { margin: 0 0 6px; color: var(--ink-brown); font-weight: 700; }
+.fit-streak { color: var(--ink-gray); font-size: .85rem; }
+.fit-step label small { color: var(--ink-gray); margin-left: 4px; }
+.fit-linked { color: var(--ink-gray); font-size: .7rem; margin-left: 4px; }
+
+/* Calendar */
+.fit-cal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 8px; }
+.fit-cal-month { display: inline-block; min-width: 120px; text-align: center; color: var(--ink-black); font-weight: 600; font-size: .9rem; }
+.fit-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.fit-cal-dow { text-align: center; color: var(--ink-gray); font-size: .7rem; }
+.fit-cal-day { aspect-ratio: 1; max-height: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    border: 1px solid transparent; border-radius: var(--radius-sm); background: rgba(var(--accent-rgb), .04);
+    color: var(--ink-black); font-size: .8rem; cursor: pointer; padding: 0; }
+.fit-cal-day:disabled { cursor: default; opacity: .45; }
+.fit-cal-day i { font-size: .7rem; color: var(--ink-gray); }
+.fit-cal-day.fit-k-session i { color: var(--ink-brown); }
+.fit-cal-day.today { border-color: var(--ink-brown); }
+.fit-cal-day.done { background: rgba(var(--accent-rgb), .18); }
+.fit-day-list small { color: var(--ink-gray); margin-left: 4px; }
+
+/* Diet */
+.fit-diet { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 0; }
+.fit-diet dt { color: var(--ink-gray); font-weight: 400; }
+.fit-diet dd { margin: 0; color: var(--ink-black); }
+.fit-diet small { color: var(--ink-gray); }
+
+/* Exercise detail */
+.fit-ex-view { position: relative; width: 100%; max-width: 360px; margin: 0 auto 10px; aspect-ratio: 1; }
+.fit-ex-still { width: 100%; height: 100%; object-fit: contain; border-radius: var(--radius-md); }
+.fit-modal h6 { color: var(--ink-brown); font-weight: 700; margin-top: 8px; }
+
+/* Nav: tighter labels; the ring is a button to Progress; date in the Today header */
+.tab-item span { letter-spacing: -0.01em; }
+.tab-item.productivity-score { cursor: pointer; }
+.today-date { color: var(--ink-gray); font-size: .9rem; font-weight: 500; margin-top: 2px; }
+.header-menu-btn { display: none; }
+@media (max-width: 1200px) {
+    .header-menu-btn { display: flex; align-items: center; order: 2; background: none; border: none; color: var(--ink-brown);
+        font-size: 1.3rem; padding: 6px 10px; cursor: pointer; }
+    .fit-rings { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Log-without-player form */
+.fit-log-details summary { color: var(--ink-brown); cursor: pointer; margin: 8px 0; }
+.fit-log-ex { margin-bottom: 10px; }
+.fit-log-name { font-weight: 600; color: var(--ink-black); }
+.fit-log-name small { color: var(--ink-gray); font-weight: 400; margin-left: 6px; }
+.fit-log-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: .9rem; color: var(--ink-gray); }
+.fit-log-k { min-width: 64px; }
+.fit-log-load { width: 90px; }
+.fit-log-skip { display: inline-flex; gap: 4px; align-items: center; }
+
+/* Timeline items */
+.fit-tl-prog { color: var(--ink-gray); font-size: .8rem; margin-right: 4px; white-space: nowrap; }
+.timeline-type-fitness .timeline-icon { color: var(--ink-brown); }
+
+/* Onboarding */
+.fit-q-progress { display: flex; gap: 4px; margin: 0 0 12px; }
+.fit-q-progress i { flex: 1; height: 4px; border-radius: 2px; background: rgba(var(--accent-rgb), .15); }
+.fit-q-progress i.on { background: var(--ink-brown); }
+.fit-q-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; font-size: .95rem; }
+.fit-q-cols { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+.fit-q-check { display: flex; gap: 8px; align-items: flex-start; color: var(--ink-black); cursor: pointer; }
+.fit-q-check input { margin-top: 4px; accent-color: var(--ink-brown); }
+.fit-q-joints { display: flex; flex-wrap: wrap; gap: 4px 14px; padding-left: 24px; text-transform: capitalize; }
+.fit-q-week { list-style: none; padding: 0; margin: 0 0 10px; }
+.fit-q-week li { padding: 3px 0; color: var(--ink-black); }
+.fit-q-week b { display: inline-block; width: 42px; color: var(--ink-brown); }
+.fit-q-week small { color: var(--ink-gray); }
+.fit-banner { padding: 8px 12px; border-left: 3px solid var(--ink-red); background: rgba(var(--accent-rgb), .06); margin-bottom: 10px; color: var(--ink-black); }
+.fit-how summary { color: var(--ink-brown); cursor: pointer; margin-top: 8px; }
+.fit-how li { color: var(--ink-gray); font-size: .85rem; }
+.fit-onboard .fit-diet dd { margin-bottom: 6px; }

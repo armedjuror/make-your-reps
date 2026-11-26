@@ -20,7 +20,7 @@ from board.days import (
 )
 from board.gamification import award_points, deduct_points, update_daily_streak
 from board.models import (
-    BlockLog, DayMode, DayPlan, Habit, HabitLog, HabitStatus, HabitStep, HabitStepLog,
+    FITNESS_HABIT_KINDS, BlockLog, DayMode, DayPlan, Habit, HabitLog, HabitStatus, HabitStep, HabitStepLog,
     Journal, JournalEntry, Metric, MetricEntry, MetricKind, RoutineEntry, RoutineType, Tier,
 )
 from board.streaks import refresh_streak
@@ -28,6 +28,7 @@ from board.streaks import refresh_streak
 LATE_CHOICES = (15, 30, 60)
 EDIT_AHEAD_DAYS = 3
 TRAVEL_MAX_DAYS = 60
+FITNESS_EDIT_MSG = 'Fitness subtasks follow your plan. Change the plan in the Fitness tab instead.'
 RESET_STEPS = ['Drink some water', 'Eat a proper meal', 'Walk for 10 minutes', 'Start the next block']
 
 
@@ -459,7 +460,9 @@ class MetricsView(APIView):
         mx.ensure_sleep_metric(user_id)
         mx.ensure_slip_metric(user_id)
         _, hidden = hidden_ids(request, user_id)
-        qs = Metric.objects.filter(user_id=user_id).exclude(id__in=hidden)
+        # Fitness trackers show in the Fitness tab only (?domain=fitness)
+        domain = 'fitness' if request.GET.get('domain') == 'fitness' else ''
+        qs = Metric.objects.filter(user_id=user_id, domain=domain).exclude(id__in=hidden)
         return ok([metric_json(m) for m in qs])
 
     @auth
@@ -589,6 +592,8 @@ class HabitStepsView(APIView):
         if habit.is_system:
             ensure_reset_habit(user_id)
         target = parse_date(request.GET.get('date')) or logical_today(user_id)
+        if habit.kind in FITNESS_HABIT_KINDS:
+            return ok(fitness_steps_payload(habit, target))
         logs = HabitStepLog.objects.filter(step__habit=habit, date=target)
         done_ids = {l.step_id for l in logs if l.done}
         values = {l.step_id: float(l.value) for l in logs if l.value is not None}
@@ -602,6 +607,8 @@ class HabitStepsView(APIView):
         habit = _habit_for(request, user_id, habit_id)
         if not habit:
             return fail('Habit not found', http.HTTP_404_NOT_FOUND)
+        if habit.kind in FITNESS_HABIT_KINDS:
+            return fail(FITNESS_EDIT_MSG)
         name = str(request.data.get('name', '')).strip()
         if not name:
             return fail('name is required')
@@ -624,6 +631,31 @@ class HabitStepsView(APIView):
                         status=http.HTTP_201_CREATED)
 
 
+def fitness_steps_payload(habit, target):
+    """Today's expanded subtasks of a Health / Activity habit (refreshed and settled)."""
+    from fitness.program import refresh
+    pairs = refresh(habit, target) if target <= logical_today(habit.user_id) else None
+    if pairs is None:   # future date: a preview, nothing written
+        from fitness.program import expand
+        items = expand(habit, target)
+        return {'kind': habit.kind, 'preview': True, 'current_stage': 1, 'complete_when': 'all',
+                'steps': [{'id': None, 'key': it.key, 'name': it.name, 'target': it.target,
+                           'how_to': it.how_to, 'visible': True, 'done': False, 'optional': it.optional,
+                           'linked': bool(it.rule), 'extra': it.extra} for it in items]}
+    logs = {l.step_id: l for l in HabitStepLog.objects.filter(step__in=[s for s, _ in pairs], date=target)}
+    steps = []
+    for step, it in pairs:
+        log = logs.get(step.id)
+        steps.append({
+            'id': step.id, 'key': step.key, 'order': step.order, 'name': step.name, 'target': step.target,
+            'how_to': step.how_to, 'stage': 1, 'metric': step.metric_id, 'visible': True,
+            'done': bool(log and log.done), 'auto': bool(log and log.done and log.source == 'auto'),
+            'value': float(log.value) if log and log.value is not None else None,
+            'optional': step.optional, 'linked': bool(step.rule), 'extra': it.extra,
+        })
+    return {'kind': habit.kind, 'preview': False, 'current_stage': 1, 'complete_when': 'all', 'steps': steps}
+
+
 def _own_step(request, user_id, pk):
     step = HabitStep.objects.select_related('habit').filter(pk=pk, habit__user_id=user_id).first()
     if step and _habit_for(request, user_id, step.habit_id) is None:
@@ -637,6 +669,8 @@ class HabitStepDetailView(APIView):
         step = _own_step(request, user_id, pk)
         if not step:
             return fail('Step not found', http.HTTP_404_NOT_FOUND)
+        if step.habit.kind in FITNESS_HABIT_KINDS:
+            return fail(FITNESS_EDIT_MSG)
         for key, limit in (('name', 120), ('target', 60)):
             if key in request.data:
                 setattr(step, key, str(request.data[key]).strip()[:limit])
@@ -665,6 +699,8 @@ class HabitStepDetailView(APIView):
         step = _own_step(request, user_id, pk)
         if not step:
             return fail('Step not found', http.HTTP_404_NOT_FOUND)
+        if step.habit.kind in FITNESS_HABIT_KINDS:
+            return fail(FITNESS_EDIT_MSG)
         step.delete()
         return ok(message='Step deleted')
 
@@ -685,8 +721,13 @@ class HabitStepLogView(APIView):
         if target < habit.created_at.date():
             return fail('This date is before the habit creation')
         done = bool(request.data.get('done', True))
+        if habit.kind in FITNESS_HABIT_KINDS:
+            from fitness.program import steps_for
+            if step.id not in {s.id for s in steps_for(habit, target)}:
+                return fail('That step is not part of this day')
         log, _ = HabitStepLog.objects.get_or_create(step=step, date=target)
         log.done = done
+        log.source = 'manual'
         value = request.data.get('value')
         if value not in (None, ''):
             try:
@@ -704,23 +745,39 @@ class HabitStepLogView(APIView):
 
     @staticmethod
     def _settle(habit, target, today, user_id):
+        return settle_habit(habit, target, today=today, user_id=user_id)
+
+
+def settle_habit(habit, target, today=None, user_id=None, steps=None):
+    """
+    Mark the habit done for ``target`` when its checklist is complete
+    (``complete_when``: all / any). Fitness habits pass today's expanded steps;
+    optional steps never block. Returns None for a habit with no steps.
+    """
+    user_id = user_id or habit.user_id
+    today = today or logical_today(user_id)
+    if steps is None:
+        from fitness.program import steps_for
+        steps = steps_for(habit, target)
+    if steps is None:
         steps = list(habit.steps.filter(stage__lte=habit.current_stage))
-        if not steps:
-            return None
-        done_ids = set(HabitStepLog.objects.filter(step__in=steps, date=target, done=True)
-                       .values_list('step_id', flat=True))
-        complete = (len(done_ids) == len(steps)) if habit.complete_when == 'all' else bool(done_ids)
-        hl, _ = HabitLog.objects.get_or_create(habit=habit, date=target)
-        if hl.is_done != complete:
-            hl.is_done = complete
-            hl.save()
-            if target == today and not habit.is_system:
-                if complete:
-                    update_daily_streak(user_id)
-                    award_points(user_id, 'habit')
-                else:
-                    deduct_points(user_id, 'habit')
-        return complete
+    steps = [s for s in steps if not getattr(s, 'optional', False)]
+    if not steps:
+        return None
+    done_ids = set(HabitStepLog.objects.filter(step__in=steps, date=target, done=True)
+                   .values_list('step_id', flat=True))
+    complete = (len(done_ids) == len(steps)) if habit.complete_when == 'all' else bool(done_ids)
+    hl, _ = HabitLog.objects.get_or_create(habit=habit, date=target)
+    if hl.is_done != complete:
+        hl.is_done = complete
+        hl.save()
+        if target == today and not habit.is_system:
+            if complete:
+                update_daily_streak(user_id)
+                award_points(user_id, 'habit')
+            else:
+                deduct_points(user_id, 'habit')
+    return complete
 
 
 # ── Journals ───────────────────────────────────────────────

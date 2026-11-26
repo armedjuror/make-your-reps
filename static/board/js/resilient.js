@@ -209,7 +209,10 @@ const Resilient = {
             return `<div class="timeline-actions">${badge}${undo}</div>`;
         }
         if (!entry) return '';
-        return `<div class="timeline-actions">
+        const focus = typeof FocusPlayer !== 'undefined'
+            ? `<button type="button" class="btn btn-paper btn-sm rs-icon-btn me-1" data-fp="focus-entry" data-fp-global data-entry="${this.esc(entry)}" data-title="${this.esc(event.event)}" title="Focus" aria-label="Focus on this block"><i class="fas fa-crosshairs"></i></button>`
+            : '';
+        return `<div class="timeline-actions">${focus}
             <button type="button" class="btn btn-paper btn-sm btn-primary rs-icon-btn" data-rs="block" data-st="done" data-entry="${this.esc(entry)}" title="Done" aria-label="Mark done"><i class="fas fa-check"></i></button>
             <button type="button" class="btn btn-paper btn-sm rs-icon-btn ms-1" data-rs="block" data-st="skipped" data-entry="${this.esc(entry)}" title="Skip" aria-label="Skip"><i class="fas fa-forward"></i></button>
         </div>`;

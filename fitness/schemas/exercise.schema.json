@@ -1,0 +1,413 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://makeyourreps.com/schemas/exercise.schema.json",
+  "title": "Make Your Reps exercise (library contract v1)",
+  "description": "One object in exercises.json (a JSON array of these). Frozen contract between the library pipeline and the app. Asset paths are relative to static/fitness/: the clip at clips/<id>.glb, the still at stills/<id>.png, the shared model at mannequin.glb.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name",
+    "aliases",
+    "pattern",
+    "primary_muscles",
+    "secondary_muscles",
+    "equipment",
+    "settings",
+    "level",
+    "intensity",
+    "measure",
+    "default_reps",
+    "default_seconds",
+    "sec_per_rep",
+    "unilateral",
+    "met",
+    "contraindications",
+    "regression",
+    "progression",
+    "steps",
+    "avoid",
+    "breathing",
+    "video_query",
+    "animation"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(_[a-z0-9]+)*$",
+      "maxLength": 64
+    },
+    "name": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 120
+    },
+    "aliases": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "pattern": {
+      "$ref": "#/$defs/pattern"
+    },
+    "primary_muscles": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/muscle"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "secondary_muscles": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/muscle"
+      },
+      "uniqueItems": true
+    },
+    "equipment": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/equipment"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "settings": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "home",
+          "gym"
+        ]
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "level": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 3
+    },
+    "intensity": {
+      "enum": [
+        "heavy",
+        "moderate",
+        "light"
+      ]
+    },
+    "measure": {
+      "enum": [
+        "reps",
+        "time"
+      ]
+    },
+    "default_reps": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "minItems": 2,
+          "maxItems": 2
+        }
+      ]
+    },
+    "default_seconds": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 600
+        }
+      ]
+    },
+    "sec_per_rep": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 20
+    },
+    "unilateral": {
+      "type": "boolean"
+    },
+    "met": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 20
+    },
+    "contraindications": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/contraindication"
+      },
+      "uniqueItems": true
+    },
+    "regression": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(_[a-z0-9]+)*$"
+        }
+      ]
+    },
+    "progression": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(_[a-z0-9]+)*$"
+        }
+      ]
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 3
+      },
+      "minItems": 1
+    },
+    "avoid": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 3
+      }
+    },
+    "breathing": {
+      "type": "string"
+    },
+    "video_query": {
+      "type": "string",
+      "minLength": 3
+    },
+    "animation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "clip",
+        "loop_ms",
+        "camera",
+        "peak",
+        "still"
+      ],
+      "properties": {
+        "clip": {
+          "type": "string",
+          "pattern": "^clips/[a-z0-9_]+\\.glb$"
+        },
+        "loop_ms": {
+          "type": "integer",
+          "minimum": 500,
+          "maximum": 20000
+        },
+        "camera": {
+          "description": "Default view. A preset name, or an orbit {yaw, pitch[, distance]} in degrees.",
+          "oneOf": [
+            {
+              "enum": [
+                "front",
+                "side",
+                "back",
+                "three_quarter",
+                "top"
+              ]
+            },
+            {
+              "type": "object",
+              "required": [
+                "yaw",
+                "pitch"
+              ],
+              "properties": {
+                "yaw": {
+                  "type": "number",
+                  "minimum": -180,
+                  "maximum": 360
+                },
+                "pitch": {
+                  "type": "number",
+                  "minimum": -90,
+                  "maximum": 90
+                },
+                "distance": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "peak": {
+          "description": "Fraction of the loop at peak contraction (0-1); the still is rendered here.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "still": {
+          "type": "string",
+          "pattern": "^stills/[a-z0-9_]+\\.png$"
+        },
+        "side": {
+          "description": "Which side the clip animates. 'right': unilateral clip, the player mirrors it (root scale x = -1) for the left side and swaps left/right highlights. 'both': bilateral or alternating move, never mirrored. Defaults to 'right' when unilateral is true, else 'both'.",
+          "enum": [
+            "right",
+            "both"
+          ]
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "measure": {
+            "const": "reps"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "default_reps": {
+            "type": "array"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "measure": {
+            "const": "time"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "default_seconds": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "unilateral": {
+            "const": false
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "animation": {
+            "properties": {
+              "side": {
+                "const": "both"
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "pattern": {
+      "enum": [
+        "squat",
+        "hinge",
+        "lunge",
+        "horizontal_push",
+        "vertical_push",
+        "horizontal_pull",
+        "vertical_pull",
+        "core_anti_extension",
+        "core_anti_rotation",
+        "core_flexion",
+        "core_lateral",
+        "isolation_upper",
+        "isolation_lower",
+        "cardio",
+        "warmup",
+        "mobility",
+        "stretch"
+      ]
+    },
+    "muscle": {
+      "enum": [
+        "quads",
+        "hamstrings",
+        "glutes",
+        "adductors",
+        "abductors",
+        "calves",
+        "chest",
+        "upper_back",
+        "lats",
+        "front_delts",
+        "side_delts",
+        "rear_delts",
+        "biceps",
+        "triceps",
+        "forearms",
+        "core",
+        "obliques",
+        "lower_back",
+        "hip_flexors",
+        "full_body"
+      ]
+    },
+    "equipment": {
+      "enum": [
+        "none",
+        "mat",
+        "band_tube",
+        "band_loop",
+        "door_anchor",
+        "dumbbell",
+        "kettlebell",
+        "barbell",
+        "bench",
+        "pullup_bar",
+        "cable_machine",
+        "machine",
+        "chair",
+        "table",
+        "wall",
+        "jump_rope"
+      ]
+    },
+    "contraindication": {
+      "enum": [
+        "knee",
+        "lower_back",
+        "shoulder",
+        "wrist",
+        "neck",
+        "hip",
+        "ankle",
+        "pregnancy",
+        "high_blood_pressure"
+      ]
+    }
+  }
+}

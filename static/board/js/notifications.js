@@ -68,6 +68,8 @@ const BrowserNotify = {
 
             for (const event of res.data) {
                 if (this._notifiedIds.has(event.id)) continue;
+                // Fitness: only water and the workout notify, and never once done
+                if (event.event_type === 'fitness' && (!event.notify || event.action_response)) continue;
                 const diff = new Date(event.timestamp).getTime() - now;
                 if (diff >= -WINDOW_MS && diff <= WINDOW_MS) {
                     const { pane, subTab } = this._paneForType(event.event_type);
@@ -95,7 +97,7 @@ const BrowserNotify = {
 
     _titleForType(type) {
         const map = {
-            habit: 'Habit Reminder', todo: 'Task Due', routine: 'Routine',
+            habit: 'Habit Reminder', todo: 'Task Due', routine: 'Routine', fitness: 'Fitness',
             sleep_tracker: 'Sleep Tracker', journal: 'Journal Time', text: 'Reminder',
             meeting: 'Meeting', friend_request: 'Friend Request',
             accountability_invite: 'Accountability Invite',

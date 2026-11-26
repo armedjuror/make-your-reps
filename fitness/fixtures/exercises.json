@@ -1,0 +1,691 @@
+[
+  {
+    "id": "arm_circles",
+    "name": "Arm Circles",
+    "aliases": [
+      "shoulder circles"
+    ],
+    "pattern": "warmup",
+    "primary_muscles": [
+      "front_delts",
+      "side_delts"
+    ],
+    "secondary_muscles": [
+      "rear_delts",
+      "upper_back"
+    ],
+    "equipment": [
+      "none"
+    ],
+    "settings": [
+      "home",
+      "gym"
+    ],
+    "level": 1,
+    "intensity": "light",
+    "measure": "time",
+    "default_reps": null,
+    "default_seconds": 40,
+    "sec_per_rep": 2.0,
+    "unilateral": false,
+    "met": 2.5,
+    "contraindications": [],
+    "regression": null,
+    "progression": null,
+    "steps": [
+      "Stand tall with feet hip-width apart and arms straight out to the sides.",
+      "Draw small circles forward, slowly making them bigger.",
+      "Halfway through, reverse the direction."
+    ],
+    "avoid": [
+      "Shrugging your shoulders up to your ears",
+      "Arching the lower back"
+    ],
+    "breathing": "Breathe steadily through the nose.",
+    "video_query": "arm circles proper form",
+    "animation": {
+      "clip": "clips/arm_circles.glb",
+      "loop_ms": 3000,
+      "camera": "front",
+      "peak": 0.5,
+      "still": "stills/arm_circles.png",
+      "side": "both"
+    }
+  },
+  {
+    "id": "band_squat",
+    "name": "Band Squat",
+    "aliases": [],
+    "pattern": "squat",
+    "primary_muscles": [
+      "quads",
+      "glutes"
+    ],
+    "secondary_muscles": [
+      "adductors",
+      "core"
+    ],
+    "equipment": [
+      "band_tube"
+    ],
+    "settings": [
+      "home",
+      "gym"
+    ],
+    "level": 1,
+    "intensity": "heavy",
+    "measure": "reps",
+    "default_reps": [
+      10,
+      12
+    ],
+    "default_seconds": null,
+    "sec_per_rep": 3.0,
+    "unilateral": false,
+    "met": 5.0,
+    "contraindications": [
+      "knee"
+    ],
+    "regression": null,
+    "progression": null,
+    "steps": [
+      "Stand on the band with feet shoulder-width apart, handles at your shoulders.",
+      "Push your hips back and bend your knees until your thighs are near parallel.",
+      "Keep your chest up and knees tracking over your toes.",
+      "Drive through your whole foot to stand tall."
+    ],
+    "avoid": [
+      "Knees caving inward",
+      "Heels lifting off the floor",
+      "Rounding the lower back at the bottom"
+    ],
+    "breathing": "Breathe in on the way down, out as you stand.",
+    "video_query": "band squat proper form",
+    "animation": {
+      "clip": "clips/band_squat.glb",
+      "loop_ms": 3000,
+      "camera": "side",
+      "peak": 0.5,
+      "still": "stills/band_squat.png",
+      "side": "both"
+    }
+  },
+  {
+    "id": "band_row",
+    "name": "Band Row",
+    "aliases": [
+      "standing band row"
+    ],
+    "pattern": "horizontal_pull",
+    "primary_muscles": [
+      "upper_back",
+      "lats"
+    ],
+    "secondary_muscles": [
+      "biceps",
+      "rear_delts"
+    ],
+    "equipment": [
+      "band_tube",
+      "door_anchor"
+    ],
+    "settings": [
+      "home",
+      "gym"
+    ],
+    "level": 1,
+    "intensity": "heavy",
+    "measure": "reps",
+    "default_reps": [
+      10,
+      12
+    ],
+    "default_seconds": null,
+    "sec_per_rep": 3.0,
+    "unilateral": false,
+    "met": 4.0,
+    "contraindications": [],
+    "regression": null,
+    "progression": null,
+    "steps": [
+      "Anchor the band at chest height and step back until it is taut.",
+      "Stand with a slight knee bend, arms straight in front.",
+      "Pull the handles to your lower ribs, squeezing your shoulder blades together.",
+      "Return slowly until your arms are straight."
+    ],
+    "avoid": [
+      "Shrugging the shoulders",
+      "Leaning back to cheat the pull",
+      "Letting the band snap back"
+    ],
+    "breathing": "Breathe out as you pull, in as you return.",
+    "video_query": "band row proper form",
+    "animation": {
+      "clip": "clips/band_row.glb",
+      "loop_ms": 3000,
+      "camera": "side",
+      "peak": 0.5,
+      "still": "stills/band_row.png",
+      "side": "both"
+    }
+  },
+  {
+    "id": "band_chest_press",
+    "name": "Band Chest Press",
+    "aliases": [],
+    "pattern": "horizontal_push",
+    "primary_muscles": [
+      "chest"
+    ],
+    "secondary_muscles": [
+      "triceps",
+      "front_delts"
+    ],
+    "equipment": [
+      "band_tube",
+      "door_anchor"
+    ],
+    "settings": [
+      "home",
+      "gym"
+    ],
+    "level": 1,
+    "intensity": "heavy",
+    "measure": "reps",
+    "default_reps": [
+      10,
+      12
+    ],
+    "default_seconds": null,
+    "sec_per_rep": 3.0,
+    "unilateral": false,
+    "met": 4.0,
+    "contraindications": [
+      "shoulder"
+    ],
+    "regression": null,
+    "progression": null,
+    "steps": [
+      "Anchor the band at chest height behind you and step forward until it is taut.",
+      "Hold the handles at chest level, elbows about 45 degrees from your body.",
+      "Press forward until your arms are straight.",
+      "Return slowly to the start."
+    ],
+    "avoid": [
+      "Flaring the elbows straight out",
+      "Arching the lower back",
+      "Letting the shoulders roll forward"
+    ],
+    "breathing": "Breathe out as you press, in as you return.",
+    "video_query": "band chest press proper form",
+    "animation": {
+      "clip": "clips/band_chest_press.glb",
+      "loop_ms": 3000,
+      "camera": "side",
+      "peak": 0.5,
+      "still": "stills/band_chest_press.png",
+      "side": "both"
+    }
+  },
+  {
+    "id": "band_rdl",
+    "name": "Band Romanian Deadlift",
+    "aliases": [
+      "band RDL"
+    ],
+    "pattern": "hinge",
+    "primary_muscles": [
+      "hamstrings",
+      "glutes"
+    ],
+    "secondary_muscles": [
+      "lower_back",
+      "core"
+    ],
+    "equipment": [
+      "band_tube"
+    ],
+    "settings": [
+      "home",
+      "gym"
+    ],
+    "level": 1,
+    "intensity": "heavy",
+    "measure": "reps",
+    "default_reps": [
+      10,
+      12
+    ],
+    "default_seconds": null,
+    "sec_per_rep": 3.5,
+    "unilateral": false,
+    "met": 5.0,
+    "contraindications": [
+      "lower_back"
+    ],
+    "regression": null,
+    "progression": null,
+    "steps": [
+      "Stand on the band with feet hip-width apart, handles in front of your thighs.",
+      "With soft knees, push your hips back and lower the handles along your legs.",
+      "Stop when you feel a stretch in your hamstrings, back flat.",
+      "Squeeze your glutes to drive your hips forward and stand up."
+    ],
+    "avoid": [
+      "Rounding the back",
+      "Turning it into a squat by bending the knees too much",
+      "Over-leaning back at the top"
+    ],
+    "breathing": "Breathe in as you hinge, out as you stand.",
+    "video_query": "band romanian deadlift proper form",
+    "animation": {
+      "clip": "clips/band_rdl.glb",
+      "loop_ms": 3000,
+      "camera": "side",
+      "peak": 0.5,
+      "still": "stills/band_rdl.png",
+      "side": "both"
+    }
+  },
+  {
+    "id": "band_face_pull",
+    "name": "Band Face Pull",
+    "aliases": [
+      "face pull"
+    ],
+    "pattern": "horizontal_pull",
+    "primary_muscles": [
+      "rear_delts"
+    ],
+    "secondary_muscles": [
+      "upper_back",
+      "side_delts"
+    ],
+    "equipment": [
+      "band_tube",
+      "door_anchor"
+    ],
+    "settings": [
+      "home",
+      "gym"
+    ],
+    "level": 1,
+    "intensity": "light",
+    "measure": "reps",
+    "default_reps": [
+      12,
+      15
+    ],
+    "default_seconds": null,
+    "sec_per_rep": 3.0,
+    "unilateral": false,
+    "met": 3.5,
+    "contraindications": [],
+    "regression": null,
+    "progression": null,
+    "steps": [
+      "Anchor the band at face height and hold the handles with palms facing down.",
+      "Pull the handles toward your face, elbows high and wide.",
+      "Finish with your hands beside your ears, squeezing the back of your shoulders.",
+      "Return slowly."
+    ],
+    "avoid": [
+      "Pulling with the elbows low",
+      "Shrugging the shoulders",
+      "Leaning back"
+    ],
+    "breathing": "Breathe out as you pull.",
+    "video_query": "band face pull proper form",
+    "animation": {
+      "clip": "clips/band_face_pull.glb",
+      "loop_ms": 3000,
+      "camera": "front",
+      "peak": 0.5,
+      "still": "stills/band_face_pull.png",
+      "side": "both"
+    }
+  },
+  {
+    "id": "dead_bug",
+    "name": "Dead Bug",
+    "aliases": [],
+    "pattern": "core_anti_extension",
+    "primary_muscles": [
+      "core"
+    ],
+    "secondary_muscles": [
+      "hip_flexors"
+    ],
+    "equipment": [
+      "mat"
+    ],
+    "settings": [
+      "home",
+      "gym"
+    ],
+    "level": 1,
+    "intensity": "light",
+    "measure": "reps",
+    "default_reps": [
+      8,
+      10
+    ],
+    "default_seconds": null,
+    "sec_per_rep": 4.0,
+    "unilateral": false,
+    "met": 3.0,
+    "contraindications": [],
+    "regression": null,
+    "progression": null,
+    "steps": [
+      "Lie on your back, arms pointing at the ceiling, knees bent at 90 degrees over your hips.",
+      "Press your lower back into the floor.",
+      "Slowly lower the opposite arm and leg toward the floor.",
+      "Return and switch sides."
+    ],
+    "avoid": [
+      "Letting the lower back arch off the floor",
+      "Moving too fast",
+      "Holding your breath"
+    ],
+    "breathing": "Breathe out as you extend, in as you return.",
+    "video_query": "dead bug proper form",
+    "animation": {
+      "clip": "clips/dead_bug.glb",
+      "loop_ms": 3000,
+      "camera": "side",
+      "peak": 0.5,
+      "still": "stills/dead_bug.png",
+      "side": "both"
+    }
+  },
+  {
+    "id": "band_overhead_press",
+    "name": "Band Overhead Press",
+    "aliases": [
+      "band shoulder press"
+    ],
+    "pattern": "vertical_push",
+    "primary_muscles": [
+      "front_delts",
+      "side_delts"
+    ],
+    "secondary_muscles": [
+      "triceps",
+      "core"
+    ],
+    "equipment": [
+      "band_tube"
+    ],
+    "settings": [
+      "home",
+      "gym"
+    ],
+    "level": 1,
+    "intensity": "moderate",
+    "measure": "reps",
+    "default_reps": [
+      10,
+      12
+    ],
+    "default_seconds": null,
+    "sec_per_rep": 3.0,
+    "unilateral": false,
+    "met": 4.0,
+    "contraindications": [
+      "shoulder"
+    ],
+    "regression": null,
+    "progression": null,
+    "steps": [
+      "Stand on the band with feet hip-width apart, handles at your shoulders.",
+      "Brace your core and press the handles straight overhead.",
+      "Finish with your arms by your ears.",
+      "Lower slowly back to your shoulders."
+    ],
+    "avoid": [
+      "Arching the lower back",
+      "Pressing forward instead of up",
+      "Locking the elbows hard"
+    ],
+    "breathing": "Breathe out as you press, in as you lower.",
+    "video_query": "band overhead press proper form",
+    "animation": {
+      "clip": "clips/band_overhead_press.glb",
+      "loop_ms": 3000,
+      "camera": "front",
+      "peak": 0.5,
+      "still": "stills/band_overhead_press.png",
+      "side": "both"
+    }
+  },
+  {
+    "id": "band_lat_pulldown",
+    "name": "Band Lat Pulldown",
+    "aliases": [],
+    "pattern": "vertical_pull",
+    "primary_muscles": [
+      "lats"
+    ],
+    "secondary_muscles": [
+      "biceps",
+      "upper_back"
+    ],
+    "equipment": [
+      "band_tube",
+      "door_anchor"
+    ],
+    "settings": [
+      "home",
+      "gym"
+    ],
+    "level": 1,
+    "intensity": "moderate",
+    "measure": "reps",
+    "default_reps": [
+      10,
+      12
+    ],
+    "default_seconds": null,
+    "sec_per_rep": 3.0,
+    "unilateral": false,
+    "met": 4.0,
+    "contraindications": [
+      "shoulder"
+    ],
+    "regression": null,
+    "progression": null,
+    "steps": [
+      "Anchor the band high on the door and kneel or stand facing it.",
+      "Hold the handles with arms straight up.",
+      "Pull your elbows down to your sides, squeezing your back.",
+      "Return slowly until your arms are straight."
+    ],
+    "avoid": [
+      "Shrugging the shoulders up",
+      "Pulling with the arms only",
+      "Leaning far back"
+    ],
+    "breathing": "Breathe out as you pull down.",
+    "video_query": "band lat pulldown proper form",
+    "animation": {
+      "clip": "clips/band_lat_pulldown.glb",
+      "loop_ms": 3000,
+      "camera": "front",
+      "peak": 0.5,
+      "still": "stills/band_lat_pulldown.png",
+      "side": "both"
+    }
+  },
+  {
+    "id": "band_bicep_curl",
+    "name": "Band Bicep Curl",
+    "aliases": [
+      "band curl"
+    ],
+    "pattern": "isolation_upper",
+    "primary_muscles": [
+      "biceps"
+    ],
+    "secondary_muscles": [
+      "forearms"
+    ],
+    "equipment": [
+      "band_tube"
+    ],
+    "settings": [
+      "home",
+      "gym"
+    ],
+    "level": 1,
+    "intensity": "light",
+    "measure": "reps",
+    "default_reps": [
+      12,
+      15
+    ],
+    "default_seconds": null,
+    "sec_per_rep": 2.5,
+    "unilateral": false,
+    "met": 3.0,
+    "contraindications": [],
+    "regression": null,
+    "progression": null,
+    "steps": [
+      "Stand on the band with feet hip-width apart, palms facing forward.",
+      "Keep your elbows at your sides and curl the handles up.",
+      "Squeeze at the top.",
+      "Lower slowly."
+    ],
+    "avoid": [
+      "Swinging the body",
+      "Elbows drifting forward",
+      "Dropping the handles fast"
+    ],
+    "breathing": "Breathe out as you curl.",
+    "video_query": "band bicep curl proper form",
+    "animation": {
+      "clip": "clips/band_bicep_curl.glb",
+      "loop_ms": 3000,
+      "camera": "side",
+      "peak": 0.5,
+      "still": "stills/band_bicep_curl.png",
+      "side": "both"
+    }
+  },
+  {
+    "id": "split_squat",
+    "name": "Split Squat",
+    "aliases": [
+      "static lunge"
+    ],
+    "pattern": "lunge",
+    "primary_muscles": [
+      "quads",
+      "glutes"
+    ],
+    "secondary_muscles": [
+      "adductors",
+      "hamstrings"
+    ],
+    "equipment": [
+      "none"
+    ],
+    "settings": [
+      "home",
+      "gym"
+    ],
+    "level": 1,
+    "intensity": "moderate",
+    "measure": "reps",
+    "default_reps": [
+      8,
+      10
+    ],
+    "default_seconds": null,
+    "sec_per_rep": 3.5,
+    "unilateral": true,
+    "met": 5.0,
+    "contraindications": [
+      "knee"
+    ],
+    "regression": null,
+    "progression": null,
+    "steps": [
+      "Stand in a long stride, back heel lifted.",
+      "Lower straight down until both knees are near 90 degrees.",
+      "Keep your torso upright and front knee over the foot.",
+      "Push through the front foot to rise."
+    ],
+    "avoid": [
+      "Front knee caving in",
+      "Leaning far forward",
+      "Bouncing the back knee off the floor"
+    ],
+    "breathing": "Breathe in as you lower, out as you rise.",
+    "video_query": "split squat proper form",
+    "animation": {
+      "clip": "clips/split_squat.glb",
+      "loop_ms": 3000,
+      "camera": "side",
+      "peak": 0.5,
+      "still": "stills/split_squat.png",
+      "side": "right"
+    }
+  },
+  {
+    "id": "glute_bridge",
+    "name": "Glute Bridge",
+    "aliases": [],
+    "pattern": "hinge",
+    "primary_muscles": [
+      "glutes"
+    ],
+    "secondary_muscles": [
+      "hamstrings",
+      "core"
+    ],
+    "equipment": [
+      "mat"
+    ],
+    "settings": [
+      "home",
+      "gym"
+    ],
+    "level": 1,
+    "intensity": "light",
+    "measure": "reps",
+    "default_reps": [
+      12,
+      15
+    ],
+    "default_seconds": null,
+    "sec_per_rep": 3.0,
+    "unilateral": false,
+    "met": 3.0,
+    "contraindications": [],
+    "regression": null,
+    "progression": null,
+    "steps": [
+      "Lie on your back with knees bent and feet flat, hip-width apart.",
+      "Press through your heels and lift your hips.",
+      "Squeeze your glutes at the top, body straight from shoulders to knees.",
+      "Lower slowly."
+    ],
+    "avoid": [
+      "Arching the lower back at the top",
+      "Pushing through the toes",
+      "Letting the knees fall out"
+    ],
+    "breathing": "Breathe out as you lift.",
+    "video_query": "glute bridge proper form",
+    "animation": {
+      "clip": "clips/glute_bridge.glb",
+      "loop_ms": 3000,
+      "camera": "side",
+      "peak": 0.5,
+      "still": "stills/glute_bridge.png",
+      "side": "both"
+    }
+  }
+]

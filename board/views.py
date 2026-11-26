@@ -676,8 +676,9 @@ class HabitViewSet(AuthenticatedModelViewSet):
         now = timezone.localdate()
         start_date = now - timezone.timedelta(days=60)
         streak_ctx = StreakContext(user_id)
+        # Health / Activity habits live in the Fitness tab, not on the Habits page
         queryset = self.get_queryset().filter(
-            user_id=user_id, status=habit_status
+            user_id=user_id, status=habit_status, kind=''
         ).annotate(
             total_reps_count=Count('habitlog', filter=Q(habitlog__is_done=True))
         ).prefetch_related(
@@ -1246,6 +1247,11 @@ class TimelineEventViewSet(AuthenticatedModelViewSet):
                     'action_response': {'metric': 'logged'} if logged else None,
                     'created_at': m_ts.isoformat(), 'updated_at': m_ts.isoformat(),
                 })
+
+            # Fitness items: workout, snack, meals, water, walk, weigh-in, bedtime (computed, never stored)
+            from fitness.timeline import fitness_events
+            _hh, _hm = _hidden_ids(request, user_id)
+            data.extend(fitness_events(user_id, parsed_date, _hh, _hm))
 
             # Journal card is done once the day has a journal entry
             _dd = DailyData.objects.filter(user_id=user_id, date=parsed_date).first()
